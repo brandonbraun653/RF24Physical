@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+vs/nrf24l01_testing/**
+vs/nrf24l01_system_testing/**
+
 # User-specific files
 *.suo
 *.user
