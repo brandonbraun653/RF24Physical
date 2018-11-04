@@ -5,6 +5,7 @@
 
 vs/nrf24l01_testing/**
 vs/nrf24l01_system_testing/**
+tests/development_system_test_project/**
 
 # User-specific files
 *.suo
