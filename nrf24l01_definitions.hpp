@@ -2,6 +2,11 @@
 #define NRF24L01_DEFINITIONS_HPP
 
 /*----------------------------------------------
+General Definitions
+----------------------------------------------*/
+#define NRF24L_SPI_BUFFER_LEN           (33)    /* Accounts for max payload of 32 bytes + 1 byte for the command */
+
+/*----------------------------------------------
 Register Addresses
 ----------------------------------------------*/
 #define NRF24L_REG_CONFIG               (0x00)  /* Configuration Register */

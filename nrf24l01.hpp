@@ -5,6 +5,10 @@
 
 #include "nrf24l01_definitions.hpp"
 
+#if defined(WIN32) && defined(SYSTEM_TEST)
+#include <CppUTest/MemoryLeakDetectorMallocMacros.h>
+#include <CppUTest/MemoryLeakDetectorNewMacros.h>
+#endif
 
 typedef enum 
 { 
@@ -773,6 +777,72 @@ public:
 
 protected:
 
+    /**
+    *   Read a chunk of data in from a register
+    *   
+    *   @param reg Which register. Use constants from nRF24L01.h
+    *   @param buf Where to put the data
+    *   @param len How many bytes of data to transfer
+    *   @return Current value of status register
+    */
+    uint8_t read_register(uint8_t reg, uint8_t* buf, uint8_t len);
+
+    /**
+    *   Read single byte from a register
+    *   
+    *   @param reg Which register. Use constants from nRF24L01.h
+    *   @return Current value of register @p reg
+    */
+    uint8_t read_register(uint8_t reg);
+
+    /**
+    *   Write a chunk of data to a register
+    *   
+    *   @param reg Which register. Use constants from nRF24L01.h
+    *   @param buf Where to get the data
+    *   @param len How many bytes of data to transfer
+    *   @return Current value of status register
+    */
+    uint8_t write_register(uint8_t reg, const uint8_t* buf, uint8_t len);
+
+    /**
+    *   Write a single byte to a register
+    *   
+    *   @param reg Which register. Use constants from nRF24L01.h
+    *   @param value The new value to write
+    *   @return Current value of status register
+    */
+    uint8_t write_register(uint8_t reg, uint8_t value);
+
+    /**
+    *   Write the transmit payload
+    *   
+    *   The size of data written is the fixed payload size, see getPayloadSize()
+    *   
+    *   @param buf Where to get the data
+    *   @param len Number of bytes to be sent
+    *   @return Current value of status register
+    */
+    uint8_t write_payload(const void* buf, uint8_t len, const uint8_t writeType);
+
+    /**
+    *   Read the receive payload
+    *   
+    *   The size of data read is the fixed payload size, see getPayloadSize()
+    *   
+    *   @param buf Where to put the data
+    *   @param len Maximum number of bytes to read
+    *   @return Current value of status register
+    */
+    uint8_t read_payload(void* buf, uint8_t len);
+
+    /**
+    *   Retrieve the current status of the chip
+    *   
+    *   @return Current value of status register
+    */
+    uint8_t get_status();
+
     /** User defined function that will perform an SPI write/read. This must
     *   be overwritten otherwise the program will not compile.
     *
@@ -793,7 +863,6 @@ protected:
     */
     virtual size_t spi_read(uint8_t* rx_buffer, size_t len) = 0;
 
-
     /** User defined function that will perform an SPI write/read. This must
     *   be overwritten otherwise the program will not compile.
     *
@@ -807,7 +876,7 @@ protected:
 
     /** User defined function that will start the SPI transaction correctly. This
     *   typically means asserting the chip select line either in software or hardware.
-    *   
+    *
     *   @return void
     */
     virtual void begin_transaction() = 0;
@@ -820,72 +889,6 @@ protected:
     virtual void end_transaction() = 0;
 
 private:
-    /**
-    * Read a chunk of data in from a register
-    *
-    * @param reg Which register. Use constants from nRF24L01.h
-    * @param buf Where to put the data
-    * @param len How many bytes of data to transfer
-    * @return Current value of status register
-    */
-    uint8_t read_register(uint8_t reg, uint8_t* buf, uint8_t len);
-
-    /**
-    * Read single byte from a register
-    *
-    * @param reg Which register. Use constants from nRF24L01.h
-    * @return Current value of register @p reg
-    */
-    uint8_t read_register(uint8_t reg);
-
-    /**
-    * Write a chunk of data to a register
-    *
-    * @param reg Which register. Use constants from nRF24L01.h
-    * @param buf Where to get the data
-    * @param len How many bytes of data to transfer
-    * @return Current value of status register
-    */
-    uint8_t write_register(uint8_t reg, const uint8_t* buf, uint8_t len);
-
-    /**
-    * Write a single byte to a register
-    *
-    * @param reg Which register. Use constants from nRF24L01.h
-    * @param value The new value to write
-    * @return Current value of status register
-    */
-    uint8_t write_register(uint8_t reg, uint8_t value);
-
-    /**
-    * Write the transmit payload
-    *
-    * The size of data written is the fixed payload size, see getPayloadSize()
-    *
-    * @param buf Where to get the data
-    * @param len Number of bytes to be sent
-    * @return Current value of status register
-    */
-    uint8_t write_payload(const void* buf, uint8_t len, const uint8_t writeType);
-
-    /**
-    * Read the receive payload
-    *
-    * The size of data read is the fixed payload size, see getPayloadSize()
-    *
-    * @param buf Where to put the data
-    * @param len Maximum number of bytes to read
-    * @return Current value of status register
-    */
-    uint8_t read_payload(void* buf, uint8_t len);
-
-    /**
-    * Retrieve the current status of the chip
-    *
-    * @return Current value of status register
-    */
-    uint8_t get_status(void);
-
 
 };
 

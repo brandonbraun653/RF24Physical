@@ -1,7 +1,10 @@
 #include "nrf24l01.hpp"
 
-static uint8_t spi_rxbuff[32 + 1]; //SPI receive buffer (payload max 32 bytes)
-static uint8_t spi_txbuff[32 + 1]; //SPI transmit buffer (payload max 32 bytes + 1 byte for the command)
+static uint8_t spi_rxbuff[NRF24L_SPI_BUFFER_LEN];
+static_assert(sizeof(spi_rxbuff) == NRF24L_SPI_BUFFER_LEN, "SPI receive buffer is the wrong length");
+
+static uint8_t spi_txbuff[NRF24L_SPI_BUFFER_LEN];
+static_assert(sizeof(spi_txbuff) == NRF24L_SPI_BUFFER_LEN, "SPI transmit buffer is the wrong length");
 
 NRF24L01::NRF24L01()
 {
@@ -287,7 +290,7 @@ uint8_t NRF24L01::read_payload(void* buf, uint8_t len)
     return 0;
 }
 
-uint8_t NRF24L01::get_status(void)
+uint8_t NRF24L01::get_status()
 {
     return 0;
 }

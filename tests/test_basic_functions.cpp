@@ -6,7 +6,7 @@
 #include <iostream>
 #include <stdint.h>
 
-TEST_GROUP(BasicInterface)
+TEST_GROUP(BasicFunctions)
 {
     void setup() override
     {
@@ -20,7 +20,7 @@ TEST_GROUP(BasicInterface)
 
 };
 
-TEST(BasicInterface, FirstTest)
+TEST(BasicFunctions, FirstTest)
 {
     CHECK_EQUAL(0, 0);
     std::cout << "Basic Interface test" << std::endl;
