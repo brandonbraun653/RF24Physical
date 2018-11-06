@@ -1,12 +1,5 @@
 #include "nrf24l01.hpp"
 
-#include <iostream>
-#include <memory>
-
-
-#include <CppUTest/MemoryLeakDetectorMallocMacros.h>
-#include <CppUTest/MemoryLeakDetectorNewMacros.h>
-
 /**
 *   This class inherits the properties of the NRF24L01 class and implements
 *   the required low level drivers.
@@ -65,5 +58,3 @@ private:
     
 
 };
-
-typedef std::shared_ptr<NRF24L01_SystemTest> NRF24L01_SystemTest_sPtr;

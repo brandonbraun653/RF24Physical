@@ -2,13 +2,9 @@
 #define NRF24L01_HPP
 
 #include <stdint.h>
+#include <cstdio>
 
 #include "nrf24l01_definitions.hpp"
-
-#if defined(WIN32) && defined(SYSTEM_TEST)
-#include <CppUTest/MemoryLeakDetectorMallocMacros.h>
-#include <CppUTest/MemoryLeakDetectorNewMacros.h>
-#endif
 
 typedef enum 
 { 
