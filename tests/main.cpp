@@ -23,6 +23,7 @@ int main(void)
 #else
 int main(int ac, char** av)
 {
+    printf("Yo man");
     return CommandLineTestRunner::RunAllTests(ac, av);
 }
 #endif 

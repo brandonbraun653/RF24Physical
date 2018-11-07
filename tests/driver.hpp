@@ -1,15 +1,14 @@
 #include "nrf24l01.hpp"
 
 /**
-*   This class inherits the properties of the NRF24L01 class and implements
-*   the required low level drivers.
+*   Add doc
 */
-class NRF24L01_SystemTest : protected NRF24L01
+class NRF24L01_Test : protected NRF24L01
 {
 public:
     
-    NRF24L01_SystemTest();
-    ~NRF24L01_SystemTest() = default;
+    NRF24L01_Test();
+    ~NRF24L01_Test() = default;
 
     /** Manually set the return of an SPI transaction. This allows simulating the slave 
     *   device fairly cleanly and helps in mocking bad data responses.

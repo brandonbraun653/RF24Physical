@@ -3,29 +3,30 @@
 #include "nrf24l01.hpp"
 #include "driver.hpp"
 
-//#include <iostream>
+
 #include <stdint.h>
 
 
-//TEST_GROUP(PrivateFunctions)
-//{
-//    NRF24L01_SystemTest_sPtr nrf;
-//
-//    void setup() override
-//    {
-//        nrf = std::make_shared<NRF24L01_SystemTest>();
-//    }
-//
-//    void teardown() override
-//    {
-//    }
-//
-//    void reset_test()
-//    {
-//        
-//    }
-//};
-//
+TEST_GROUP(PrivateFunctions)
+{
+    NRF24L01_Test nrf;
+
+    void setup() override
+    {
+        nrf.init();
+    }
+
+    void teardown() override
+    {
+        nrf.teardown();
+    }
+
+    void reset_test()
+    {
+        nrf.reset();
+    }
+};
+
 //TEST(PrivateFunctions, write_register_NormalCase)
 //{
 //    /*-------------------------------------------------
