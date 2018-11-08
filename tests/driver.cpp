@@ -11,17 +11,37 @@ NRF24L01_Test::NRF24L01_Test()
     memset(test_tx_buffer, 0, sizeof(test_tx_buffer));
 }
 
+void NRF24L01_Test::init()
+{
+
+}
+
+void NRF24L01_Test::teardown()
+{
+
+}
+
+void NRF24L01_Test::reset()
+{
+    memset(test_rx_buffer, 0, sizeof(test_rx_buffer));
+    memset(test_tx_buffer, 0, sizeof(test_tx_buffer));
+}
+
+
+#if defined(HARDWARE_TEST) && defined(EMBEDDED)
+// Add versions of the functions that talk to real hardware
+#else
+
 void NRF24L01_Test::set_spi_return(uint8_t * const buffer, size_t len, bool clear_rx_buffer)
 {
     if(!buffer)
     {
-        std::cout << "ERROR: set_spi_return() was passed a null pointer" << std::endl;
+        printf("ERROR: set_spi_return() was passed a null pointer");
         return;
     }
-
-    if(len > NRF24L_SPI_BUFFER_LEN)
+    else if(len > NRF24L_SPI_BUFFER_LEN)
     {
-        std::cout << "ERROR: set_spi_return() exceeded length of internal buffers" << std::endl;
+        printf("ERROR: set_spi_return() exceeded length of internal buffers");
         return;
     }
 
@@ -49,7 +69,7 @@ size_t NRF24L01_Test::spi_write(uint8_t* tx_buffer, size_t len)
 {
     if(len > sizeof(test_tx_buffer))
     {
-        std::cout << "ERROR: spi_write() was asked to send/receive way too much data" << std::endl;
+        printf("ERROR: spi_write() was asked to send/receive way too much data");
         return 0;
     }
 
@@ -100,3 +120,5 @@ void NRF24L01_Test::end_transaction()
 {
     //Do nothing. The embedded system will handle this as needed.
 }
+
+#endif /* HARDWARE_TEST */

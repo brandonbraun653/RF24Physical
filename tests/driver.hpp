@@ -1,7 +1,11 @@
 #include "nrf24l01.hpp"
 
+#include <cstring>
+
 /**
-*   Add doc
+*   Class for testing behavior of the NRF24L01 driver. The hope is that this class
+*   will compile and execute both on the development system (Windows) as well as the
+*   target system (microcontroller).
 */
 class NRF24L01_Test : protected NRF24L01
 {
@@ -9,6 +13,16 @@ public:
     
     NRF24L01_Test();
     ~NRF24L01_Test() = default;
+
+    void init();
+
+    void teardown();
+
+    void reset();
+
+    #if defined(HARDWARE_TEST) && defined(EMBEDDED)
+    //Add functions only for real hardware here
+    #else
 
     /** Manually set the return of an SPI transaction. This allows simulating the slave 
     *   device fairly cleanly and helps in mocking bad data responses.
@@ -27,6 +41,7 @@ public:
     */
     void set_spi_return(const uint8_t &val, bool clear_rx_buffer = true);
 
+    #endif /* HARDWARE_TEST */
 
     /** Expose protected function to the test interface */
     uint8_t write_register(uint8_t reg, uint8_t value) { return NRF24L01::write_register(reg, value); }
@@ -38,22 +53,16 @@ protected:
 
     size_t spi_write(uint8_t* tx_buffer, size_t len) override;
 
-
     size_t spi_read(uint8_t* rx_buffer, size_t len) override;
-
 
     size_t spi_write_read(uint8_t* tx_buffer, uint8_t* rx_buffer, size_t len) override;
 
-
     void begin_transaction() override;
-
 
     void end_transaction() override;
 
 private:
 
     bool spi_return_data_available = false;
-
-    
 
 };

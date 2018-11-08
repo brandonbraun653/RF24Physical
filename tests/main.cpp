@@ -1,6 +1,6 @@
 #include <CppUTest/CommandLineTestRunner.h>
 
-#if defined(EMBEDDED_TEST)
+#if defined(EMBEDDED) || defined(HARDWARE_TEST)
 #include <stm32f4xx_hal.h>
 #include <stm32_hal_legacy.h>
 
@@ -23,7 +23,6 @@ int main(void)
 #else
 int main(int ac, char** av)
 {
-    printf("Yo man");
     return CommandLineTestRunner::RunAllTests(ac, av);
 }
 #endif 
