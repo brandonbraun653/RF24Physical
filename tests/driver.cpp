@@ -25,6 +25,8 @@ void NRF24L01_Test::reset()
 {
     memset(test_rx_buffer, 0, sizeof(test_rx_buffer));
     memset(test_tx_buffer, 0, sizeof(test_tx_buffer));
+
+    bytes_written = 0;
 }
 
 
@@ -88,7 +90,10 @@ size_t NRF24L01_Test::spi_write_read(uint8_t* tx_buffer, uint8_t* rx_buffer, siz
         printf("ERROR: spi_write_read() was asked to send/receive way too much data");
         return 0;
     }
-
+    else
+    {
+        bytes_written = len;
+    }
     /*-------------------------------------------------
     Set the return data for the calling function
     -------------------------------------------------*/

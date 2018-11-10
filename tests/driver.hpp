@@ -44,8 +44,28 @@ public:
     #endif /* HARDWARE_TEST */
 
     /** Expose protected function to the test interface */
-    uint8_t write_register(uint8_t reg, uint8_t value) { return NRF24L01::write_register(reg, value); }
+    uint8_t write_register(uint8_t reg, uint8_t value)
+    { 
+        return NRF24L01::write_register(reg, value);
+    }
 
+    uint8_t write_register(uint8_t reg, const uint8_t* buf, uint8_t len)
+    {
+        return NRF24L01::write_register(reg, buf, len);
+    }
+
+    uint8_t read_register(uint8_t reg)
+    {
+        return NRF24L01::read_register(reg);
+    }
+
+    uint8_t read_register(uint8_t reg, uint8_t* buf, uint8_t len)
+    {
+        return NRF24L01::read_register(reg, buf, len);
+    }
+
+
+    size_t bytes_written = 0;
     uint8_t test_rx_buffer[NRF24L_SPI_BUFFER_LEN];
     uint8_t test_tx_buffer[NRF24L_SPI_BUFFER_LEN];
 
@@ -64,5 +84,5 @@ protected:
 private:
 
     bool spi_return_data_available = false;
-
+    
 };
