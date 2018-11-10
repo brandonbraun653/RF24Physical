@@ -885,6 +885,11 @@ protected:
     virtual void end_transaction() = 0;
 
 private:
+    bool p_variant = false;
+    bool dynamic_payloads_enabled = false;
+    uint8_t addr_width = 0;
+    uint8_t payload_size = 0;
+    uint8_t pipe0_reading_address[5];
 
 };
 

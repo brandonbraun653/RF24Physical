@@ -4,7 +4,8 @@
 /*----------------------------------------------
 General Definitions
 ----------------------------------------------*/
-#define NRF24L_SPI_BUFFER_LEN           (33)    /* Accounts for max payload of 32 bytes + 1 byte for the command */
+#define NRF24L_PAYLOAD_LEN              (32)
+#define NRF24L_SPI_BUFFER_LEN           (1 + NRF24L_PAYLOAD_LEN)    /* Accounts for max payload of 32 bytes + 1 byte for the command */
 
 /*----------------------------------------------
 Register Addresses
@@ -39,7 +40,7 @@ Register Addresses
 /*----------------------------------------------
 Command Instructions
 ----------------------------------------------*/
-#define NRF24L_CMD_REGISTER_MASK        (0x1F)
+#define NRF24L_CMD_REGISTER_MASK        (0x1F)  /* Masks off the largest available register address */
 #define NRF24L_CMD_R_REGISTER           (0x00)  /* Read command and status registers  */
 #define NRF24L_CMD_W_REGISTER           (0x20)  /* Write command and status registers  */
 #define NRF24L_CMD_R_RX_PAYLOAD         (0x61)  /* Read RX Payload (1-32 bytes) */
@@ -51,7 +52,7 @@ Command Instructions
 #define NRF24L_CMD_R_RX_PL_WID          (0x60)  /* Read RX payload width for the top payload in the RX FIFO */
 #define NRF24L_CMD_W_ACK_PAYLOAD        (0xA8)  /* Write Payload together with ACK packet */
 #define NRF24L_CMD_W_TX_PAYLOAD_NO_ACK  (0xB0)  /* Disables AUTOACK on this specific packet */
-#define NRF24L_CMD_RF24_NOP             (0xFF)  /* No operation */
+#define NRF24L_CMD_NOP             (0xFF)  /* No operation */
 
 
 #endif /* NRF24L01_DEFINITIONS_HPP */
