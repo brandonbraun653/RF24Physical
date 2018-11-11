@@ -94,6 +94,7 @@ size_t NRF24L01_Test::spi_write_read(uint8_t* tx_buffer, uint8_t* rx_buffer, siz
     {
         bytes_written = len;
     }
+
     /*-------------------------------------------------
     Set the return data for the calling function
     -------------------------------------------------*/
