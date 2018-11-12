@@ -2,6 +2,8 @@
 
 #include <cstring>
 
+using namespace NRF24L;
+
 /**
 *   Class for testing behavior of the NRF24L01 driver. The hope is that this class
 *   will compile and execute both on the development system (Windows) as well as the
@@ -66,8 +68,8 @@ public:
 
 
     size_t bytes_written = 0;
-    uint8_t test_rx_buffer[NRF24L_SPI_BUFFER_LEN];
-    uint8_t test_tx_buffer[NRF24L_SPI_BUFFER_LEN];
+    uint8_t test_rx_buffer[NRF24L::SPI_BUFFER_LEN];
+    uint8_t test_tx_buffer[NRF24L::SPI_BUFFER_LEN];
 
 protected:
 
