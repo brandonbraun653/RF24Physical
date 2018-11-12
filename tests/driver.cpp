@@ -4,8 +4,8 @@
 
 NRF24L01_Test::NRF24L01_Test()
 {
-    static_assert(sizeof(test_rx_buffer) == NRF24L_SPI_BUFFER_LEN, "Invalid test rx_buffer len");
-    static_assert(sizeof(test_tx_buffer) == NRF24L_SPI_BUFFER_LEN, "Invalid test tx_buffer len");
+    static_assert(sizeof(test_rx_buffer) == NRF24L::SPI_BUFFER_LEN, "Invalid test rx_buffer len");
+    static_assert(sizeof(test_tx_buffer) == NRF24L::SPI_BUFFER_LEN, "Invalid test tx_buffer len");
 
     memset(test_rx_buffer, 0, sizeof(test_rx_buffer));
     memset(test_tx_buffer, 0, sizeof(test_tx_buffer));
@@ -41,7 +41,7 @@ void NRF24L01_Test::set_spi_return(uint8_t * const buffer, size_t len, bool clea
         printf("ERROR: set_spi_return() was passed a null pointer");
         return;
     }
-    else if(len > NRF24L_SPI_BUFFER_LEN)
+    else if(len > NRF24L::SPI_BUFFER_LEN)
     {
         printf("ERROR: set_spi_return() exceeded length of internal buffers");
         return;

@@ -70,11 +70,11 @@ TEST(PrivateFunctions, write_register_single_value)
         reset_test();
 
         /* Test Variables */
-        uint8_t reg = NRF24L_REG_STATUS;
+        uint8_t reg = NRF24L::REG_STATUS;
         uint8_t payload = 0x34;
 
         /* Expected Results */
-        uint8_t exp0 = (NRF24L_CMD_W_REGISTER | (NRF24L_CMD_REGISTER_MASK & reg));
+        uint8_t exp0 = (NRF24L::CMD_W_REGISTER | (NRF24L::CMD_REGISTER_MASK & reg));
         uint8_t exp1 = payload;
 
         /* Call FUT and validate the correct information was written to the tx_buffers */
@@ -118,11 +118,11 @@ TEST(PrivateFunctions, write_register_multiple_values)
             reset_test();
 
             /* Test Variables */
-            uint8_t reg = NRF24L_REG_STATUS;
+            uint8_t reg = NRF24L::REG_STATUS;
             uint8_t multiple_vals[] = { 0x33, 0x44, 0x55 };
 
             /* Expected Results */
-            uint8_t exp0 = (NRF24L_CMD_W_REGISTER | (NRF24L_CMD_REGISTER_MASK & reg));
+            uint8_t exp0 = (NRF24L::CMD_W_REGISTER | (NRF24L::CMD_REGISTER_MASK & reg));
 
             /* Call FUT and validate the correct information was written to the tx_buffers */
             nrf.write_register(reg, multiple_vals, sizeof(multiple_vals));
@@ -139,14 +139,14 @@ TEST(PrivateFunctions, write_register_multiple_values)
         printf("Verify too much data gets truncated\n");
         reset_test();
 
-        uint8_t reg = NRF24L_REG_STATUS;
-        uint8_t way_too_many_bytes[NRF24L_PAYLOAD_LEN + 10];
+        uint8_t reg = NRF24L::REG_STATUS;
+        uint8_t way_too_many_bytes[NRF24L::PAYLOAD_LEN + 10];
         memset(way_too_many_bytes, 0xAA, sizeof(way_too_many_bytes));
 
         nrf.write_register(reg, way_too_many_bytes, sizeof(way_too_many_bytes));
 
-        CHECK_EQUAL(NRF24L_PAYLOAD_LEN + 1, nrf.bytes_written);
-        CHECK_FALSE(memcmp(&nrf.test_tx_buffer[1], way_too_many_bytes, NRF24L_PAYLOAD_LEN));
+        CHECK_EQUAL(NRF24L::PAYLOAD_LEN + 1, nrf.bytes_written);
+        CHECK_FALSE(memcmp(&nrf.test_tx_buffer[1], way_too_many_bytes, NRF24L::PAYLOAD_LEN));
     }
 }
 
