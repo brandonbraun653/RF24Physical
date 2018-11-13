@@ -2,6 +2,15 @@
 
 #include <cstring>
 
+#if defined(EMBEDDED) && defined(HARDWARE_TEST)
+#include <Thor/include/spi.hpp>
+#include <Thor/include/gpio.hpp>
+
+using namespace Thor::Peripheral::SPI;
+using namespace Thor::Peripheral::GPIO;
+#endif
+
+
 using namespace NRF24L;
 
 /**
@@ -22,7 +31,7 @@ public:
 
     void reset();
 
-    #if defined(HARDWARE_TEST) && defined(EMBEDDED)
+    #if defined(EMBEDDED) && defined(HARDWARE_TEST)
     //Add functions only for real hardware here
     #else
 
@@ -71,6 +80,11 @@ public:
     uint8_t test_rx_buffer[NRF24L::SPI_BUFFER_LEN];
     uint8_t test_tx_buffer[NRF24L::SPI_BUFFER_LEN];
 
+    #if defined(EMBEDDED) && defined(HARDWARE_TEST)
+    Thor::Peripheral::SPI::SPIClass_sPtr spi;
+    Thor::Peripheral::GPIO::GPIOClass_sPtr chip_enable;
+    #endif
+
 protected:
 
     size_t spi_write(uint8_t* tx_buffer, size_t len) override;
@@ -86,5 +100,6 @@ protected:
 private:
 
     bool spi_return_data_available = false;
+    
     
 };

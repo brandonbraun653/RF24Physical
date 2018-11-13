@@ -145,6 +145,96 @@ namespace NRF24L
     constexpr uint8_t EN_RXADDR_P0_Msk          = 1u << EN_RXADDR_P0_Pos;
     constexpr uint8_t EN_RXADDR_P0              = EN_RXADDR_P0_Msk;
 
+    /* Register: SETUP_AW */
+
+
+    /* Register: SETUP_RETR */
+
+
+    /* Register: RF_CH */
+
+
+    /* Register: RF_SETUP */
+
+
+    /* Register: STATUS */
+
+
+    /* Register: OBSERVE_TX */
+
+
+    /* Register: CD */
+
+
+    /* Register: RX_ADDR_P0 */
+
+
+    /* Register: RX_ADDR_P1 */
+
+
+    /* Register: RX_ADDR_P2 */
+
+
+    /* Register: RX_ADDR_P3 */
+
+    
+    /* Register: RX_ADDR_P4 */
+
+    
+    /* Register: RX_ADDR_P5 */
+
+    
+    /* Register: TX_ADDR */
+
+    
+    /* Register: RX_PW_P0 */
+
+    
+    /* Register: RX_PW_P1 */
+
+    
+    /* Register: RX_PW_P2 */
+
+    
+    /* Register: RX_PW_P3 */
+
+    
+    /* Register: RX_PW_P4 */
+
+    
+    /* Register: RX_PW_P5 */
+
+    
+    /* Register: FIFO_STATUS */
+
+    
+    /* Register: ACK_PLD */
+
+    
+    /* Register: TX_PLD */
+    
+    
+    /* Register: RX_PLD */
+    
+    
+    /* Register: DYNPD */
+    
+    
+    /* Register: FEATURE */
+    constexpr uint8_t FEATURE_MSK               = 0x07;
+
+    constexpr uint8_t FEATURE_EN_DPL_Pos        = 2u;
+    constexpr uint8_t FEATURE_EN_DPL_Msk        = 1u << FEATURE_EN_DPL_Pos;
+    constexpr uint8_t FEATURE_EN_DPL            = FEATURE_EN_DPL_Msk;
+
+    constexpr uint8_t FEATURE_EN_ACK_PAY_Pos    = 1u;
+    constexpr uint8_t FEATURE_EN_ACK_PAY_Msk    = 1u << FEATURE_EN_ACK_PAY_Pos;
+    constexpr uint8_t FEATURE_EN_ACK_PAY        = FEATURE_EN_ACK_PAY_Msk;
+
+    constexpr uint8_t FEATURE_EN_DYN_ACK_Pos    = 0u;
+    constexpr uint8_t FEATURE_EN_DYN_ACK_Msk    = 1u << FEATURE_EN_DYN_ACK_Pos;
+    constexpr uint8_t FEATURE_EN_DYN_ACK        = FEATURE_EN_DYN_ACK_Msk;
+
 };
 
 

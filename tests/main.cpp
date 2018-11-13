@@ -1,24 +1,17 @@
 #include <CppUTest/CommandLineTestRunner.h>
 
 #if defined(EMBEDDED) || defined(HARDWARE_TEST)
-#include <stm32f4xx_hal.h>
-#include <stm32_hal_legacy.h>
-
-#ifdef __cplusplus
-extern "C"
-#endif
-void SysTick_Handler(void)
-{
-    HAL_IncTick();
-    HAL_SYSTICK_IRQHandler();
-}
+#include <Thor/include/thor.hpp>
 
 int main(void)
 {
     HAL_Init();
+    ThorInit();
 
     const char *p = "";
     CommandLineTestRunner::RunAllTests(0, &p);
+
+    while(1);
 }
 #else
 int main(int ac, char** av)

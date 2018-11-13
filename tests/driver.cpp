@@ -9,6 +9,19 @@ NRF24L01_Test::NRF24L01_Test()
 
     memset(test_rx_buffer, 0, sizeof(test_rx_buffer));
     memset(test_tx_buffer, 0, sizeof(test_tx_buffer));
+
+    #if defined(HARDWARE_TEST) && defined(EMBEDDED)
+    spi = SPIClass::create(3);
+
+    spi->begin();
+    spi->setMode(SubPeripheral::TXRX, Modes::BLOCKING);
+    spi->updateClockFrequency(1000000);
+
+    chip_enable = boost::make_shared<Thor::Peripheral::GPIO::GPIOClass>();
+    chip_enable->reconfigure(GPIOC, PIN_1);
+    chip_enable->mode(PinMode::OUTPUT_PP);
+    chip_enable->write(LogicLevel::HIGH);
+    #endif
 }
 
 void NRF24L01_Test::init()
@@ -31,7 +44,35 @@ void NRF24L01_Test::reset()
 
 
 #if defined(HARDWARE_TEST) && defined(EMBEDDED)
-// Add versions of the functions that talk to real hardware
+size_t NRF24L01_Test::spi_write(uint8_t* tx_buffer, size_t len)
+{
+    if(len > sizeof(test_tx_buffer))
+    {
+        printf("ERROR: spi_write() was asked to send/receive way too much data");
+        return 0;
+    }
+    
+    spi->write(tx_buffer, len);
+    
+    return len;
+}
+
+size_t NRF24L01_Test::spi_read(uint8_t* rx_buffer, size_t len)
+{
+    return len;
+}
+
+size_t NRF24L01_Test::spi_write_read(uint8_t* tx_buffer, uint8_t* rx_buffer, size_t len)
+{
+    if((len > sizeof(test_tx_buffer)) || (len > sizeof(test_rx_buffer)))
+    {
+        printf("ERROR: spi_write_read() was asked to send/receive way too much data");
+        return 0;
+    }
+    
+    spi->write(tx_buffer, rx_buffer, len);
+    return len;
+}
 #else
 
 void NRF24L01_Test::set_spi_return(uint8_t * const buffer, size_t len, bool clear_rx_buffer)
@@ -117,6 +158,8 @@ size_t NRF24L01_Test::spi_write_read(uint8_t* tx_buffer, uint8_t* rx_buffer, siz
     return len;
 }
 
+#endif /* HARDWARE_TEST */
+
 void NRF24L01_Test::begin_transaction()
 {
     //Do nothing. The embedded system will handle this as needed.
@@ -126,5 +169,3 @@ void NRF24L01_Test::end_transaction()
 {
     //Do nothing. The embedded system will handle this as needed.
 }
-
-#endif /* HARDWARE_TEST */
