@@ -33,6 +33,7 @@ Tests that run on either the development system or target system
 #if defined(WIN32) || defined(EMBEDDED)
 
 
+
 #endif /* WIN32 || EMBEDDED */
 
 /*-------------------------------------------------
@@ -185,5 +186,14 @@ Tests that only run on the target system
 Tests that only run when connected to real hardware
 -------------------------------------------------*/
 #if defined(EMBEDDED) && defined(HARDWARE_TEST)
+TEST(PrivateFunctions, read_register_single_value)
+{
+    {
+        nrf.chip_enable->write(LogicLevel::LOW);
+        uint8_t reset_config_value = 0x00;
+        uint8_t actual_config_value = nrf.read_register(NRF24L::REG_CONFIG);
 
+        CHECK_EQUAL(reset_config_value, actual_config_value);
+    }
+}
 #endif /* EMBEDDED && HARDWARE_TEST */
