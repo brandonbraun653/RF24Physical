@@ -1,12 +1,11 @@
 #include <CppUTest/CommandLineTestRunner.h>
 
 #if defined(EMBEDDED) || defined(HARDWARE_TEST)
-#include <Thor/include/thor.hpp>
+#include <Chimera/chimera.hpp>
 
 int main(void)
 {
-    HAL_Init();
-    ThorInit();
+    ChimeraInit();
 
     const char *p = "";
     CommandLineTestRunner::RunAllTests(0, &p);

@@ -8,9 +8,6 @@
 
 namespace NRF24L
 {
-
-
-
     typedef enum 
     { 
         RF24_PA_MIN = 0, 
@@ -119,7 +116,7 @@ namespace NRF24L
         *   @endcode
         *   @return No return value. Use available().
         */
-        bool read(void *buffer, uint8_t len);
+        bool read(void *const buffer, uint8_t &len);
 
         /**
         *   Be sure to call openWritingPipe() first to set the destination
@@ -185,7 +182,7 @@ namespace NRF24L
         *   @param number Which pipe# to open, 0-5.
         *   @param address The 24, 32 or 40 bit address of the pipe to open.
         */
-        void openReadPipe(uint8_t number, const uint8_t *address);
+        void openReadPipe(const uint8_t &number, const uint8_t *const address);
 
     
         /* Advanced Operation */
@@ -786,7 +783,7 @@ namespace NRF24L
         *   @param len How many bytes of data to transfer
         *   @return Current value of status register
         */
-        uint8_t read_register(uint8_t reg, uint8_t* buf, uint8_t len);
+        uint8_t read_register(const uint8_t &reg, uint8_t *const buf, size_t & len);
 
         /**
         *   Read single byte from a register
@@ -794,7 +791,7 @@ namespace NRF24L
         *   @param reg Which register. Use constants from nRF24L01.h
         *   @return Current value of register @p reg
         */
-        uint8_t read_register(uint8_t reg);
+        uint8_t read_register(const uint8_t &reg);
 
         /**
         *   Write a chunk of data to a register
@@ -804,7 +801,7 @@ namespace NRF24L
         *   @param len How many bytes of data to transfer
         *   @return Current value of status register
         */
-        uint8_t write_register(uint8_t reg, const uint8_t* buf, uint8_t len);
+        uint8_t write_register(const uint8_t &reg, const uint8_t *const buf, size_t & len);
 
         /**
         *   Write a single byte to a register
@@ -813,7 +810,7 @@ namespace NRF24L
         *   @param value The new value to write
         *   @return Current value of status register
         */
-        uint8_t write_register(uint8_t reg, uint8_t value);
+        uint8_t write_register(const uint8_t &reg, const uint8_t &value);
 
         /**
         *   Write the transmit payload
@@ -824,7 +821,7 @@ namespace NRF24L
         *   @param len Number of bytes to be sent
         *   @return Current value of status register
         */
-        uint8_t write_payload(const void* buf, uint8_t len, const uint8_t writeType);
+        uint8_t write_payload(const void *const buf, size_t & len, const uint8_t &writeType);
 
         /**
         *   Read the receive payload
@@ -835,7 +832,7 @@ namespace NRF24L
         *   @param len Maximum number of bytes to read
         *   @return Current value of status register
         */
-        uint8_t read_payload(void* buf, uint8_t len);
+        uint8_t read_payload(void *const buf, size_t &len);
 
         /**
         *   Retrieve the current status of the chip
@@ -852,7 +849,7 @@ namespace NRF24L
         *
         *   @return The total number of bytes that were written
         */
-        virtual size_t spi_write(uint8_t* tx_buffer, size_t len) = 0;
+        virtual size_t spi_write(const uint8_t *const tx_buffer, size_t &len) = 0;
 
         /** User defined function that will perform an SPI read. This must
         *   be overwritten otherwise the program will not compile.
@@ -862,7 +859,7 @@ namespace NRF24L
         *
         *   @return The total number of bytes read.
         */
-        virtual size_t spi_read(uint8_t* rx_buffer, size_t len) = 0;
+        virtual size_t spi_read(uint8_t *const rx_buffer, size_t &len) = 0;
 
         /** User defined function that will perform an SPI write/read. This must
         *   be overwritten otherwise the program will not compile.
@@ -873,7 +870,7 @@ namespace NRF24L
         *
         *   @return The total number of bytes that were written/read
         */
-        virtual size_t spi_write_read(uint8_t* tx_buffer, uint8_t* rx_buffer, size_t len) = 0;
+        virtual size_t spi_write_read(const uint8_t *const tx_buffer, uint8_t *const rx_buffer, size_t &len) = 0;
 
         /** User defined function that will start the SPI transaction correctly. This
         *   typically means asserting the chip select line either in software or hardware.
@@ -892,9 +889,9 @@ namespace NRF24L
     private:
         bool p_variant = false;
         bool dynamic_payloads_enabled = false;
-        uint8_t addr_width = 0;
-        uint8_t payload_size = 0;
-        uint8_t pipe0_reading_address[5];
+        size_t addr_width = 0;
+        size_t payload_size = 0;
+        size_t pipe0_reading_address[5];
 
     };
 

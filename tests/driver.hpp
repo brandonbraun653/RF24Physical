@@ -42,7 +42,7 @@ public:
     *   @param[in]  len                 How many bytes to set
     *   @param[in]  clear_rx_buffer     Optionally wipe the internal rx buffer before writing
     */
-    void set_spi_return(uint8_t * const buffer, size_t len, bool clear_rx_buffer = true);
+    void set_spi_return(uint8_t *const buffer, size_t len, bool clear_rx_buffer = true);
 
     /** Manually set the return of an SPI transaction. This allows simulating the slave
     *   device fairly cleanly and helps in mocking bad data responses.
@@ -60,7 +60,7 @@ public:
         return NRF24L01::write_register(reg, value);
     }
 
-    uint8_t write_register(uint8_t reg, const uint8_t* buf, uint8_t len)
+    uint8_t write_register(uint8_t reg, const uint8_t* buf, size_t len)
     {
         return NRF24L01::write_register(reg, buf, len);
     }
@@ -70,7 +70,7 @@ public:
         return NRF24L01::read_register(reg);
     }
 
-    uint8_t read_register(uint8_t reg, uint8_t* buf, uint8_t len)
+    uint8_t read_register(uint8_t reg, uint8_t* buf, size_t len)
     {
         return NRF24L01::read_register(reg, buf, len);
     }
@@ -87,11 +87,11 @@ public:
 
 protected:
 
-    size_t spi_write(uint8_t* tx_buffer, size_t len) override;
+    size_t spi_write(const uint8_t *const tx_buffer, size_t &len) override;
 
-    size_t spi_read(uint8_t* rx_buffer, size_t len) override;
+    size_t spi_read(uint8_t *const rx_buffer, size_t &len) override;
 
-    size_t spi_write_read(uint8_t* tx_buffer, uint8_t* rx_buffer, size_t len) override;
+    size_t spi_write_read(const uint8_t *const tx_buffer, uint8_t *const rx_buffer, size_t &len) override;
 
     void begin_transaction() override;
 

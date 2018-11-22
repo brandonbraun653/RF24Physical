@@ -6,7 +6,7 @@ namespace NRF24L
     /*----------------------------------------------
     General Definitions
     ----------------------------------------------*/
-    constexpr uint8_t PAYLOAD_LEN = 32;
+    constexpr size_t PAYLOAD_LEN = 32;
     constexpr uint8_t SPI_BUFFER_LEN = 1 + PAYLOAD_LEN;    /* Accounts for max payload of 32 bytes + 1 byte for the command */
 
     /*----------------------------------------------
