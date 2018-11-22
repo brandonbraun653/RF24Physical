@@ -1,5 +1,9 @@
 #include "driver.hpp"
 
+#if defined(HARDWARE_TEST) && defined(EMBEDDED)
+using namespace Chimera::SPI;
+using namespace Chimera::GPIO;
+#endif 
 
 
 NRF24L01_Test::NRF24L01_Test()
@@ -11,16 +15,27 @@ NRF24L01_Test::NRF24L01_Test()
     memset(test_tx_buffer, 0, sizeof(test_tx_buffer));
 
     #if defined(HARDWARE_TEST) && defined(EMBEDDED)
-    spi = SPIClass::create(3);
+    spi = std::make_shared<SPIClass>(3);
 
-    spi->begin();
-    spi->setMode(SubPeripheral::TXRX, Modes::BLOCKING);
-    spi->updateClockFrequency(1000000);
+    spiSetup.clockFrequency = 1000000;
+    spiSetup.bitOrder = BitOrder::MSB_FIRST;
+    spiSetup.clockMode = ClockMode::MODE0;
+    spiSetup.mode = Mode::MASTER;
 
-    chip_enable = boost::make_shared<Thor::Peripheral::GPIO::GPIOClass>();
-    chip_enable->reconfigure(GPIOC, PIN_1);
-    chip_enable->mode(PinMode::OUTPUT_PP);
-    chip_enable->write(LogicLevel::HIGH);
+    spiSetup.CS.pin = 15;
+    spiSetup.CS.port = Port::PORTA;
+    spiSetup.CS.alternate = Thor::Peripheral::GPIO::NOALTERNATE;
+    spiSetup.CS.mode = Drive::OUTPUT_PUSH_PULL;
+    spiSetup.CS.state = State::HIGH;
+
+    spi->setChipSelectControlMode(ChipSelectMode::MANUAL);
+
+    spi->init(spiSetup);
+    spi->setPeripheralMode(SubPeripheral::TXRX, SubPeripheralMode::BLOCKING);
+
+    chip_enable = std::make_shared<GPIOClass>(Port::PORTC, 1);
+    chip_enable->mode(Drive::OUTPUT_PUSH_PULL);
+    chip_enable->write(State::HIGH);
     #endif
 }
 
@@ -44,33 +59,21 @@ void NRF24L01_Test::reset()
 
 
 #if defined(HARDWARE_TEST) && defined(EMBEDDED)
-size_t NRF24L01_Test::spi_write(uint8_t* tx_buffer, size_t len)
+size_t NRF24L01_Test::spi_write(const uint8_t *const tx_buffer, size_t &len)
 {
-    if(len > sizeof(test_tx_buffer))
-    {
-        printf("ERROR: spi_write() was asked to send/receive way too much data");
-        return 0;
-    }
-    
-    spi->write(tx_buffer, len);
-    
+    spi->writeBytes(tx_buffer, len, false);
     return len;
 }
 
-size_t NRF24L01_Test::spi_read(uint8_t* rx_buffer, size_t len)
+size_t NRF24L01_Test::spi_read(uint8_t *const rx_buffer, size_t &len)
 {
+    spi->readBytes(rx_buffer, len, false);
     return len;
 }
 
-size_t NRF24L01_Test::spi_write_read(uint8_t* tx_buffer, uint8_t* rx_buffer, size_t len)
-{
-    if((len > sizeof(test_tx_buffer)) || (len > sizeof(test_rx_buffer)))
-    {
-        printf("ERROR: spi_write_read() was asked to send/receive way too much data");
-        return 0;
-    }
-    
-    spi->write(tx_buffer, rx_buffer, len);
+size_t NRF24L01_Test::spi_write_read(const uint8_t *const tx_buffer, uint8_t *const rx_buffer, size_t &len)
+{   
+    spi->readWriteBytes(tx_buffer, rx_buffer, len, false);
     return len;
 }
 #else

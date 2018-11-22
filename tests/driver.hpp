@@ -3,11 +3,12 @@
 #include <cstring>
 
 #if defined(EMBEDDED) && defined(HARDWARE_TEST)
-#include <Thor/include/spi.hpp>
-#include <Thor/include/gpio.hpp>
+#include <Chimera/types.hpp>
+#include <Chimera/spi.hpp>
+#include <Chimera/gpio.hpp>
 
-using namespace Thor::Peripheral::SPI;
-using namespace Thor::Peripheral::GPIO;
+using namespace Chimera::SPI;
+using namespace Chimera::GPIO;
 #endif
 
 
@@ -81,8 +82,8 @@ public:
     uint8_t test_tx_buffer[NRF24L::SPI_BUFFER_LEN];
 
     #if defined(EMBEDDED) && defined(HARDWARE_TEST)
-    Thor::Peripheral::SPI::SPIClass_sPtr spi;
-    Thor::Peripheral::GPIO::GPIOClass_sPtr chip_enable;
+    Chimera::SPI::SPIClass_sPtr spi;
+    Chimera::GPIO::GPIOClass_sPtr chip_enable;
     #endif
 
 protected:
@@ -101,5 +102,8 @@ private:
 
     bool spi_return_data_available = false;
     
+    #if defined(EMBEDDED) && defined(HARDWARE_TEST)
+    Chimera::SPI::Setup spiSetup;
+    #endif
     
 };
