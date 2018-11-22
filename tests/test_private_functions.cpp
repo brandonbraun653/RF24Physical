@@ -189,7 +189,7 @@ Tests that only run when connected to real hardware
 TEST(PrivateFunctions, read_register_single_value)
 {
     {
-        nrf.chip_enable->write(LogicLevel::LOW);
+        nrf.chip_enable->write(State::LOW);
         uint8_t reset_config_value = 0x00;
         uint8_t actual_config_value = nrf.read_register(NRF24L::REG_CONFIG);
 
