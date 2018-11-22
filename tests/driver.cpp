@@ -108,7 +108,7 @@ void NRF24L01_Test::set_spi_return(const uint8_t &val, bool clear_rx_buffer)
     spi_return_data_available = true;
 }
 
-size_t NRF24L01_Test::spi_write(uint8_t* tx_buffer, size_t len)
+size_t NRF24L01_Test::spi_write(const uint8_t *const tx_buffer, size_t &len)
 {
     if(len > sizeof(test_tx_buffer))
     {
@@ -119,12 +119,12 @@ size_t NRF24L01_Test::spi_write(uint8_t* tx_buffer, size_t len)
     return len;
 }
 
-size_t NRF24L01_Test::spi_read(uint8_t* rx_buffer, size_t len)
+size_t NRF24L01_Test::spi_read(uint8_t *const rx_buffer, size_t &len)
 {
     return len;
 }
 
-size_t NRF24L01_Test::spi_write_read(uint8_t* tx_buffer, uint8_t* rx_buffer, size_t len)
+size_t NRF24L01_Test::spi_write_read(const uint8_t *const tx_buffer, uint8_t *const rx_buffer, size_t &len)
 {
     if((len > sizeof(test_tx_buffer)) || (len > sizeof(test_rx_buffer)))
     {

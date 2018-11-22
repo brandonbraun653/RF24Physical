@@ -3,10 +3,6 @@
 #include <cstring>
 #include <algorithm>
 
-
-
-
-
 namespace NRF24L
 {
     static uint8_t spi_rxbuff[SPI_BUFFER_LEN];
@@ -289,7 +285,7 @@ namespace NRF24L
 
     }
 
-    uint8_t NRF24L01::read_register(uint8_t reg, uint8_t* buf, uint8_t len)
+    uint8_t NRF24L01::read_register(const uint8_t &reg, uint8_t *const buf, size_t & len)
     {
         if(len > PAYLOAD_LEN)
         {
@@ -307,20 +303,21 @@ namespace NRF24L
         return spi_rxbuff[0];
     }
 
-    uint8_t NRF24L01::read_register(uint8_t reg)
+    uint8_t NRF24L01::read_register(const uint8_t &reg)
     {
+        size_t txLength = 2;
         spi_txbuff[0] = (CMD_R_REGISTER | (CMD_REGISTER_MASK & reg));
         spi_txbuff[1] = CMD_NOP;
 
         begin_transaction();
-        spi_write_read(spi_txbuff, spi_rxbuff, 2);
+        spi_write_read(spi_txbuff, spi_rxbuff, txLength);
         end_transaction();
 
         /* Current register value is in the second byte of the receive buffer */
         return spi_rxbuff[1];
     }
 
-    uint8_t NRF24L01::write_register(uint8_t reg, const uint8_t* buf, uint8_t len)
+    uint8_t NRF24L01::write_register(const uint8_t &reg, const uint8_t *const buf, size_t &len)
     {
         if(len > PAYLOAD_LEN)
         {
@@ -330,28 +327,30 @@ namespace NRF24L
         spi_txbuff[0] = (CMD_W_REGISTER | (CMD_REGISTER_MASK & reg));
         memcpy(&spi_txbuff[1], buf, len);
 
+        len += 1;
         begin_transaction();
-        spi_write_read(spi_txbuff, spi_rxbuff, len + 1);
+        spi_write_read(spi_txbuff, spi_rxbuff, len);
         end_transaction();
 
         /* Status code is in the first byte of the receive buffer */
         return spi_rxbuff[0];
     }
 
-    uint8_t NRF24L01::write_register(uint8_t reg, uint8_t value)
+    uint8_t NRF24L01::write_register(const uint8_t &reg, const uint8_t &value)
     {
+        size_t txLength = 2;
         spi_txbuff[0] = (CMD_W_REGISTER | (CMD_REGISTER_MASK & reg));
         spi_txbuff[1] = value;
 
         begin_transaction();
-        spi_write_read(spi_txbuff, spi_rxbuff, 2);
+        spi_write_read(spi_txbuff, spi_rxbuff, txLength);
         end_transaction();
     
         /* Status code is in the first byte of the receive buffer */
         return spi_rxbuff[0];
     }
 
-    uint8_t NRF24L01::write_payload(const void* buf, uint8_t len, const uint8_t writeType)
+    uint8_t NRF24L01::write_payload(const void *const buf, size_t & len, const uint8_t &writeType)
     {
         const uint8_t * tx_buf = reinterpret_cast<const uint8_t *>(buf);
 
@@ -359,8 +358,8 @@ namespace NRF24L
         Calculate the number of bytes that do nothing
         -------------------------------------------------*/
         len = std::min(len, payload_size);
-        uint8_t blank_len = dynamic_payloads_enabled ? 0 : (payload_size - len);
-        uint8_t size = len + blank_len + 1;
+        uint8_t blank_len = static_cast<uint8_t>(dynamic_payloads_enabled ? 0 : (payload_size - len));
+        size_t size = len + blank_len + 1;
 
         /*-------------------------------------------------
         Format the write command and fill the rest with NOPs
@@ -376,7 +375,7 @@ namespace NRF24L
         return spi_rxbuff[0];
     }
 
-    uint8_t NRF24L01::read_payload(void* buf, uint8_t len)
+    uint8_t NRF24L01::read_payload(void *const buf, size_t &len)
     {
         if(len > payload_size)
         {
@@ -387,8 +386,8 @@ namespace NRF24L
         Calculate the number of bytes that do nothing
         -------------------------------------------------*/
         uint8_t * rx_buf = reinterpret_cast<uint8_t *>(buf);
-        uint8_t blank_len = dynamic_payloads_enabled ? 0 : (payload_size - len);
-        uint8_t size = len + blank_len + 1;
+        uint8_t blank_len = static_cast<uint8_t>(dynamic_payloads_enabled ? 0 : (payload_size - len));
+        size_t size = len + blank_len + 1;
 
         /*-------------------------------------------------
         Format the read command and fill the rest with NOPs
@@ -412,32 +411,35 @@ namespace NRF24L
         return 0;
     }
 
-    void NRF24L01::openWritePipe(const uint8_t *address)
+    void NRF24L01::openWritePipe(const uint8_t *const address)
     {
         write_register(REG_RX_ADDR_P0, address, addr_width);
         write_register(REG_TX_ADDR, address, addr_width);
-        write_register(REG_RX_PW_P0, payload_size);
+        write_register(REG_RX_PW_P0, static_cast<uint8_t>(payload_size));
     }
 
-    void NRF24L01::openReadPipe(uint8_t number, const uint8_t *address)
+    void NRF24L01::openReadPipe(const uint8_t &number, const uint8_t *const address)
     {
+        size_t width = addr_width;
+
         if(number == 0)
         {
-            memcpy(pipe0_reading_address, address, addr_width);
+            memcpy(pipe0_reading_address, address, width);
         }
 
         if(number <= 6)
         {
             if(number < 2)
             {
-                write_register(child_pipe[number], address, addr_width);
+                write_register(child_pipe[number], address, width);
             }
             else
             {
-                write_register(child_pipe[number], address, 1);
+                width = 1;
+                write_register(child_pipe[number], address, width);
             }
 
-            write_register(child_payload_size[number], payload_size);
+            write_register(child_payload_size[number], static_cast<uint8_t>(payload_size));
 
             uint8_t reg_en_rxaddr = read_register(REG_EN_RXADDR);
 
@@ -445,7 +447,7 @@ namespace NRF24L
         }
     }
 
-    bool NRF24L01::read(void *buffer, uint8_t len)
+    bool NRF24L01::read(void *const buffer, uint8_t &len)
     {
         return false;
     }
