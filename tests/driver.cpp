@@ -76,6 +76,16 @@ size_t NRF24L01_Test::spi_write_read(const uint8_t *const tx_buffer, uint8_t *co
     spi->readWriteBytes(tx_buffer, rx_buffer, len, false);
     return len;
 }
+
+void NRF24L01_Test::begin_transaction()
+{
+    spi->setChipSelect(State::LOW);
+}
+
+void NRF24L01_Test::end_transaction()
+{
+    spi->setChipSelect(State::HIGH);
+}
 #else
 
 void NRF24L01_Test::set_spi_return(uint8_t * const buffer, size_t len, bool clear_rx_buffer)
@@ -161,8 +171,6 @@ size_t NRF24L01_Test::spi_write_read(const uint8_t *const tx_buffer, uint8_t *co
     return len;
 }
 
-#endif /* HARDWARE_TEST */
-
 void NRF24L01_Test::begin_transaction()
 {
     //Do nothing. The embedded system will handle this as needed.
@@ -172,3 +180,6 @@ void NRF24L01_Test::end_transaction()
 {
     //Do nothing. The embedded system will handle this as needed.
 }
+
+#endif /* HARDWARE_TEST */
+
