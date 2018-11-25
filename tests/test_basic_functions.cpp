@@ -78,17 +78,19 @@ TEST(BasicFunctions, testReadWriteRegister)
 {
     reset_test();
 
-    nrf->write_register(REG_CONFIG, 0x0C);
+    uint8_t write_val = 0x0C;
+    uint8_t read_val = 0x00;
 
-    uint8_t reg = nrf->read_register(REG_CONFIG);
+    nrf->write_register(REG_CONFIG, write_val);
+    read_val = nrf->read_register(REG_CONFIG);
 
-    CHECK_EQUAL(0x0C, reg);
+    CHECK_EQUAL(write_val, read_val);
 }
 
-//TEST(BasicFunctions, testBegin)
-//{
-//    reset_test();
-//    bool result = nrf->begin();
-//    CHECK_TRUE(result);
-//}
+TEST(BasicFunctions, testBegin)
+{
+    reset_test();
+    bool result = nrf->begin();
+    CHECK_TRUE(result);
+}
 #endif /* HW_TEST */

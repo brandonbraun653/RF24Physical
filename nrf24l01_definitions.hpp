@@ -92,7 +92,7 @@ namespace NRF24L
     constexpr uint8_t CONFIG_PRIM_RX            = CONFIG_PRIM_RX_Msk;
 
     /* Register: EN_AA */
-    constexpr uint8_t EN_AA_MSK                 = 0x3F;
+    constexpr uint8_t EN_AA_Msk                 = 0x3F;
 
     constexpr uint8_t EN_AA_P5_Pos              = 5u;
     constexpr uint8_t EN_AA_P5_Msk              = 1u << EN_AA_P5_Pos;
@@ -182,7 +182,8 @@ namespace NRF24L
     constexpr uint8_t RF_SETUP_RF_DR            = RF_SETUP_RF_DR_Msk;
 
     constexpr uint8_t RF_SETUP_RF_PWR_Pos       = 1u;
-    constexpr uint8_t RF_SETUP_RF_PWR_Msk       = 3u << RF_SETUP_RF_PWR_Pos;
+    constexpr uint8_t RF_SETUP_RF_PWR_Wid       = 0x03;
+    constexpr uint8_t RF_SETUP_RF_PWR_Msk       = RF_SETUP_RF_PWR_Wid << RF_SETUP_RF_PWR_Pos;
     constexpr uint8_t RF_SETUP_RF_PWR           = RF_SETUP_RF_PWR_Msk;
 
     constexpr uint8_t RF_SETUP_LNA_HCURR_Pos    = 0u;
@@ -190,7 +191,28 @@ namespace NRF24L
     constexpr uint8_t RF_SETUP_LNA_HCURR        = RF_SETUP_LNA_HCURR_Msk;
 
     /* Register: STATUS */
+    constexpr uint8_t STATUS_Msk                = 0x7F;
 
+    constexpr uint8_t STATUS_RX_DR_Pos          = 6u;
+    constexpr uint8_t STATUS_RX_DR_Msk          = 1u << STATUS_RX_DR_Pos;
+    constexpr uint8_t STATUS_RX_DR              = STATUS_RX_DR_Msk;
+
+    constexpr uint8_t STATUS_TX_DS_Pos          = 5u;
+    constexpr uint8_t STATUS_TX_DS_Msk          = 1u << STATUS_TX_DS_Pos;
+    constexpr uint8_t STATUS_TX_DS              = STATUS_TX_DS_Msk;
+
+    constexpr uint8_t STATUS_MAX_RT_Pos         = 4u;
+    constexpr uint8_t STATUS_MAX_RT_Msk         = 1u << STATUS_MAX_RT_Pos;
+    constexpr uint8_t STATUS_MAX_RT             = STATUS_MAX_RT_Msk;
+    
+    constexpr uint8_t STATUS_RX_P_NO_Pos        = 1u;
+    constexpr uint8_t STATUS_RX_P_NO_Wid        = 0x07;
+    constexpr uint8_t STATUS_RX_P_NO_Msk        = STATUS_RX_P_NO_Wid << STATUS_RX_P_NO_Pos;
+    constexpr uint8_t STATUS_RX_P_NO            = STATUS_RX_P_NO_Msk;
+
+    constexpr uint8_t STATUS_TX_FULL_Pos        = 0u;
+    constexpr uint8_t STATUS_TX_FULL_Msk        = 1u << STATUS_TX_FULL_Pos;
+    constexpr uint8_t STATUS_TX_FULL            = STATUS_TX_FULL_Msk;
 
     /* Register: OBSERVE_TX */
 
@@ -238,7 +260,27 @@ namespace NRF24L
 
 
     /* Register: FIFO_STATUS */
+    constexpr uint8_t FIFO_STATUS_Msk           = 0x7F;
 
+    constexpr uint8_t FIFO_STATUS_TX_REUSE_Pos  = 6u;
+    constexpr uint8_t FIFO_STATUS_TX_REUSE_Msk  = 1u << FIFO_STATUS_TX_REUSE_Pos;
+    constexpr uint8_t FIFO_STATUS_TX_REUSE      = FIFO_STATUS_TX_REUSE_Msk;
+
+    constexpr uint8_t FIFO_STATUS_TX_FULL_Pos   = 5u;
+    constexpr uint8_t FIFO_STATUS_TX_FULL_Msk   = 1u << FIFO_STATUS_TX_FULL_Pos;
+    constexpr uint8_t FIFO_STATUS_TX_FULL       = FIFO_STATUS_TX_FULL_Msk;
+
+    constexpr uint8_t FIFO_STATUS_TX_EMPTY_Pos  = 4u;
+    constexpr uint8_t FIFO_STATUS_TX_EMPTY_Msk  = 1u << FIFO_STATUS_TX_EMPTY_Pos;
+    constexpr uint8_t FIFO_STATUS_TX_EMPTY      = FIFO_STATUS_TX_EMPTY_Msk;
+
+    constexpr uint8_t FIFO_STATUS_RX_FULL_Pos   = 1u;
+    constexpr uint8_t FIFO_STATUS_RX_FULL_Msk   = 1u << FIFO_STATUS_RX_FULL_Pos;
+    constexpr uint8_t FIFO_STATUS_RX_FULL       = FIFO_STATUS_RX_FULL_Msk;
+
+    constexpr uint8_t FIFO_STATUS_RX_EMPTY_Pos  = 0u;
+    constexpr uint8_t FIFO_STATUS_RX_EMPTY_Msk  = 1u << FIFO_STATUS_RX_EMPTY_Pos;
+    constexpr uint8_t FIFO_STATUS_RX_EMPTY      = FIFO_STATUS_RX_EMPTY_Msk;
 
     /* Register: ACK_PLD */
 
@@ -250,7 +292,31 @@ namespace NRF24L
 
 
     /* Register: DYNPD */
+    constexpr uint8_t DYNPD_Msk                 = 0x3F;
 
+    constexpr uint8_t DYNPD_DPL_P5_Pos          = 5u;
+    constexpr uint8_t DYNPD_DPL_P5_Msk          = 1u << DYNPD_DPL_P5_Pos;
+    constexpr uint8_t DYNPD_DPL_P5              = DYNPD_DPL_P5_Msk;
+
+    constexpr uint8_t DYNPD_DPL_P4_Pos          = 4u;
+    constexpr uint8_t DYNPD_DPL_P4_Msk          = 1u << DYNPD_DPL_P4_Pos;
+    constexpr uint8_t DYNPD_DPL_P4              = DYNPD_DPL_P4_Msk;
+
+    constexpr uint8_t DYNPD_DPL_P3_Pos          = 3u;
+    constexpr uint8_t DYNPD_DPL_P3_Msk          = 1u << DYNPD_DPL_P3_Pos;
+    constexpr uint8_t DYNPD_DPL_P3              = DYNPD_DPL_P3_Msk;
+
+    constexpr uint8_t DYNPD_DPL_P2_Pos          = 2u;
+    constexpr uint8_t DYNPD_DPL_P2_Msk          = 1u << DYNPD_DPL_P2_Pos;
+    constexpr uint8_t DYNPD_DPL_P2              = DYNPD_DPL_P2_Msk;
+
+    constexpr uint8_t DYNPD_DPL_P1_Pos          = 1u;
+    constexpr uint8_t DYNPD_DPL_P1_Msk          = 1u << DYNPD_DPL_P1_Pos;
+    constexpr uint8_t DYNPD_DPL_P1              = DYNPD_DPL_P1_Msk;
+
+    constexpr uint8_t DYNPD_DPL_P0_Pos          = 0u;
+    constexpr uint8_t DYNPD_DPL_P0_Msk          = 1u << DYNPD_DPL_P0_Pos;
+    constexpr uint8_t DYNPD_DPL_P0              = DYNPD_DPL_P0_Msk;
 
     /* Register: FEATURE */
     constexpr uint8_t FEATURE_MSK               = 0x07;
