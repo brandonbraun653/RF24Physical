@@ -2,14 +2,11 @@
 
 #include <cstring>
 
-#if defined(EMBEDDED) && defined(HARDWARE_TEST)
-#include <Chimera/types.hpp>
-#include <Chimera/spi.hpp>
-#include <Chimera/gpio.hpp>
-
-using namespace Chimera::SPI;
-using namespace Chimera::GPIO;
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(MOD_TEST)
+#define HW_TEST
 #endif
+
+
 
 
 using namespace NRF24L;
@@ -19,10 +16,10 @@ using namespace NRF24L;
 *   will compile and execute both on the development system (Windows) as well as the
 *   target system (microcontroller).
 */
-class NRF24L01_Test : protected NRF24L01
+class NRF24L01_Test : public NRF24L01
 {
 public:
-    
+
     NRF24L01_Test();
     ~NRF24L01_Test() = default;
 
@@ -32,13 +29,11 @@ public:
 
     void reset();
 
-    #if defined(EMBEDDED) && defined(HARDWARE_TEST)
-    //Add functions only for real hardware here
-    #else
+    #if !defined(HW_TEST)
 
-    /** Manually set the return of an SPI transaction. This allows simulating the slave 
+    /** Manually set the return of an SPI transaction. This allows simulating the slave
     *   device fairly cleanly and helps in mocking bad data responses.
-    *   
+    *
     *   @param[in]  buffer              Buffer of containing the return data
     *   @param[in]  len                 How many bytes to set
     *   @param[in]  clear_rx_buffer     Optionally wipe the internal rx buffer before writing
@@ -55,39 +50,16 @@ public:
 
     #endif /* HARDWARE_TEST */
 
-    /** Expose protected function to the test interface */
-    uint8_t write_register(uint8_t reg, uint8_t value)
-    { 
-        return NRF24L01::write_register(reg, value);
-    }
-
-    uint8_t write_register(uint8_t reg, const uint8_t* buf, size_t len)
-    {
-        return NRF24L01::write_register(reg, buf, len);
-    }
-
-    uint8_t read_register(uint8_t reg)
-    {
-        return NRF24L01::read_register(reg);
-    }
-
-    uint8_t read_register(uint8_t reg, uint8_t* buf, size_t len)
-    {
-        return NRF24L01::read_register(reg, buf, len);
-    }
-
 
     size_t bytes_written = 0;
     uint8_t test_rx_buffer[NRF24L::SPI_BUFFER_LEN];
     uint8_t test_tx_buffer[NRF24L::SPI_BUFFER_LEN];
 
-    #if defined(EMBEDDED) && defined(HARDWARE_TEST)
-    Chimera::SPI::SPIClass_sPtr spi;
-    Chimera::GPIO::GPIOClass_sPtr chip_enable;
-    #endif
+
 
 protected:
 
+    #if !defined(HW_TEST)
     size_t spi_write(const uint8_t *const tx_buffer, size_t &len) override;
 
     size_t spi_read(uint8_t *const rx_buffer, size_t &len) override;
@@ -98,12 +70,10 @@ protected:
 
     void end_transaction() override;
 
+    #endif
+
 private:
 
     bool spi_return_data_available = false;
-    
-    #if defined(EMBEDDED) && defined(HARDWARE_TEST)
-    Chimera::SPI::Setup spiSetup;
-    #endif
-    
+
 };
