@@ -17,28 +17,28 @@ namespace NRF24L
     typedef std::shared_ptr<NRF24L01> NRF24L01_sPtr;
     typedef std::unique_ptr<NRF24L01> NRF24L01_uPtr;
 
-    typedef enum
+    enum class PowerAmplitude : uint8_t
     {
-        RF24_PA_MIN = 0,
-        RF24_PA_LOW,
-        RF24_PA_HIGH,
-        RF24_PA_MAX,
-        RF24_PA_ERROR
-    } nrf24l01_pa_dbm;
+        MIN,
+        LOW,
+        HIGH,
+        MAX,
+        ERROR
+    };
 
-    typedef enum
+    enum class DataRate : uint8_t
     {
-        RF24_1MBPS = 0,
-        RF24_2MBPS,
-        RF24_250KBPS
-    } nrf24_datarate;
+        DR_1MBPS,
+        DR_2MBPS,
+        DR_250KBPS
+    };
 
-    typedef enum
+    enum class CRCLength : uint8_t
     {
-        RF24_CRC_DISABLED = 0,
-        RF24_CRC_8,
-        RF24_CRC_16
-    } nrf24_crclength;
+        CRC_DISABLED,
+        CRC_8,
+        CRC_16
+    };
 
 
     /**
@@ -99,6 +99,24 @@ namespace NRF24L
         *   @return True if there is a payload available, false if none is
         */
         bool available();
+
+        /**
+        *   Test whether there are bytes available to be read in the
+        *   FIFO buffers.
+        *
+        *   @param[out] pipe_num Which pipe has the payload available
+        *
+        *   @code
+        *   uint8_t pipeNum;
+        *   if(radio.available(&pipeNum)){
+        *     radio.read(&data,sizeof(data));
+        *     Serial.print("Got data on pipe");
+        *     Serial.println(pipeNum);
+        *   }
+        *   @endcode
+        *   @return True if there is a payload available, false if none is
+        */
+        bool available(uint8_t *const pipeNum);
 
         /**
         *   Read the available payload
@@ -195,23 +213,7 @@ namespace NRF24L
 
         bool failureDetected;
 
-        /**
-        *   Test whether there are bytes available to be read in the
-        *   FIFO buffers.
-        *
-        *   @param[out] pipe_num Which pipe has the payload available
-        *
-        *   @code
-        *   uint8_t pipeNum;
-        *   if(radio.available(&pipeNum)){
-        *     radio.read(&data,sizeof(data));
-        *     Serial.print("Got data on pipe");
-        *     Serial.println(pipeNum);
-        *   }
-        *   @endcode
-        *   @return True if there is a payload available, false if none is
-        */
-        bool available(uint8_t *pipe_num);
+        
 
         /**
         *   Check if the radio needs to be read. Can be used to prevent data loss
@@ -546,7 +548,7 @@ namespace NRF24L
         *
         *   @param a_width The address width to use: 3,4 or 5
         */
-        void setAddressWidth(uint8_t address_width);
+        void setAddressWidth(const uint8_t address_width);
 
         /**
         *   Set the number and delay of retries upon failed submit
@@ -627,6 +629,8 @@ namespace NRF24L
         */
         void enableAckPayload();
 
+        void disableAckPayload();
+
         /**
         *   Enable dynamically-sized payloads
         *
@@ -658,6 +662,8 @@ namespace NRF24L
         *   @endcode
         */
         void enableDynamicAck();
+
+        void disableDynamicAck();
 
         /**
         *   Determine whether the hardware is an nRF24L01+ or not.
@@ -699,7 +705,7 @@ namespace NRF24L
         *
         *   @param level Desired PA level.
         */
-        void setPALevel(uint8_t level);
+        void setPALevel(const PowerAmplitude level);
 
         /**
         *   Fetches the current PA level.
@@ -709,7 +715,7 @@ namespace NRF24L
         *
         *   @return Returns values 0 to 3 representing the PA Level.
         */
-        uint8_t getPALevel();
+        PowerAmplitude getPALevel();
 
         /**
         *   Set the transmission data rate
@@ -719,7 +725,7 @@ namespace NRF24L
         *   @param speed RF24_250KBPS for 250kbs, RF24_1MBPS for 1Mbps, or RF24_2MBPS for 2Mbps
         *   @return true if the change was successful
         */
-        bool setDataRate(const nrf24_datarate speed);
+        bool setDataRate(const DataRate speed);
 
         /**
         *   Fetches the transmission data rate
@@ -728,21 +734,21 @@ namespace NRF24L
         *   is one of 250kbs, RF24_1MBPS for 1Mbps, or RF24_2MBPS, as defined in the
         *   nrf24_datarate enum.
         */
-        nrf24_datarate getDataRate();
+        DataRate getDataRate();
 
         /**
         *   Set the CRC length
         *   <br>CRC checking cannot be disabled if auto-ACK is enabled
         *   @param length RF24_CRC_8 for 8-bit or RF24_CRC_16 for 16-bit
         */
-        void setCRCLength(nrf24_crclength length);
+        void setCRCLength(const CRCLength length);
 
         /**
         *   Get the CRC length
         *   <br>CRC checking cannot be disabled if auto-ACK is enabled
         *   @return RF24_CRC_DISABLED if disabled or RF24_CRC_8 for 8-bit or RF24_CRC_16 for 16-bit
         */
-        nrf24_crclength getCRCLength();
+        CRCLength getCRCLength();
 
         /**
         *   Disable CRC validation
@@ -895,16 +901,19 @@ namespace NRF24L
         virtual void end_transaction();
 
     private:
-      uint8_t write_cmd(const uint8_t cmd);
+        uint8_t write_cmd(const uint8_t cmd);
 
-      bool pVariant = false;
-      bool dynamic_payloads_enabled = false;
-      size_t addr_width = 0;
-      size_t payload_size = 0;
-      size_t pipe0_reading_address[5];
+        bool pVariant = false;
+        bool dynamic_payloads_enabled = false;
+        size_t addr_width = 0;
+        size_t payload_size = 0;
+        size_t pipe0_reading_address[5];
 
-      Chimera::SPI::SPIClass_sPtr spi;
-      Chimera::GPIO::GPIOClass_sPtr chipEnable;
+        Chimera::SPI::SPIClass_sPtr spi;
+        Chimera::GPIO::GPIOClass_sPtr chipEnable;
+
+        uint8_t spi_rxbuff[SPI_BUFFER_LEN];
+        uint8_t spi_txbuff[SPI_BUFFER_LEN];
     };
 
 };

@@ -10,12 +10,7 @@
 namespace NRF24L
 {
     using namespace Chimera;
-
-    static uint8_t spi_rxbuff[SPI_BUFFER_LEN];
-    static_assert(sizeof(spi_rxbuff) == SPI_BUFFER_LEN, "SPI receive buffer is the wrong length");
-
-    static uint8_t spi_txbuff[SPI_BUFFER_LEN];
-    static_assert(sizeof(spi_txbuff) == SPI_BUFFER_LEN, "SPI transmit buffer is the wrong length");
+    using namespace Chimera::GPIO;
 
     static const uint8_t child_pipe[] =
     {
@@ -52,7 +47,13 @@ namespace NRF24L
         this->spi = spiInstance;
         this->chipEnable = chipEnable;
 
+        memset(spi_txbuff, 0, sizeof(spi_txbuff));
+        memset(spi_rxbuff, 0, sizeof(spi_rxbuff));
 
+        /*-------------------------------------------------
+        Default address width is 5 bytes
+        -------------------------------------------------*/
+        addr_width = 5u;
     }
 
     bool NRF24L01::begin()
@@ -87,13 +88,13 @@ namespace NRF24L
         /*-------------------------------------------------
         Check whether or not we have a P variant of the chip
         -------------------------------------------------*/
-        pVariant = setDataRate(RF24_250KBPS);
+        pVariant = setDataRate(DataRate::DR_250KBPS);
         setup = read_register(REG_RF_SETUP);
 
         /*-------------------------------------------------
         Set datarate to the slowest, most reliable speed supported by all hardware
         -------------------------------------------------*/
-        setDataRate(RF24_1MBPS);
+        setDataRate(DataRate::DR_1MBPS);
 
         /*-------------------------------------------------
         Disable all the fancy features
@@ -154,29 +155,53 @@ namespace NRF24L
 
     bool NRF24L01::available()
     {
-        return false;
+        return available(nullptr);
     }
 
-    bool NRF24L01::available(uint8_t *pipe_num)
+    bool NRF24L01::available(uint8_t *const pipe_num)
     {
+        if(!(read_register(REG_FIFO_STATUS) & FIFO_STATUS_RX_EMPTY))
+        {
+            /*-------------------------------------------------
+            Figure out which pipe has data available
+            -------------------------------------------------*/
+            if(pipe_num)
+            {
+                *pipe_num = (get_status() >> STATUS_RX_P_NO_Pos) & STATUS_RX_P_NO_Wid;
+            }
+
+            return true;
+        }
+        
         return false;
     }
 
     bool NRF24L01::rxFifoFull()
     {
-        return false;
+        return read_register(REG_FIFO_STATUS) & FIFO_STATUS_RX_FULL;
     }
 
     void NRF24L01::powerDown()
     {
+        /*-------------------------------------------------
+        Make sure the enable pin is low to force standby mode
+        -------------------------------------------------*/
+        chipEnable->write(State::LOW);
 
+        /*-------------------------------------------------
+        Twiddle that power bit real good
+        -------------------------------------------------*/
+        uint8_t reg = read_register(REG_CONFIG) & ~CONFIG_PWR_UP;
+        write_register(REG_CONFIG, reg);
     }
 
     void NRF24L01::powerUp()
     {
-        uint8_t cfg = read_register(REG_CONFIG);
-
-        if (!(cfg & CONFIG_PWR_UP))
+        /*-------------------------------------------------
+        If not powered up already, do it. The worst startup delay is
+        about 5mS, so just wait that amount.
+        -------------------------------------------------*/
+        if(!(read_register(REG_CONFIG) & CONFIG_PWR_UP))
         {
             write_register(REG_CONFIG, CONFIG_PWR_UP);
             delayMilliseconds(5);
@@ -278,9 +303,30 @@ namespace NRF24L
 
     }
 
-    void NRF24L01::setAddressWidth(uint8_t address_width)
+    void NRF24L01::setAddressWidth(const uint8_t address_width)
     {
+        switch(address_width)
+        {
+        case 3:
+            write_register(REG_SETUP_AW, static_cast<uint8_t>(0x01));
+            addr_width = address_width;
+            break;
 
+        case 4:
+            write_register(REG_SETUP_AW, static_cast<uint8_t>(0x02));
+            addr_width = address_width;
+            break;
+
+        case 5:
+            write_register(REG_SETUP_AW, static_cast<uint8_t>(0x03));
+            addr_width = address_width;
+            break;
+
+        default:
+            write_register(REG_SETUP_AW, static_cast<uint8_t>(0x00));
+            addr_width = 2u;
+            break;
+        }
     }
 
     void NRF24L01::setRetries(const uint8_t delay, const uint8_t count)
@@ -320,27 +366,62 @@ namespace NRF24L
 
     void NRF24L01::enableAckPayload()
     {
+        
+    }
 
+    void NRF24L01::disableAckPayload()
+    {
+        
     }
 
     void NRF24L01::enableDynamicPayloads()
     {
+        /*-------------------------------------------------
+        Send the activate command to enable selection of features
+        -------------------------------------------------*/
+        write_register(CMD_ACTIVATE, static_cast<uint8_t>(0x73));
 
+        /*-------------------------------------------------
+        Enable the dynamic payload feature bit
+        -------------------------------------------------*/
+        uint8_t feature = read_register(REG_FEATURE) | FEATURE_EN_DPL;
+        write_register(REG_FEATURE, feature);
+
+        /*-------------------------------------------------
+        Enable dynamic payload on all pipes. This requires that 
+        auto-acknowledge be enabled.
+        -------------------------------------------------*/
+        write_register(REG_EN_AA, EN_AA_Msk);
+        write_register(REG_DYNPD, DYNPD_Msk);
+
+        dynamic_payloads_enabled = true;
     }
 
     void NRF24L01::disableDynamicPayloads()
     {
-
+        /*-------------------------------------------------
+        Disable for all pipes
+        -------------------------------------------------*/
+        write_register(REG_DYNPD, ~DYNPD_Msk);
+        write_register(REG_EN_AA, ~EN_AA_Msk);
+        write_register(REG_FEATURE, ~FEATURE_EN_DPL);
     }
 
     void NRF24L01::enableDynamicAck()
     {
+        uint8_t feature = read_register(REG_FEATURE) | FEATURE_EN_DYN_ACK;
+        write_register(REG_FEATURE, feature);
+    }
 
+    void NRF24L01::disableDynamicAck()
+    {
+        uint8_t feature = read_register(REG_FEATURE) & ~FEATURE_EN_DYN_ACK;
+        write_register(REG_FEATURE, feature);
     }
 
     bool NRF24L01::isPVariant()
     {
-        return false;
+        return pVariant;
     }
 
     void NRF24L01::setAutoAck(bool enable)
@@ -353,23 +434,38 @@ namespace NRF24L
 
     }
 
-    void NRF24L01::setPALevel(uint8_t level)
+    void NRF24L01::setPALevel(const PowerAmplitude level)
     {
+        uint8_t pwr = static_cast<uint8_t>(level);
+        uint8_t setup = read_register(REG_RF_SETUP);
 
+        if(pwr > 3)
+        {
+            /*-------------------------------------------------
+            +1 to support the SI24R1 chip extra bit
+            -------------------------------------------------*/
+            setup |= (static_cast<uint8_t>(PowerAmplitude::MAX) << 1) + 1;
+        }
+        else 
+        {
+            setup |= (pwr << 1) + 1;
+        }
+
+        write_register(REG_RF_SETUP, setup);
     }
 
-    uint8_t NRF24L01::getPALevel()
+    PowerAmplitude NRF24L01::getPALevel()
     {
-        return 0;
+        return static_cast<PowerAmplitude>((read_register(REG_RF_SETUP) & RF_SETUP_RF_PWR) >> 1);
     }
 
-    bool NRF24L01::setDataRate(const nrf24_datarate speed)
+    bool NRF24L01::setDataRate(const DataRate speed)
     {
         uint8_t setup = read_register(REG_RF_SETUP);
 
         switch (speed)
         {
-        case RF24_250KBPS:
+        case DataRate::DR_250KBPS:
             if (pVariant)
             {
                 setup |= RF_SETUP_RF_DR_LOW;
@@ -381,11 +477,11 @@ namespace NRF24L
             }
             break;
 
-        case RF24_1MBPS:
+        case DataRate::DR_1MBPS:
             setup &= ~(RF_SETUP_RF_DR_HIGH | RF_SETUP_RF_DR_LOW);
             break;
 
-        case RF24_2MBPS:
+        case DataRate::DR_2MBPS:
             setup &= ~RF_SETUP_RF_DR_LOW;
             setup |= RF_SETUP_RF_DR_HIGH;
             break;
@@ -399,29 +495,69 @@ namespace NRF24L
         return (read_register(REG_RF_SETUP) == setup);
     }
 
-    nrf24_datarate NRF24L01::getDataRate()
+    DataRate NRF24L01::getDataRate()
     {
-        return RF24_2MBPS;
+        return static_cast<DataRate>(read_register(REG_RF_SETUP) & (RF_SETUP_RF_DR_HIGH | RF_SETUP_RF_DR_LOW));
     }
 
-    void NRF24L01::setCRCLength(nrf24_crclength length)
+    void NRF24L01::setCRCLength(const CRCLength length)
     {
+        uint8_t config = read_register(REG_CONFIG) & ~(CONFIG_CRCO | CONFIG_EN_CRC);
 
+        switch(length)
+        {
+        case CRCLength::CRC_8:
+            config |= CONFIG_EN_CRC;
+            config &= ~CONFIG_CRCO;
+            break;
+
+        case CRCLength::CRC_16:
+            config |= CONFIG_EN_CRC | CONFIG_CRCO;
+            break;
+
+        default:
+            break;
+        }
+
+        write_register(REG_CONFIG, config);
     }
 
-    nrf24_crclength NRF24L01::getCRCLength()
+    CRCLength NRF24L01::getCRCLength()
     {
-        return RF24_CRC_16;
+        CRCLength result = CRCLength::CRC_DISABLED;
+  
+        uint8_t config = read_register(REG_CONFIG) & (CONFIG_CRCO | CONFIG_EN_CRC);
+        uint8_t AA = read_register(REG_EN_AA);
+  
+        if((config & CONFIG_EN_CRC) || AA)
+        {
+            if(config & CONFIG_CRCO)
+            {
+                result = CRCLength::CRC_16;
+            }
+            else
+            {
+                result = CRCLength::CRC_8;
+            }
+        }
+
+        return result;
     }
 
     void NRF24L01::disableCRC()
     {
-
+        uint8_t disable = read_register(REG_CONFIG) & ~CONFIG_EN_CRC;
+        write_register(REG_CONFIG, disable);
     }
 
     void NRF24L01::maskIRQ(bool tx_ok, bool tx_fail, bool rx_ready)
     {
+        uint8_t config = read_register(REG_CONFIG);
 
+        config &= ~(CONFIG_MASK_MAX_RT | CONFIG_MASK_TX_DS | CONFIG_MASK_RX_DR);
+        config |= (tx_fail << CONFIG_MASK_MAX_RT_Pos) | (tx_ok << CONFIG_MASK_TX_DS_Pos) | (rx_ready << CONFIG_MASK_RX_DR_Pos);
+
+        write_register(REG_CONFIG, config);
     }
 
     uint8_t NRF24L01::read_register(const uint8_t &reg, uint8_t *const buf, size_t & len)
@@ -547,7 +683,7 @@ namespace NRF24L
 
     uint8_t NRF24L01::get_status()
     {
-        return 0;
+        return write_cmd(CMD_NOP);
     }
 
     size_t NRF24L01::spi_write(const uint8_t *const tx_buffer, size_t &len)
