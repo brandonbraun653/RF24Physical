@@ -3,8 +3,14 @@
 #include <cstring>
 #include <algorithm>
 
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(MOD_TEST)
+#define HW_TEST
+#endif
+
 namespace NRF24L
 {
+    using namespace Chimera;
+
     static uint8_t spi_rxbuff[SPI_BUFFER_LEN];
     static_assert(sizeof(spi_rxbuff) == SPI_BUFFER_LEN, "SPI receive buffer is the wrong length");
 
@@ -20,6 +26,7 @@ namespace NRF24L
         REG_RX_ADDR_P4,
         REG_RX_ADDR_P5
     };
+
     static const uint8_t child_payload_size[] =
     {
         REG_RX_PW_P0,
@@ -40,14 +47,99 @@ namespace NRF24L
         EN_RXADDR_P0
     };
 
-    NRF24L01::NRF24L01()
+    NRF24L01::NRF24L01(Chimera::SPI::SPIClass_sPtr spiInstance, Chimera::GPIO::GPIOClass_sPtr chipEnable)
     {
+        this->spi = spiInstance;
+        this->chipEnable = chipEnable;
+
 
     }
 
-    void NRF24L01::begin()
+    bool NRF24L01::begin()
     {
+        uint8_t setup = 0u;
 
+        /*-------------------------------------------------
+        Setup the MCU hardware to the correct state
+        -------------------------------------------------*/
+        spi->setChipSelectControlMode(SPI::ChipSelectMode::MANUAL);
+        chipEnable->mode(GPIO::Drive::OUTPUT_PUSH_PULL);
+        chipEnable->write(GPIO::State::LOW);
+
+        spi->setChipSelect(GPIO::State::LOW);
+        spi->setChipSelect(GPIO::State::HIGH);
+        delayMilliseconds(10);
+
+        /*-------------------------------------------------
+        Reset config register and enable 16-bit CRC
+        -------------------------------------------------*/
+        write_register(REG_CONFIG, 0x0C);
+        if (read_register(REG_CONFIG) != 0x0C)
+        {
+            return false;
+        }
+
+        /*-------------------------------------------------
+        Set 1500uS timeout. Don't lower or the 250KBS mode will break.
+        -------------------------------------------------*/
+        setRetries(5, 15);
+
+        /*-------------------------------------------------
+        Check whether or not we have a P variant of the chip
+        -------------------------------------------------*/
+        pVariant = setDataRate(RF24_250KBPS);
+        setup = read_register(REG_RF_SETUP);
+
+        /*-------------------------------------------------
+        Set datarate to the slowest, most reliable speed supported by all hardware
+        -------------------------------------------------*/
+        setDataRate(RF24_1MBPS);
+
+        /*-------------------------------------------------
+        Disable all the fancy features
+        -------------------------------------------------*/
+        write_register(REG_FEATURE, 0u);
+
+        if (read_register(REG_FEATURE))
+        {
+            return false;
+        }
+
+        write_register(REG_DYNPD, 0u);
+
+        if (read_register(REG_DYNPD))
+        {
+            return false;
+        }
+
+        dynamic_payloads_enabled = false;
+
+        /*-------------------------------------------------
+        Set the default channel to a value that likely won't congest the spectrum
+        -------------------------------------------------*/
+        setChannel(76);
+
+        /*-------------------------------------------------
+        Clear the buffers
+        -------------------------------------------------*/
+        flush_tx();
+        flush_rx();
+
+        /*-------------------------------------------------
+        Power up the module and enable PTX. Stay in standby mode by not writing CE high
+        -------------------------------------------------*/
+        powerUp();
+
+        auto cfg = read_register(REG_CONFIG);
+        cfg &= ~CONFIG_PRIM_RX;
+        write_register(REG_CONFIG, cfg);
+
+        if (read_register(REG_CONFIG) != cfg)
+        {
+            return false;
+        }
+
+        return (setup != 0 && setup != 0xFF);
     }
 
     void NRF24L01::startListening()
@@ -82,7 +174,13 @@ namespace NRF24L
 
     void NRF24L01::powerUp()
     {
+        uint8_t cfg = read_register(REG_CONFIG);
 
+        if (!(cfg & CONFIG_PWR_UP))
+        {
+            write_register(REG_CONFIG, CONFIG_PWR_UP);
+            delayMilliseconds(5);
+        }
     }
 
     bool NRF24L01::write(const void *buffer, uint8_t len)
@@ -152,7 +250,12 @@ namespace NRF24L
 
     uint8_t NRF24L01::flush_tx()
     {
-        return 0;
+        return write_cmd(CMD_FLUSH_TX);
+    }
+
+    uint8_t NRF24L01::flush_rx()
+    {
+        return write_cmd(CMD_FLUSH_RX);
     }
 
     bool NRF24L01::testCarrier()
@@ -180,14 +283,19 @@ namespace NRF24L
 
     }
 
-    void NRF24L01::setRetries(uint8_t delay, uint8_t count)
+    void NRF24L01::setRetries(const uint8_t delay, const uint8_t count)
     {
+        uint8_t ard = (delay & 0x0F) << SETUP_RETR_ARD_Pos;
+        uint8_t arc = (count & 0x0F) << SETUP_RETR_ARC_Pos;
+        uint8_t setup_retr = ard | arc;
 
+        write_register(REG_SETUP_RETR, setup_retr);
     }
 
     void NRF24L01::setChannel(uint8_t channel)
     {
-
+        uint8_t ch = channel & RF_CH_Msk;
+        write_register(REG_RF_CH, ch);
     }
 
     uint8_t NRF24L01::getChannel()
@@ -255,9 +363,40 @@ namespace NRF24L
         return 0;
     }
 
-    bool NRF24L01::setDataRate(nrf24_datarate speed)
+    bool NRF24L01::setDataRate(const nrf24_datarate speed)
     {
-        return false;
+        uint8_t setup = read_register(REG_RF_SETUP);
+
+        switch (speed)
+        {
+        case RF24_250KBPS:
+            if (pVariant)
+            {
+                setup |= RF_SETUP_RF_DR_LOW;
+                setup &= ~RF_SETUP_RF_DR_HIGH;
+            }
+            else
+            {
+                return false;
+            }
+            break;
+
+        case RF24_1MBPS:
+            setup &= ~(RF_SETUP_RF_DR_HIGH | RF_SETUP_RF_DR_LOW);
+            break;
+
+        case RF24_2MBPS:
+            setup &= ~RF_SETUP_RF_DR_LOW;
+            setup |= RF_SETUP_RF_DR_HIGH;
+            break;
+
+        default:
+            break;
+        }
+
+        write_register(REG_RF_SETUP, setup);
+
+        return (read_register(REG_RF_SETUP) == setup);
     }
 
     nrf24_datarate NRF24L01::getDataRate()
@@ -345,7 +484,7 @@ namespace NRF24L
         begin_transaction();
         spi_write_read(spi_txbuff, spi_rxbuff, txLength);
         end_transaction();
-    
+
         /* Status code is in the first byte of the receive buffer */
         return spi_rxbuff[0];
     }
@@ -411,6 +550,34 @@ namespace NRF24L
         return 0;
     }
 
+    size_t NRF24L01::spi_write(const uint8_t *const tx_buffer, size_t &len)
+    {
+        spi->writeBytes(tx_buffer, len);
+        return len;
+    }
+
+    size_t NRF24L01::spi_read(uint8_t *const rx_buffer, size_t &len)
+    {
+        spi->readBytes(rx_buffer, len);
+        return len;
+    }
+
+    size_t NRF24L01::spi_write_read(const uint8_t *const tx_buffer, uint8_t *const rx_buffer, size_t &len)
+    {
+        spi->readWriteBytes(tx_buffer, rx_buffer, len);
+        return len;
+    }
+
+    void NRF24L01::begin_transaction()
+    {
+        spi->setChipSelect(GPIO::State::LOW);
+    }
+
+    void NRF24L01::end_transaction()
+    {
+        spi->setChipSelect(GPIO::State::HIGH);
+    }
+
     void NRF24L01::openWritePipe(const uint8_t *const address)
     {
         write_register(REG_RX_ADDR_P0, address, addr_width);
@@ -447,9 +614,28 @@ namespace NRF24L
         }
     }
 
+    bool NRF24L01::isConnected()
+    {
+        uint8_t setup = read_register(REG_SETUP_AW);
+
+        return ((setup >= 1) && (setup <= 3));
+    }
+
     bool NRF24L01::read(void *const buffer, uint8_t &len)
     {
         return false;
     }
 
+    uint8_t NRF24L01::write_cmd(const uint8_t cmd)
+    {
+        size_t txLength = 1;
+        spi_txbuff[0] = cmd;
+
+        begin_transaction();
+        spi_write_read(spi_txbuff, spi_rxbuff, txLength);
+        end_transaction();
+
+        /* Give back the status register value */
+        return spi_rxbuff[0];
+    }
 };

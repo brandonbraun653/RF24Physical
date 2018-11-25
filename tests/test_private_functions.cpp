@@ -9,37 +9,59 @@
 
 TEST_GROUP(PrivateFunctions)
 {
-    NRF24L01_Test nrf;
+//#if defined(HW_TEST)
+//    Chimera::SPI::Setup spiSetup;
+//    Chimera::SPI::SPIClass_sPtr spi;
+//    Chimera::GPIO::GPIOClass_sPtr chip_enable;
+//
+//    NRF24L01_sPtr nrf;
+//#endif
 
     void setup() override
     {
-        nrf.init();
+//        if (!nrf)
+//        {
+//            spi = std::make_shared<SPIClass>(3);
+//
+//            spiSetup.clockFrequency = 1000000;
+//            spiSetup.bitOrder = BitOrder::MSB_FIRST;
+//            spiSetup.clockMode = ClockMode::MODE0;
+//            spiSetup.mode = Mode::MASTER;
+//
+//            spiSetup.CS.pin = 15;
+//            spiSetup.CS.port = Port::PORTA;
+//            spiSetup.CS.alternate = Thor::Peripheral::GPIO::NOALTERNATE;
+//            spiSetup.CS.mode = Drive::OUTPUT_PUSH_PULL;
+//            spiSetup.CS.state = State::HIGH;
+//
+//            spi->setChipSelectControlMode(ChipSelectMode::MANUAL);
+//
+//            spi->init(spiSetup);
+//            spi->setPeripheralMode(SubPeripheral::TXRX, SubPeripheralMode::BLOCKING);
+//
+//            chip_enable = std::make_shared<GPIOClass>(Port::PORTC, 1);
+//            chip_enable->mode(Drive::OUTPUT_PUSH_PULL);
+//            chip_enable->write(State::HIGH);
+//
+//            nrf = std::make_shared<NRF24L01>(this->spi, this->chip_enable);
+//        }
     }
 
     void teardown() override
     {
-        nrf.teardown();
+
     }
 
     void reset_test()
     {
-        nrf.reset();
+
     }
 };
 
 /*-------------------------------------------------
-Tests that run on either the development system or target system
--------------------------------------------------*/
-#if defined(WIN32) || defined(EMBEDDED)
-
-
-
-#endif /* WIN32 || EMBEDDED */
-
-/*-------------------------------------------------
 Tests that only run on the development system
 -------------------------------------------------*/
-#if defined(WIN32)
+#if defined(MOD_TEST)
 
 TEST(PrivateFunctions, write_register_single_value)
 {
@@ -173,27 +195,11 @@ TEST(PrivateFunctions, read_register_multiple_values)
 
 }
 
-#endif /* WIN32 */
-
-/*-------------------------------------------------
-Tests that only run on the target system
--------------------------------------------------*/
-#if defined(EMBEDDED)
-
-#endif /* EMBEDDED */
+#endif /* MOD_TEST */
 
 /*-------------------------------------------------
 Tests that only run when connected to real hardware
 -------------------------------------------------*/
-#if defined(EMBEDDED) && defined(HARDWARE_TEST)
-TEST(PrivateFunctions, readWriteRegisters)
-{
-    uint8_t testRegVal = 0x2A;
-    uint8_t actRegVal = 0x00;
+#if defined(HW_TEST)
 
-    nrf.write_register(NRF24L::REG_RX_ADDR_P2, testRegVal);
-    actRegVal = nrf.read_register(NRF24L::REG_RX_ADDR_P2);
-
-    CHECK_EQUAL(testRegVal, actRegVal);
-}
-#endif /* EMBEDDED && HARDWARE_TEST */
+#endif /* HW_TEST */

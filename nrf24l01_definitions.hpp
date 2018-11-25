@@ -62,7 +62,7 @@ namespace NRF24L
 
     /* Register: Config */
     constexpr uint8_t CONFIG_MSK                = 0x7F;
-    
+
     constexpr uint8_t CONFIG_MASK_RX_DR_Pos     = 6u;
     constexpr uint8_t CONFIG_MASK_RX_DR_Msk     = 1u << CONFIG_MASK_RX_DR_Pos;
     constexpr uint8_t CONFIG_MASK_RX_DR         = CONFIG_MASK_RX_DR_Msk;
@@ -119,7 +119,7 @@ namespace NRF24L
     constexpr uint8_t EN_AA_P0                  = EN_AA_P0_Msk;
 
     /* Register: EN_RXADDR */
-    constexpr uint8_t EN_RXADDR_MSK = 0x3F;
+    constexpr uint8_t EN_RXADDR_MSK             = 0x3F;
 
     constexpr uint8_t EN_RXADDR_P5_Pos          = 5u;
     constexpr uint8_t EN_RXADDR_P5_Msk          = 1u << EN_RXADDR_P5_Pos;
@@ -149,13 +149,45 @@ namespace NRF24L
 
 
     /* Register: SETUP_RETR */
+    constexpr uint8_t SETUP_RETR_Msk = 0xFF;
 
+    constexpr uint8_t SETUP_RETR_ARD_Pos        = 4u;
+    constexpr uint8_t SETUP_RETR_ARD_Msk        = 0x0F << SETUP_RETR_ARD_Pos;
+    constexpr uint8_t SETUP_RETR_ARD            = SETUP_RETR_ARD_Msk;
+
+    constexpr uint8_t SETUP_RETR_ARC_Pos        = 0u;
+    constexpr uint8_t SETUP_RETR_ARC_Msk        = 0x0F << SETUP_RETR_ARC_Pos;
+    constexpr uint8_t SETUP_RETR_ARC            = SETUP_RETR_ARC_Msk;
 
     /* Register: RF_CH */
-
+    constexpr uint8_t RF_CH_Msk                 = 0x7F;
 
     /* Register: RF_SETUP */
+    constexpr uint8_t RF_SETUP_Msk              = 0x1F;
 
+    constexpr uint8_t RF_SETUP_RF_DR_LOW_Pos    = 5u;
+    constexpr uint8_t RF_SETUP_RF_DR_LOW_Msk    = 1u << RF_SETUP_RF_DR_LOW_Pos;
+    constexpr uint8_t RF_SETUP_RF_DR_LOW        = RF_SETUP_RF_DR_LOW_Msk;
+
+    constexpr uint8_t RF_SETUP_PLL_LOCK_Pos     = 4u;
+    constexpr uint8_t RF_SETUP_PLL_LOCK_Msk     = 1u << RF_SETUP_PLL_LOCK_Pos;
+    constexpr uint8_t RF_SETUP_PLL_LOCK         = RF_SETUP_PLL_LOCK_Msk;
+
+    constexpr uint8_t RF_SETUP_RF_DR_HIGH_Pos   = 3u;
+    constexpr uint8_t RF_SETUP_RF_DR_HIGH_Msk   = 1u << RF_SETUP_RF_DR_HIGH_Pos;
+    constexpr uint8_t RF_SETUP_RF_DR_HIGH       = RF_SETUP_RF_DR_HIGH_Msk;
+
+    constexpr uint8_t RF_SETUP_RF_DR_Pos        = 3u;
+    constexpr uint8_t RF_SETUP_RF_DR_Msk        = 1u << RF_SETUP_RF_DR_Pos;
+    constexpr uint8_t RF_SETUP_RF_DR            = RF_SETUP_RF_DR_Msk;
+
+    constexpr uint8_t RF_SETUP_RF_PWR_Pos       = 1u;
+    constexpr uint8_t RF_SETUP_RF_PWR_Msk       = 3u << RF_SETUP_RF_PWR_Pos;
+    constexpr uint8_t RF_SETUP_RF_PWR           = RF_SETUP_RF_PWR_Msk;
+
+    constexpr uint8_t RF_SETUP_LNA_HCURR_Pos    = 0u;
+    constexpr uint8_t RF_SETUP_LNA_HCURR_Msk    = 1u << RF_SETUP_LNA_HCURR_Pos;
+    constexpr uint8_t RF_SETUP_LNA_HCURR        = RF_SETUP_LNA_HCURR_Msk;
 
     /* Register: STATUS */
 
@@ -177,49 +209,49 @@ namespace NRF24L
 
     /* Register: RX_ADDR_P3 */
 
-    
+
     /* Register: RX_ADDR_P4 */
 
-    
+
     /* Register: RX_ADDR_P5 */
 
-    
+
     /* Register: TX_ADDR */
 
-    
+
     /* Register: RX_PW_P0 */
 
-    
+
     /* Register: RX_PW_P1 */
 
-    
+
     /* Register: RX_PW_P2 */
 
-    
+
     /* Register: RX_PW_P3 */
 
-    
+
     /* Register: RX_PW_P4 */
 
-    
+
     /* Register: RX_PW_P5 */
 
-    
+
     /* Register: FIFO_STATUS */
 
-    
+
     /* Register: ACK_PLD */
 
-    
+
     /* Register: TX_PLD */
-    
-    
+
+
     /* Register: RX_PLD */
-    
-    
+
+
     /* Register: DYNPD */
-    
-    
+
+
     /* Register: FEATURE */
     constexpr uint8_t FEATURE_MSK               = 0x07;
 
