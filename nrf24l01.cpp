@@ -145,7 +145,29 @@ namespace NRF24L
 
     void NRF24L01::startListening()
     {
+        uint8_t cfgVal = read_register(REG_CONFIG) | CONFIG_PRIM_RX;
+        write_register(REG_CONFIG, cfgVal);
 
+        uint8_t statusVal = STATUS_RX_DR | STATUS_TX_DS | STATUS_MAX_RT;
+        write_register(REG_STATUS, statusVal);
+
+        chipEnable->write(State::HIGH);
+
+        // Restore the pipe0 adddress, if exists
+        if(pipe0_reading_address[0] > 0)
+        {
+            write_register(REG_RX_ADDR_P0, pipe0_reading_address, addr_width);	
+        }
+        else
+        {
+            closeReadingPipe(0);
+        }
+
+        // Flush buffers
+        if(read_register(REG_FEATURE) & FEATURE_EN_ACK_PAY)
+        {
+            flush_tx();
+        }
     }
 
     void NRF24L01::stopListening()

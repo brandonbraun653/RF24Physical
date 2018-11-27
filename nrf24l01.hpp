@@ -907,7 +907,7 @@ namespace NRF24L
         bool dynamic_payloads_enabled = false;
         size_t addr_width = 0;
         size_t payload_size = 0;
-        size_t pipe0_reading_address[5];
+        uint8_t pipe0_reading_address[5];
 
         Chimera::SPI::SPIClass_sPtr spi;
         Chimera::GPIO::GPIOClass_sPtr chipEnable;
