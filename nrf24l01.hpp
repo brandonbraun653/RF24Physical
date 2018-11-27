@@ -213,7 +213,7 @@ namespace NRF24L
 
         bool failureDetected;
 
-        
+
 
         /**
         *   Check if the radio needs to be read. Can be used to prevent data loss
@@ -445,7 +445,7 @@ namespace NRF24L
         *   @param multicast Request ACK (0) or NOACK (1)
         *   @return True if the payload was delivered successfully false if not
         */
-        void startFastWrite(const void *buf, uint8_t len, const bool multicast, bool startTx = true);
+        void startFastWrite(const void *const buf, size_t len, const bool multicast, bool startTx = true);
 
         /**
         *   Non-blocking write to the open writing pipe
