@@ -34,12 +34,12 @@ namespace NRF24L
 
     static const uint8_t child_pipe_enable[] =
     {
-        EN_RXADDR_P5,
-        EN_RXADDR_P4,
-        EN_RXADDR_P3,
+        EN_RXADDR_P0,
+        EN_RXADDR_P1,
         EN_RXADDR_P2,
-        EN_RXADDR_P5,
-        EN_RXADDR_P0
+        EN_RXADDR_P3,
+        EN_RXADDR_P4,
+        EN_RXADDR_P5
     };
 
     NRF24L01::NRF24L01(Chimera::SPI::SPIClass_sPtr spiInstance, Chimera::GPIO::GPIOClass_sPtr chipEnable)
@@ -150,7 +150,21 @@ namespace NRF24L
 
     void NRF24L01::stopListening()
     {
+        chipEnable->write(State::LOW);
 
+        delayMilliseconds(1);
+
+        if (read_register(REG_FEATURE) & FEATURE_EN_ACK_PAY)
+        {
+            delayMilliseconds(1);
+            flush_tx();
+        }
+
+        uint8_t cfg = read_register(REG_CONFIG) & ~CONFIG_PRIM_RX;
+        write_register(REG_CONFIG, cfg);
+
+        uint8_t en_rx = read_register(REG_EN_RXADDR) | child_pipe_enable[0];
+        write_register(REG_EN_RXADDR, en_rx);
     }
 
     bool NRF24L01::available()
@@ -172,7 +186,7 @@ namespace NRF24L
 
             return true;
         }
-        
+
         return false;
     }
 
@@ -215,7 +229,25 @@ namespace NRF24L
 
     bool NRF24L01::write(const void *buf, uint8_t len, const bool multicast)
     {
-        return false;
+        startFastWrite(buf, len, multicast);
+
+        while (!(get_status() & (STATUS_TX_DS | STATUS_MAX_RT)))
+        {
+            delayMilliseconds(100);
+        }
+
+        chipEnable->write(State::LOW);
+
+        uint8_t status_val = STATUS_RX_DR | STATUS_TX_DS | STATUS_MAX_RT;
+        uint8_t status = write_register(REG_STATUS, status_val);
+
+        if (status & STATUS_MAX_RT)
+        {
+            flush_tx();
+            return false;
+        }
+
+        return true;
     }
 
     bool NRF24L01::writeFast(const void *buf, uint8_t len)
@@ -258,9 +290,21 @@ namespace NRF24L
 
     }
 
-    void NRF24L01::startFastWrite(const void *buf, uint8_t len, const bool multicast, bool startTx)
+    void NRF24L01::startFastWrite(const void *const buf, size_t len, const bool multicast, bool startTx)
     {
+        uint8_t payloadType = CMD_W_TX_PAYLOAD;
 
+        if (multicast)
+        {
+            payloadType = CMD_W_TX_PAYLOAD_NO_ACK;
+        }
+
+        write_payload(buf, len, payloadType);
+
+        if (startTx)
+        {
+            chipEnable->write(State::HIGH);
+        }
     }
 
     void NRF24L01::startWrite(const void *buf, uint8_t len, const bool multicast)
@@ -366,12 +410,12 @@ namespace NRF24L
 
     void NRF24L01::enableAckPayload()
     {
-        
+
     }
 
     void NRF24L01::disableAckPayload()
     {
-        
+
     }
 
     void NRF24L01::enableDynamicPayloads()
@@ -388,7 +432,7 @@ namespace NRF24L
         write_register(REG_FEATURE, feature);
 
         /*-------------------------------------------------
-        Enable dynamic payload on all pipes. This requires that 
+        Enable dynamic payload on all pipes. This requires that
         auto-acknowledge be enabled.
         -------------------------------------------------*/
         write_register(REG_EN_AA, EN_AA_Msk);
@@ -446,7 +490,7 @@ namespace NRF24L
             -------------------------------------------------*/
             setup |= (static_cast<uint8_t>(PowerAmplitude::MAX) << 1) + 1;
         }
-        else 
+        else
         {
             setup |= (pwr << 1) + 1;
         }
@@ -525,10 +569,10 @@ namespace NRF24L
     CRCLength NRF24L01::getCRCLength()
     {
         CRCLength result = CRCLength::CRC_DISABLED;
-  
+
         uint8_t config = read_register(REG_CONFIG) & (CONFIG_CRCO | CONFIG_EN_CRC);
         uint8_t AA = read_register(REG_EN_AA);
-  
+
         if((config & CONFIG_EN_CRC) || AA)
         {
             if(config & CONFIG_CRCO)
