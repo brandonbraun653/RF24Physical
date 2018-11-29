@@ -1,6 +1,8 @@
+#pragma once
 #ifndef NRF24L01_HPP
 #define NRF24L01_HPP
 
+/* C/C++ Includes */
 #include <stdint.h>
 #include <cstdio>
 
@@ -8,6 +10,7 @@
 #include <Chimera/gpio.hpp>
 #include <Chimera/spi.hpp>
 
+/* Module Includes */
 #include "nrf24l01_definitions.hpp"
 
 namespace NRF24L
@@ -40,10 +43,9 @@ namespace NRF24L
         CRC_16
     };
 
-
     /**
     *   Base class for interacting with an NRF24L01 wireless module.
-    *   Most of this was taken from https://github.com/nRF24/RF24 and modified slightly to
+    *   Most of this was taken from https://github.com/nRF24/RF24 and modified to
     *   accommodate my particular flavor of hardware abstraction.
     */
     class NRF24L01
@@ -140,7 +142,7 @@ namespace NRF24L
         *   @endcode
         *   @return No return value. Use available().
         */
-        bool read(void *const buffer, uint8_t &len);
+        void read(void *const buffer, size_t len);
 
         /**
         *   Be sure to call openWritingPipe() first to set the destination
@@ -165,7 +167,23 @@ namespace NRF24L
         *   @endcode
         *   @return True if the payload was delivered successfully false if not
         */
-        bool write(const void *buffer, uint8_t len);
+        bool write(const void *const buffer, size_t len);
+
+        /**
+        *   Write for single NOACK writes. Optionally disables acknowledgments/auto retries for a single write.
+        *
+        *   @note enableDynamicAck() must be called to enable this feature
+        *
+        *   Can be used with enableAckPayload() to request a response
+        *   @see enableDynamicAck()
+        *   @see setAutoAck()
+        *   @see write()
+        *
+        *   @param buf Pointer to the data to be sent
+        *   @param len Number of bytes to be sent
+        *   @param multicast Request ACK (0), NOACK (1)
+        */
+        bool write(const void *const buffer, size_t len, const bool multicast);
 
         /**
         *   Open a pipe for writing via byte array. Old addressing format retained
@@ -177,7 +195,7 @@ namespace NRF24L
         *   @param address The address of the pipe to open. Coordinate these pipe
         *   addresses amongst nodes on the network.
         */
-        void openWritePipe(const uint8_t *address);
+        void openWritePipe(const uint8_t *const address);
 
         /**
         *   Open a pipe for reading
@@ -206,20 +224,27 @@ namespace NRF24L
         *   @param number Which pipe# to open, 0-5.
         *   @param address The 24, 32 or 40 bit address of the pipe to open.
         */
-        void openReadPipe(const uint8_t &number, const uint8_t *const address);
+        void openReadPipe(const uint8_t number, const uint8_t *const address);
 
-
+        /**
+        * TODO: ADD DOC
+        *
+        */
         bool isConnected();
-
-        bool failureDetected;
-
-
 
         /**
         *   Check if the radio needs to be read. Can be used to prevent data loss
         *   @return True if all three 32-byte radio buffers are full
         */
         bool rxFifoFull();
+
+        /**
+        *   Leave low-power mode - required for normal radio operation after calling powerDown()
+        *
+        *   To return to low power mode, call powerDown().
+        *   @note This will take up to 5ms for maximum compatibility
+        */
+        void powerUp();
 
         /**
         *   Enter low-power mode
@@ -239,30 +264,6 @@ namespace NRF24L
         *   @endcode
         */
         void powerDown();
-
-        /**
-        *   Leave low-power mode - required for normal radio operation after calling powerDown()
-        *
-        *   To return to low power mode, call powerDown().
-        *   @note This will take up to 5ms for maximum compatibility
-        */
-        void powerUp();
-
-        /**
-        *   Write for single NOACK writes. Optionally disables acknowledgments/auto retries for a single write.
-        *
-        *   @note enableDynamicAck() must be called to enable this feature
-        *
-        *   Can be used with enableAckPayload() to request a response
-        *   @see enableDynamicAck()
-        *   @see setAutoAck()
-        *   @see write()
-        *
-        *   @param buf Pointer to the data to be sent
-        *   @param len Number of bytes to be sent
-        *   @param multicast Request ACK (0), NOACK (1)
-        */
-        bool write(const void *buf, uint8_t len, const bool multicast);
 
         /**
         *   This will not block until the 3 FIFO buffers are filled with data.
@@ -292,7 +293,7 @@ namespace NRF24L
         *   @param len Number of bytes to be sent
         *   @return True if the payload was delivered successfully false if not
         */
-        bool writeFast(const void *buf, uint8_t len);
+        bool writeFast(const void *const buffer, size_t len);
 
         /**
         *       WriteFast for single NOACK writes. Disables acknowledgments/auto retries for a single write.
@@ -305,7 +306,7 @@ namespace NRF24L
         *       @param len Number of bytes to be sent
         *       @param multicast Request ACK (0) or NOACK (1)
         */
-        bool writeFast(const void *buf, uint8_t len, const bool multicast);
+        bool writeFast(const void *buf, size_t len, const bool multicast);
 
         /**
         *   This function extends the auto-retry mechanism to any specified duration.
@@ -333,7 +334,54 @@ namespace NRF24L
         *   @param timeout User defined timeout in milliseconds.
         *   @return True if the payload was loaded into the buffer successfully false if not
         */
-        bool writeBlocking(const void *buf, uint8_t len, uint32_t timeout);
+        bool writeBlocking(const void *const buffer, size_t len, uint32_t timeout);
+
+        /**
+        *   Non-blocking write to the open writing pipe used for buffered writes
+        *
+        *   @note Optimization: This function now leaves the CE pin high, so the radio
+        *   will remain in TX or STANDBY-II Mode until a txStandBy() command is issued. Can be used as an alternative to startWrite()
+        *   if writing multiple payloads at once.
+        *   @warning It is important to never keep the nRF24L01 in TX mode with FIFO full for more than 4ms at a time. If the auto
+        *   retransmit/autoAck is enabled, the nRF24L01 is never in TX mode long enough to disobey this rule. Allow the FIFO
+        *   to clear by issuing txStandBy() or ensure appropriate time between transmissions.
+        *
+        *   @see write()
+        *   @see writeFast()
+        *   @see startWrite()
+        *   @see writeBlocking()
+        *
+        *   For single noAck writes see:
+        *   @see enableDynamicAck()
+        *   @see setAutoAck()
+        *
+        *   @param buf Pointer to the data to be sent
+        *   @param len Number of bytes to be sent
+        *   @param multicast Request ACK (0) or NOACK (1)
+        *   @return True if the payload was delivered successfully false if not
+        */
+        void startFastWrite(const void *const buffer, size_t len, const bool multicast, const bool startTx = true) ;
+
+        /**
+        *   Non-blocking write to the open writing pipe
+        *
+        *   Just like write(), but it returns immediately. To find out what happened
+        *   to the send, catch the IRQ and then call whatHappened().
+        *
+        *   @see write()
+        *   @see writeFast()
+        *   @see startFastWrite()
+        *   @see whatHappened()
+        *
+        *   For single noAck writes see:
+        *   @see enableDynamicAck()
+        *   @see setAutoAck()
+        *
+        *   @param buf Pointer to the data to be sent
+        *   @param len Number of bytes to be sent
+        *   @param multicast Request ACK (0) or NOACK (1)
+        */
+        void startWrite(const void *const buffer, size_t len, const bool multicast);
 
         /**
         *   This function should be called as soon as transmission is finished to
@@ -377,7 +425,7 @@ namespace NRF24L
         *   @param timeout Number of milliseconds to retry failed payloads
         *   @return True if transmission is successful
         */
-        bool txStandBy(uint32_t timeout, bool startTx = false);
+        bool txStandBy(const uint32_t timeout, const bool startTx = false);
 
         /**
         *   Write an ACK payload for the specified pipe
@@ -397,7 +445,7 @@ namespace NRF24L
         *   @param len Length of the data to send, up to 32 bytes max.  Not affected
         *   by the static payload set by setPayloadSize().
         */
-        void writeAckPayload(uint8_t pipe, const void *buf, uint8_t len);
+        void writeAckPayload(const uint8_t pipe, const void *const buffer, size_t len);
 
         /**
         *   Determine if an ACK payload was received in the most recent call to
@@ -422,53 +470,6 @@ namespace NRF24L
         void whatHappened(bool &tx_ok, bool &tx_fail, bool &rx_ready);
 
         /**
-        *   Non-blocking write to the open writing pipe used for buffered writes
-        *
-        *   @note Optimization: This function now leaves the CE pin high, so the radio
-        *   will remain in TX or STANDBY-II Mode until a txStandBy() command is issued. Can be used as an alternative to startWrite()
-        *   if writing multiple payloads at once.
-        *   @warning It is important to never keep the nRF24L01 in TX mode with FIFO full for more than 4ms at a time. If the auto
-        *   retransmit/autoAck is enabled, the nRF24L01 is never in TX mode long enough to disobey this rule. Allow the FIFO
-        *   to clear by issuing txStandBy() or ensure appropriate time between transmissions.
-        *
-        *   @see write()
-        *   @see writeFast()
-        *   @see startWrite()
-        *   @see writeBlocking()
-        *
-        *   For single noAck writes see:
-        *   @see enableDynamicAck()
-        *   @see setAutoAck()
-        *
-        *   @param buf Pointer to the data to be sent
-        *   @param len Number of bytes to be sent
-        *   @param multicast Request ACK (0) or NOACK (1)
-        *   @return True if the payload was delivered successfully false if not
-        */
-        void startFastWrite(const void *const buf, size_t len, const bool multicast, bool startTx = true) ;
-
-        /**
-        *   Non-blocking write to the open writing pipe
-        *
-        *   Just like write(), but it returns immediately. To find out what happened
-        *   to the send, catch the IRQ and then call whatHappened().
-        *
-        *   @see write()
-        *   @see writeFast()
-        *   @see startFastWrite()
-        *   @see whatHappened()
-        *
-        *   For single noAck writes see:
-        *   @see enableDynamicAck()
-        *   @see setAutoAck()
-        *
-        *   @param buf Pointer to the data to be sent
-        *   @param len Number of bytes to be sent
-        *   @param multicast Request ACK (0) or NOACK (1)
-        */
-        void startWrite(const void *buf, uint8_t len, const bool multicast);
-
-        /**
         *   This function is mainly used internally to take advantage of the auto payload
         *   re-use functionality of the chip, but can be beneficial to users as well.
         *
@@ -486,16 +487,6 @@ namespace NRF24L
         void reUseTX();
 
         /**
-        *   Empty the transmit buffer. This is generally not required in standard operation.
-        *   May be required in specific cases after stopListening() , if operating at 250KBPS data rate.
-        *
-        *   @return Current value of status register
-        */
-        uint8_t flush_tx();
-
-        uint8_t flush_rx();
-
-        /**
         *   Test whether there was a carrier on the line for the
         *   previous listening period.
         *
@@ -506,39 +497,11 @@ namespace NRF24L
         bool testCarrier();
 
         /**
-        *   Test whether a signal (carrier or otherwise) greater than
-        *   or equal to -64dBm is present on the channel. Valid only
-        *   on nRF24L01P (+) hardware. On nRF24L01, use testCarrier().
-        *
-        *   Useful to check for interference on the current channel and
-        *   channel hopping strategies.
-        *
-        *   @code
-        *   bool goodSignal = radio.testRPD();
-        *   if(radio.available()){
-        *      Serial.println(goodSignal ? "Strong signal > 64dBm" : "Weak signal < 64dBm" );
-        *      radio.read(0,0);
-        *   }
-        *   @endcode
-        *   @return true if signal => -64dBm, false if not
-        */
-        bool testRPD();
-
-        /**
-        *   Test whether this is a real radio, or a mock shim for
-        *   debugging.  Setting either pin to 0xff is the way to
-        *   indicate that this is not a real radio.
-        *
-        *   @return true if this is a legitimate radio
-        */
-        bool isValid();
-
-        /**
         *   Close a pipe after it has been previously opened.
         *   Can be safely called without having previously opened a pipe.
         *   @param pipe Which pipe # to close, 0-5.
         */
-        void closeReadingPipe(uint8_t pipe);
+        void closeReadingPipe(const uint8_t pipe);
 
 
         /* Optional reconfiguration */
@@ -564,14 +527,7 @@ namespace NRF24L
         *
         * @param channel Which RF channel to communicate on, 0-125
         */
-        void setChannel(uint8_t channel);
-
-        /**
-        *   Get RF communication channel
-        *
-        *   @return The currently configured RF Channel
-        */
-        uint8_t getChannel();
+        void setChannel(const uint8_t channel);
 
         /**
         *   Set Static Payload Size
@@ -585,7 +541,14 @@ namespace NRF24L
         *
         *   @param size The number of bytes in the payload
         */
-        void setPayloadSize(uint8_t size);
+        void setPayloadSize(const uint8_t size);
+
+        /**
+        *   Get RF communication channel
+        *
+        *   @return The currently configured RF Channel
+        */
+        uint8_t getChannel();
 
         /**
         *   Get Static Payload Size
@@ -619,6 +582,20 @@ namespace NRF24L
         uint8_t getDynamicPayloadSize();
 
         /**
+        *   Empty the transmit buffer. This is generally not required in standard operation.
+        *   May be required in specific cases after stopListening() , if operating at 250KBPS data rate.
+        *
+        *   @return Current value of status register
+        */
+        uint8_t flush_tx();
+
+        /**
+        * TODO: ADD DOC
+        *
+        */
+        uint8_t flush_rx();
+
+        /**
         *   Enable custom payloads on the acknowledge packets
         *
         *   ACK payloads are a handy way to return data back to senders without
@@ -628,8 +605,6 @@ namespace NRF24L
         *   enableDynamicPayloads() to enable on all pipes.
         */
         void enableAckPayload();
-
-        void disableAckPayload();
 
         /**
         *   Enable dynamically-sized payloads
@@ -663,6 +638,10 @@ namespace NRF24L
         */
         void enableDynamicAck();
 
+        /**
+        * TODO: ADD DOC
+        *
+        */
         void disableDynamicAck();
 
         /**
@@ -681,7 +660,7 @@ namespace NRF24L
         *
         *   @param enable Whether to enable (true) or disable (false) auto-ACKs
         */
-        void setAutoAck(bool enable);
+        void setAutoAck(const bool enable);
 
         /**
         *   Enable or disable auto-acknowledge packets on a per pipeline basis.
@@ -692,7 +671,7 @@ namespace NRF24L
         *   @param pipe Which pipeline to modify
         *   @param enable Whether to enable (true) or disable (false) auto-ACKs
         */
-        void setAutoAck(uint8_t pipe, bool enable);
+        void setAutoAck(const uint8_t pipe, const bool enable);
 
         /**
         *   Set Power Amplifier (PA) level to one of four levels:
@@ -773,19 +752,7 @@ namespace NRF24L
         *   @param tx_fail  Mask transmit failure interrupts
         *   @param rx_ready Mask payload received interrupts
         */
-        void maskIRQ(bool tx_ok, bool tx_fail, bool rx_ready);
-
-        /**
-        *   The driver will delay for this duration when stopListening() is called
-        *
-        *   When responding to payloads, faster devices like ARM(RPi) are much faster than Arduino:
-        *   1. Arduino sends data to RPi, switches to RX mode
-        *   2. The RPi receives the data, switches to TX mode and sends before the Arduino radio is in RX mode
-        *   3. If AutoACK is disabled, this can be set as low as 0. If AA/ESB enabled, set to 100uS minimum on RPi
-        *
-        *   @warning If set to 0, ensure 130uS delay after stopListening() and before any sends
-        */
-        uint32_t txDelay;
+        void maskIRQ(const bool tx_ok, const bool tx_fail, const bool rx_ready);
 
         /**
         *   Read a chunk of data in from a register
@@ -795,7 +762,7 @@ namespace NRF24L
         *   @param len How many bytes of data to transfer
         *   @return Current value of status register
         */
-        uint8_t read_register(const uint8_t &reg, uint8_t *const buf, size_t & len);
+        uint8_t read_register(const uint8_t reg, uint8_t *const buffer, size_t len);
 
         /**
         *   Read single byte from a register
@@ -803,7 +770,7 @@ namespace NRF24L
         *   @param reg Which register. Use constants from nRF24L01.h
         *   @return Current value of register @p reg
         */
-        uint8_t read_register(const uint8_t &reg);
+        uint8_t read_register(const uint8_t reg);
 
         /**
         *   Write a chunk of data to a register
@@ -813,7 +780,7 @@ namespace NRF24L
         *   @param len How many bytes of data to transfer
         *   @return Current value of status register
         */
-        uint8_t write_register(const uint8_t &reg, const uint8_t *const buf, size_t & len);
+        uint8_t write_register(const uint8_t reg, const uint8_t *const buffer, size_t len);
 
         /**
         *   Write a single byte to a register
@@ -822,7 +789,7 @@ namespace NRF24L
         *   @param value The new value to write
         *   @return Current value of status register
         */
-        uint8_t write_register(const uint8_t &reg, const uint8_t &value);
+        uint8_t write_register(const uint8_t reg, const uint8_t value);
 
         /**
         *   Write the transmit payload
@@ -833,7 +800,7 @@ namespace NRF24L
         *   @param len Number of bytes to be sent
         *   @return Current value of status register
         */
-        uint8_t write_payload(const void *const buf, size_t & len, const uint8_t &writeType);
+        uint8_t write_payload(const void *const buffer, size_t len, const uint8_t writeType);
 
         /**
         *   Read the receive payload
@@ -844,7 +811,7 @@ namespace NRF24L
         *   @param len Maximum number of bytes to read
         *   @return Current value of status register
         */
-        uint8_t read_payload(void *const buf, size_t &len);
+        uint8_t read_payload(void *const buffer, size_t len);
 
         /**
         *   Retrieve the current status of the chip
@@ -863,7 +830,7 @@ namespace NRF24L
         *
         *   @return The total number of bytes that were written
         */
-        virtual size_t spi_write(const uint8_t *const tx_buffer, size_t &len);
+        virtual size_t spi_write(const uint8_t *const tx_buffer, size_t len);
 
         /** User defined function that will perform an SPI read. This must
         *   be overwritten otherwise the program will not compile.
@@ -873,7 +840,7 @@ namespace NRF24L
         *
         *   @return The total number of bytes read.
         */
-        virtual size_t spi_read(uint8_t *const rx_buffer, size_t &len);
+        virtual size_t spi_read(uint8_t *const rx_buffer, size_t len);
 
         /** User defined function that will perform an SPI write/read. This must
         *   be overwritten otherwise the program will not compile.
@@ -884,7 +851,7 @@ namespace NRF24L
         *
         *   @return The total number of bytes that were written/read
         */
-        virtual size_t spi_write_read(const uint8_t *const tx_buffer, uint8_t *const rx_buffer, size_t &len);
+        virtual size_t spi_write_read(const uint8_t *const tx_buffer, uint8_t *const rx_buffer, size_t len);
 
         /** User defined function that will start the SPI transaction correctly. This
         *   typically means asserting the chip select line either in software or hardware.
