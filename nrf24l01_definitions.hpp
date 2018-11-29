@@ -1,5 +1,10 @@
+#pragma once
 #ifndef NRF24L01_DEFINITIONS_HPP
 #define NRF24L01_DEFINITIONS_HPP
+
+/* C/C++ Includes */
+#include <stdint.h>
+#include <cstdio>
 
 namespace NRF24L
 {
@@ -7,333 +12,384 @@ namespace NRF24L
     General Definitions
     ----------------------------------------------*/
     constexpr size_t PAYLOAD_LEN = 32;
-    constexpr uint8_t SPI_BUFFER_LEN = 1 + PAYLOAD_LEN;    /* Accounts for max payload of 32 bytes + 1 byte for the command */
-
-    /*----------------------------------------------
-    Register Addresses
-    ----------------------------------------------*/
-    constexpr uint8_t REG_CONFIG                = 0x00;  /* Configuration Register */
-    constexpr uint8_t REG_EN_AA                 = 0x01;  /* Enable Auto Acknowledgment */
-    constexpr uint8_t REG_EN_RXADDR             = 0x02;  /* Enable RX Addresses */
-    constexpr uint8_t REG_SETUP_AW              = 0x03;  /* Setup of Address Width */
-    constexpr uint8_t REG_SETUP_RETR            = 0x04;  /* Setup of Automatic Retransmission */
-    constexpr uint8_t REG_RF_CH                 = 0x05;  /* RF Channel Frequency Settings */
-    constexpr uint8_t REG_RF_SETUP              = 0x06;  /* RF Channel Settings Register */
-    constexpr uint8_t REG_STATUS                = 0x07;  /* Status Register */
-    constexpr uint8_t REG_OBSERVE_TX            = 0x08;  /* Transmit Observe */
-    constexpr uint8_t REG_CD                    = 0x09;  /* Carrier Detect */
-    constexpr uint8_t REG_RX_ADDR_P0            = 0x0A;  /* Receive Address Data Pipe 0 */
-    constexpr uint8_t REG_RX_ADDR_P1            = 0x0B;  /* Receive Address Data Pipe 1 */
-    constexpr uint8_t REG_RX_ADDR_P2            = 0x0C;  /* Receive Address Data Pipe 2 */
-    constexpr uint8_t REG_RX_ADDR_P3            = 0x0D;  /* Receive Address Data Pipe 3 */
-    constexpr uint8_t REG_RX_ADDR_P4            = 0x0E;  /* Receive Address Data Pipe 4 */
-    constexpr uint8_t REG_RX_ADDR_P5            = 0x0F;  /* Receive Address Data Pipe 5 */
-    constexpr uint8_t REG_TX_ADDR               = 0x10;  /* Transmit Address */
-    constexpr uint8_t REG_RX_PW_P0              = 0x11;  /* Number of bytes in RX Payload Data Pipe 0 */
-    constexpr uint8_t REG_RX_PW_P1              = 0x12;  /* Number of bytes in RX Payload Data Pipe 1 */
-    constexpr uint8_t REG_RX_PW_P2              = 0x13;  /* Number of bytes in RX Payload Data Pipe 2 */
-    constexpr uint8_t REG_RX_PW_P3              = 0x14;  /* Number of bytes in RX Payload Data Pipe 3 */
-    constexpr uint8_t REG_RX_PW_P4              = 0x15;  /* Number of bytes in RX Payload Data Pipe 4 */
-    constexpr uint8_t REG_RX_PW_P5              = 0x16;  /* Number of bytes in RX Payload Data Pipe 5 */
-    constexpr uint8_t REG_FIFO_STATUS           = 0x17;  /* FIFO Status Register */
-    constexpr uint8_t REG_DYNPD                 = 0x1C;  /* Enable Dynamic Payload Length for Data Pipes */
-    constexpr uint8_t REG_FEATURE               = 0x1D;  /* Feature Register */
+    constexpr size_t SPI_BUFFER_LEN = 1 + PAYLOAD_LEN;    /* Accounts for max payload of 32 bytes + 1 byte for the command */
 
     /*----------------------------------------------
     Command Instructions
     ----------------------------------------------*/
-    constexpr uint8_t CMD_REGISTER_MASK         = 0x1F;  /* Masks off the largest available register address */
-    constexpr uint8_t CMD_R_REGISTER            = 0x00;  /* Read command and status registers  */
-    constexpr uint8_t CMD_W_REGISTER            = 0x20;  /* Write command and status registers  */
-    constexpr uint8_t CMD_R_RX_PAYLOAD          = 0x61;  /* Read RX Payload (1-32 bytes) */
-    constexpr uint8_t CMD_W_TX_PAYLOAD          = 0xA0;  /* Write TX Payload (1-32 bytes) */
-    constexpr uint8_t CMD_FLUSH_TX              = 0xE1;  /* Flush TX FIFO, used in TX Mode */
-    constexpr uint8_t CMD_FLUSH_RX              = 0xE2;  /* Flush RX FIFO, used in RX Mode */
-    constexpr uint8_t CMD_REUSE_TX_PL           = 0xE3;  /* Reuse last transmitted payload (PTX device only) */
-    constexpr uint8_t CMD_ACTIVATE              = 0x50;  /* This command, followed by 0x73, activates R_RX_PL_WID, W_ACK_PAYLOAD, W_TX_PAYLOAD_NOACK */
-    constexpr uint8_t CMD_R_RX_PL_WID           = 0x60;  /* Read RX payload width for the top payload in the RX FIFO */
-    constexpr uint8_t CMD_W_ACK_PAYLOAD         = 0xA8;  /* Write Payload together with ACK packet */
-    constexpr uint8_t CMD_W_TX_PAYLOAD_NO_ACK   = 0xB0;  /* Disables AUTOACK on this specific packet */
-    constexpr uint8_t CMD_NOP                   = 0xFF;  /* No operation */
+    namespace Command
+    {
+        constexpr uint8_t REGISTER_MASK = 0x1F;       /* Masks off the largest available register address */
+        constexpr uint8_t R_REGISTER = 0x00;          /* Read command and status registers  */
+        constexpr uint8_t W_REGISTER = 0x20;          /* Write command and status registers  */
+        constexpr uint8_t R_RX_PAYLOAD = 0x61;        /* Read RX Payload (1-32 bytes) */
+        constexpr uint8_t W_TX_PAYLOAD = 0xA0;        /* Write TX Payload (1-32 bytes) */
+        constexpr uint8_t FLUSH_TX = 0xE1;            /* Flush TX FIFO, used in TX Mode */
+        constexpr uint8_t FLUSH_RX = 0xE2;            /* Flush RX FIFO, used in RX Mode */
+        constexpr uint8_t REUSE_TX_PL = 0xE3;         /* Reuse last transmitted payload (PTX device only) */
+        constexpr uint8_t ACTIVATE = 0x50;            /* This command, followed by 0x73, activates R_RX_PL_WID, W_ACK_PAYLOAD, W_TX_PAYLOAD_NOACK */
+        constexpr uint8_t R_RX_PL_WID = 0x60;         /* Read RX payload width for the top payload in the RX FIFO */
+        constexpr uint8_t W_ACK_PAYLOAD = 0xA8;       /* Write Payload together with ACK packet */
+        constexpr uint8_t W_TX_PAYLOAD_NO_ACK = 0xB0; /* Disables AUTOACK on this specific packet */
+        constexpr uint8_t NOP = 0xFF;                 /* No operation */
+    }
+
+    /*----------------------------------------------
+    Register Addresses
+    ----------------------------------------------*/
+    namespace Register
+    {
+        constexpr uint8_t CONFIG = 0x00;      /* Configuration Register */
+        constexpr uint8_t EN_AA = 0x01;       /* Enable Auto Acknowledgment */
+        constexpr uint8_t EN_RXADDR = 0x02;   /* Enable RX Addresses */
+        constexpr uint8_t SETUP_AW = 0x03;    /* Setup of Address Width */
+        constexpr uint8_t SETUP_RETR = 0x04;  /* Setup of Automatic Retransmission */
+        constexpr uint8_t RF_CH = 0x05;       /* RF Channel Frequency Settings */
+        constexpr uint8_t RF_SETUP = 0x06;    /* RF Channel Settings Register */
+        constexpr uint8_t STATUS = 0x07;      /* Status Register */
+        constexpr uint8_t OBSERVE_TX = 0x08;  /* Transmit Observe */
+        constexpr uint8_t CD = 0x09;          /* Carrier Detect */
+        constexpr uint8_t RX_ADDR_P0 = 0x0A;  /* Receive Address Data Pipe 0 */
+        constexpr uint8_t RX_ADDR_P1 = 0x0B;  /* Receive Address Data Pipe 1 */
+        constexpr uint8_t RX_ADDR_P2 = 0x0C;  /* Receive Address Data Pipe 2 */
+        constexpr uint8_t RX_ADDR_P3 = 0x0D;  /* Receive Address Data Pipe 3 */
+        constexpr uint8_t RX_ADDR_P4 = 0x0E;  /* Receive Address Data Pipe 4 */
+        constexpr uint8_t RX_ADDR_P5 = 0x0F;  /* Receive Address Data Pipe 5 */
+        constexpr uint8_t TX_ADDR = 0x10;     /* Transmit Address */
+        constexpr uint8_t RX_PW_P0 = 0x11;    /* Number of bytes in RX Payload Data Pipe 0 */
+        constexpr uint8_t RX_PW_P1 = 0x12;    /* Number of bytes in RX Payload Data Pipe 1 */
+        constexpr uint8_t RX_PW_P2 = 0x13;    /* Number of bytes in RX Payload Data Pipe 2 */
+        constexpr uint8_t RX_PW_P3 = 0x14;    /* Number of bytes in RX Payload Data Pipe 3 */
+        constexpr uint8_t RX_PW_P4 = 0x15;    /* Number of bytes in RX Payload Data Pipe 4 */
+        constexpr uint8_t RX_PW_P5 = 0x16;    /* Number of bytes in RX Payload Data Pipe 5 */
+        constexpr uint8_t FIFO_STATUS = 0x17; /* FIFO Status Register */
+        constexpr uint8_t DYNPD = 0x1C;       /* Enable Dynamic Payload Length for Data Pipes */
+        constexpr uint8_t FEATURE = 0x1D;     /* Feature Register */
+	}
 
     /*----------------------------------------------
     Register Bit Fields and Masks
     ----------------------------------------------*/
-
-    /* Register: Config */
-    constexpr uint8_t CONFIG_MSK                = 0x7F;
-
-    constexpr uint8_t CONFIG_MASK_RX_DR_Pos     = 6u;
-    constexpr uint8_t CONFIG_MASK_RX_DR_Msk     = 1u << CONFIG_MASK_RX_DR_Pos;
-    constexpr uint8_t CONFIG_MASK_RX_DR         = CONFIG_MASK_RX_DR_Msk;
-
-    constexpr uint8_t CONFIG_MASK_TX_DS_Pos     = 5u;
-    constexpr uint8_t CONFIG_MASK_TX_DS_Msk     = 1u << CONFIG_MASK_TX_DS_Pos;
-    constexpr uint8_t CONFIG_MASK_TX_DS         = CONFIG_MASK_TX_DS_Msk;
-
-    constexpr uint8_t CONFIG_MASK_MAX_RT_Pos    = 4u;
-    constexpr uint8_t CONFIG_MASK_MAX_RT_Msk    = 1u << CONFIG_MASK_MAX_RT_Pos;
-    constexpr uint8_t CONFIG_MASK_MAX_RT        = CONFIG_MASK_MAX_RT_Msk;
-
-    constexpr uint8_t CONFIG_EN_CRC_Pos         = 3u;
-    constexpr uint8_t CONFIG_EN_CRC_Msk         = 1u << CONFIG_EN_CRC_Pos;
-    constexpr uint8_t CONFIG_EN_CRC             = CONFIG_EN_CRC_Msk;
-
-    constexpr uint8_t CONFIG_CRCO_Pos           = 2u;
-    constexpr uint8_t CONFIG_CRCO_Msk           = 1u << CONFIG_CRCO_Pos;
-    constexpr uint8_t CONFIG_CRCO               = CONFIG_CRCO_Msk;
-
-    constexpr uint8_t CONFIG_PWR_UP_Pos         = 1u;
-    constexpr uint8_t CONFIG_PWR_UP_Msk         = 1u << CONFIG_PWR_UP_Pos;
-    constexpr uint8_t CONFIG_PWR_UP             = CONFIG_PWR_UP_Msk;
-
-    constexpr uint8_t CONFIG_PRIM_RX_Pos        = 0u;
-    constexpr uint8_t CONFIG_PRIM_RX_Msk        = 1u << CONFIG_PRIM_RX_Pos;
-    constexpr uint8_t CONFIG_PRIM_RX            = CONFIG_PRIM_RX_Msk;
-
-    /* Register: EN_AA */
-    constexpr uint8_t EN_AA_Msk                 = 0x3F;
-
-    constexpr uint8_t EN_AA_P5_Pos              = 5u;
-    constexpr uint8_t EN_AA_P5_Msk              = 1u << EN_AA_P5_Pos;
-    constexpr uint8_t EN_AA_P5                  = EN_AA_P5_Msk;
-
-    constexpr uint8_t EN_AA_P4_Pos              = 4u;
-    constexpr uint8_t EN_AA_P4_Msk              = 1u << EN_AA_P4_Pos;
-    constexpr uint8_t EN_AA_P4                  = EN_AA_P4_Msk;
-
-    constexpr uint8_t EN_AA_P3_Pos              = 3u;
-    constexpr uint8_t EN_AA_P3_Msk              = 1u << EN_AA_P3_Pos;
-    constexpr uint8_t EN_AA_P3                  = EN_AA_P3_Msk;
-
-    constexpr uint8_t EN_AA_P2_Pos              = 2u;
-    constexpr uint8_t EN_AA_P2_Msk              = 1u << EN_AA_P2_Pos;
-    constexpr uint8_t EN_AA_P2                  = EN_AA_P2_Msk;
-
-    constexpr uint8_t EN_AA_P1_Pos              = 1u;
-    constexpr uint8_t EN_AA_P1_Msk              = 1u << EN_AA_P1_Pos;
-    constexpr uint8_t EN_AA_P1                  = EN_AA_P1_Msk;
-
-    constexpr uint8_t EN_AA_P0_Pos              = 0u;
-    constexpr uint8_t EN_AA_P0_Msk              = 1u << EN_AA_P0_Pos;
-    constexpr uint8_t EN_AA_P0                  = EN_AA_P0_Msk;
-
-    /* Register: EN_RXADDR */
-    constexpr uint8_t EN_RXADDR_MSK             = 0x3F;
-
-    constexpr uint8_t EN_RXADDR_P5_Pos          = 5u;
-    constexpr uint8_t EN_RXADDR_P5_Msk          = 1u << EN_RXADDR_P5_Pos;
-    constexpr uint8_t EN_RXADDR_P5              = EN_RXADDR_P5_Msk;
-
-    constexpr uint8_t EN_RXADDR_P4_Pos          = 4u;
-    constexpr uint8_t EN_RXADDR_P4_Msk          = 1u << EN_RXADDR_P4_Pos;
-    constexpr uint8_t EN_RXADDR_P4              = EN_RXADDR_P4_Msk;
-
-    constexpr uint8_t EN_RXADDR_P3_Pos          = 3u;
-    constexpr uint8_t EN_RXADDR_P3_Msk          = 1u << EN_RXADDR_P3_Pos;
-    constexpr uint8_t EN_RXADDR_P3              = EN_RXADDR_P3_Msk;
-
-    constexpr uint8_t EN_RXADDR_P2_Pos          = 2u;
-    constexpr uint8_t EN_RXADDR_P2_Msk          = 1u << EN_RXADDR_P2_Pos;
-    constexpr uint8_t EN_RXADDR_P2              = EN_RXADDR_P2_Msk;
-
-    constexpr uint8_t EN_RXADDR_P1_Pos          = 1u;
-    constexpr uint8_t EN_RXADDR_P1_Msk          = 1u << EN_RXADDR_P1_Pos;
-    constexpr uint8_t EN_RXADDR_P1              = EN_RXADDR_P1_Msk;
-
-    constexpr uint8_t EN_RXADDR_P0_Pos          = 0u;
-    constexpr uint8_t EN_RXADDR_P0_Msk          = 1u << EN_RXADDR_P0_Pos;
-    constexpr uint8_t EN_RXADDR_P0              = EN_RXADDR_P0_Msk;
-
-    /* Register: SETUP_AW */
-
-
-    /* Register: SETUP_RETR */
-    constexpr uint8_t SETUP_RETR_Msk = 0xFF;
-
-    constexpr uint8_t SETUP_RETR_ARD_Pos        = 4u;
-    constexpr uint8_t SETUP_RETR_ARD_Msk        = 0x0F << SETUP_RETR_ARD_Pos;
-    constexpr uint8_t SETUP_RETR_ARD            = SETUP_RETR_ARD_Msk;
-
-    constexpr uint8_t SETUP_RETR_ARC_Pos        = 0u;
-    constexpr uint8_t SETUP_RETR_ARC_Msk        = 0x0F << SETUP_RETR_ARC_Pos;
-    constexpr uint8_t SETUP_RETR_ARC            = SETUP_RETR_ARC_Msk;
-
-    /* Register: RF_CH */
-    constexpr uint8_t RF_CH_Msk                 = 0x7F;
-
-    /* Register: RF_SETUP */
-    constexpr uint8_t RF_SETUP_Msk              = 0x1F;
-
-    constexpr uint8_t RF_SETUP_RF_DR_LOW_Pos    = 5u;
-    constexpr uint8_t RF_SETUP_RF_DR_LOW_Msk    = 1u << RF_SETUP_RF_DR_LOW_Pos;
-    constexpr uint8_t RF_SETUP_RF_DR_LOW        = RF_SETUP_RF_DR_LOW_Msk;
-
-    constexpr uint8_t RF_SETUP_PLL_LOCK_Pos     = 4u;
-    constexpr uint8_t RF_SETUP_PLL_LOCK_Msk     = 1u << RF_SETUP_PLL_LOCK_Pos;
-    constexpr uint8_t RF_SETUP_PLL_LOCK         = RF_SETUP_PLL_LOCK_Msk;
-
-    constexpr uint8_t RF_SETUP_RF_DR_HIGH_Pos   = 3u;
-    constexpr uint8_t RF_SETUP_RF_DR_HIGH_Msk   = 1u << RF_SETUP_RF_DR_HIGH_Pos;
-    constexpr uint8_t RF_SETUP_RF_DR_HIGH       = RF_SETUP_RF_DR_HIGH_Msk;
-
-    constexpr uint8_t RF_SETUP_RF_DR_Pos        = 3u;
-    constexpr uint8_t RF_SETUP_RF_DR_Msk        = 1u << RF_SETUP_RF_DR_Pos;
-    constexpr uint8_t RF_SETUP_RF_DR            = RF_SETUP_RF_DR_Msk;
-
-    constexpr uint8_t RF_SETUP_RF_PWR_Pos       = 1u;
-    constexpr uint8_t RF_SETUP_RF_PWR_Wid       = 0x03;
-    constexpr uint8_t RF_SETUP_RF_PWR_Msk       = RF_SETUP_RF_PWR_Wid << RF_SETUP_RF_PWR_Pos;
-    constexpr uint8_t RF_SETUP_RF_PWR           = RF_SETUP_RF_PWR_Msk;
-
-    constexpr uint8_t RF_SETUP_LNA_HCURR_Pos    = 0u;
-    constexpr uint8_t RF_SETUP_LNA_HCURR_Msk    = 1u << RF_SETUP_LNA_HCURR_Pos;
-    constexpr uint8_t RF_SETUP_LNA_HCURR        = RF_SETUP_LNA_HCURR_Msk;
-
-    /* Register: STATUS */
-    constexpr uint8_t STATUS_Msk                = 0x7F;
-
-    constexpr uint8_t STATUS_RX_DR_Pos          = 6u;
-    constexpr uint8_t STATUS_RX_DR_Msk          = 1u << STATUS_RX_DR_Pos;
-    constexpr uint8_t STATUS_RX_DR              = STATUS_RX_DR_Msk;
-
-    constexpr uint8_t STATUS_TX_DS_Pos          = 5u;
-    constexpr uint8_t STATUS_TX_DS_Msk          = 1u << STATUS_TX_DS_Pos;
-    constexpr uint8_t STATUS_TX_DS              = STATUS_TX_DS_Msk;
-
-    constexpr uint8_t STATUS_MAX_RT_Pos         = 4u;
-    constexpr uint8_t STATUS_MAX_RT_Msk         = 1u << STATUS_MAX_RT_Pos;
-    constexpr uint8_t STATUS_MAX_RT             = STATUS_MAX_RT_Msk;
-    
-    constexpr uint8_t STATUS_RX_P_NO_Pos        = 1u;
-    constexpr uint8_t STATUS_RX_P_NO_Wid        = 0x07;
-    constexpr uint8_t STATUS_RX_P_NO_Msk        = STATUS_RX_P_NO_Wid << STATUS_RX_P_NO_Pos;
-    constexpr uint8_t STATUS_RX_P_NO            = STATUS_RX_P_NO_Msk;
-
-    constexpr uint8_t STATUS_TX_FULL_Pos        = 0u;
-    constexpr uint8_t STATUS_TX_FULL_Msk        = 1u << STATUS_TX_FULL_Pos;
-    constexpr uint8_t STATUS_TX_FULL            = STATUS_TX_FULL_Msk;
-
-    /* Register: OBSERVE_TX */
-
-
-    /* Register: CD */
-
-
-    /* Register: RX_ADDR_P0 */
-
-
-    /* Register: RX_ADDR_P1 */
-
-
-    /* Register: RX_ADDR_P2 */
-
-
-    /* Register: RX_ADDR_P3 */
-
-
-    /* Register: RX_ADDR_P4 */
-
-
-    /* Register: RX_ADDR_P5 */
-
-
-    /* Register: TX_ADDR */
-
-
-    /* Register: RX_PW_P0 */
-
-
-    /* Register: RX_PW_P1 */
-
-
-    /* Register: RX_PW_P2 */
-
-
-    /* Register: RX_PW_P3 */
-
-
-    /* Register: RX_PW_P4 */
-
-
-    /* Register: RX_PW_P5 */
-
-
-    /* Register: FIFO_STATUS */
-    constexpr uint8_t FIFO_STATUS_Msk           = 0x7F;
-
-    constexpr uint8_t FIFO_STATUS_TX_REUSE_Pos  = 6u;
-    constexpr uint8_t FIFO_STATUS_TX_REUSE_Msk  = 1u << FIFO_STATUS_TX_REUSE_Pos;
-    constexpr uint8_t FIFO_STATUS_TX_REUSE      = FIFO_STATUS_TX_REUSE_Msk;
-
-    constexpr uint8_t FIFO_STATUS_TX_FULL_Pos   = 5u;
-    constexpr uint8_t FIFO_STATUS_TX_FULL_Msk   = 1u << FIFO_STATUS_TX_FULL_Pos;
-    constexpr uint8_t FIFO_STATUS_TX_FULL       = FIFO_STATUS_TX_FULL_Msk;
-
-    constexpr uint8_t FIFO_STATUS_TX_EMPTY_Pos  = 4u;
-    constexpr uint8_t FIFO_STATUS_TX_EMPTY_Msk  = 1u << FIFO_STATUS_TX_EMPTY_Pos;
-    constexpr uint8_t FIFO_STATUS_TX_EMPTY      = FIFO_STATUS_TX_EMPTY_Msk;
-
-    constexpr uint8_t FIFO_STATUS_RX_FULL_Pos   = 1u;
-    constexpr uint8_t FIFO_STATUS_RX_FULL_Msk   = 1u << FIFO_STATUS_RX_FULL_Pos;
-    constexpr uint8_t FIFO_STATUS_RX_FULL       = FIFO_STATUS_RX_FULL_Msk;
-
-    constexpr uint8_t FIFO_STATUS_RX_EMPTY_Pos  = 0u;
-    constexpr uint8_t FIFO_STATUS_RX_EMPTY_Msk  = 1u << FIFO_STATUS_RX_EMPTY_Pos;
-    constexpr uint8_t FIFO_STATUS_RX_EMPTY      = FIFO_STATUS_RX_EMPTY_Msk;
-
-    /* Register: ACK_PLD */
-
-
-    /* Register: TX_PLD */
-
-
-    /* Register: RX_PLD */
-
-
-    /* Register: DYNPD */
-    constexpr uint8_t DYNPD_Msk                 = 0x3F;
-
-    constexpr uint8_t DYNPD_DPL_P5_Pos          = 5u;
-    constexpr uint8_t DYNPD_DPL_P5_Msk          = 1u << DYNPD_DPL_P5_Pos;
-    constexpr uint8_t DYNPD_DPL_P5              = DYNPD_DPL_P5_Msk;
-
-    constexpr uint8_t DYNPD_DPL_P4_Pos          = 4u;
-    constexpr uint8_t DYNPD_DPL_P4_Msk          = 1u << DYNPD_DPL_P4_Pos;
-    constexpr uint8_t DYNPD_DPL_P4              = DYNPD_DPL_P4_Msk;
-
-    constexpr uint8_t DYNPD_DPL_P3_Pos          = 3u;
-    constexpr uint8_t DYNPD_DPL_P3_Msk          = 1u << DYNPD_DPL_P3_Pos;
-    constexpr uint8_t DYNPD_DPL_P3              = DYNPD_DPL_P3_Msk;
-
-    constexpr uint8_t DYNPD_DPL_P2_Pos          = 2u;
-    constexpr uint8_t DYNPD_DPL_P2_Msk          = 1u << DYNPD_DPL_P2_Pos;
-    constexpr uint8_t DYNPD_DPL_P2              = DYNPD_DPL_P2_Msk;
-
-    constexpr uint8_t DYNPD_DPL_P1_Pos          = 1u;
-    constexpr uint8_t DYNPD_DPL_P1_Msk          = 1u << DYNPD_DPL_P1_Pos;
-    constexpr uint8_t DYNPD_DPL_P1              = DYNPD_DPL_P1_Msk;
-
-    constexpr uint8_t DYNPD_DPL_P0_Pos          = 0u;
-    constexpr uint8_t DYNPD_DPL_P0_Msk          = 1u << DYNPD_DPL_P0_Pos;
-    constexpr uint8_t DYNPD_DPL_P0              = DYNPD_DPL_P0_Msk;
-
-    /* Register: FEATURE */
-    constexpr uint8_t FEATURE_MSK               = 0x07;
-
-    constexpr uint8_t FEATURE_EN_DPL_Pos        = 2u;
-    constexpr uint8_t FEATURE_EN_DPL_Msk        = 1u << FEATURE_EN_DPL_Pos;
-    constexpr uint8_t FEATURE_EN_DPL            = FEATURE_EN_DPL_Msk;
-
-    constexpr uint8_t FEATURE_EN_ACK_PAY_Pos    = 1u;
-    constexpr uint8_t FEATURE_EN_ACK_PAY_Msk    = 1u << FEATURE_EN_ACK_PAY_Pos;
-    constexpr uint8_t FEATURE_EN_ACK_PAY        = FEATURE_EN_ACK_PAY_Msk;
-
-    constexpr uint8_t FEATURE_EN_DYN_ACK_Pos    = 0u;
-    constexpr uint8_t FEATURE_EN_DYN_ACK_Msk    = 1u << FEATURE_EN_DYN_ACK_Pos;
-    constexpr uint8_t FEATURE_EN_DYN_ACK        = FEATURE_EN_DYN_ACK_Msk;
-
-};
+    namespace CONFIG
+    {
+        constexpr uint8_t Mask = 0x7F;
+
+        constexpr uint8_t MASK_RX_DR_Pos = 6u;
+        constexpr uint8_t MASK_RX_DR_Msk = 1u << MASK_RX_DR_Pos;
+        constexpr uint8_t MASK_RX_DR = MASK_RX_DR_Msk;
+
+        constexpr uint8_t MASK_TX_DS_Pos = 5u;
+        constexpr uint8_t MASK_TX_DS_Msk = 1u << MASK_TX_DS_Pos;
+        constexpr uint8_t MASK_TX_DS = MASK_TX_DS_Msk;
+
+        constexpr uint8_t MASK_MAX_RT_Pos = 4u;
+        constexpr uint8_t MASK_MAX_RT_Msk = 1u << MASK_MAX_RT_Pos;
+        constexpr uint8_t MASK_MAX_RT = MASK_MAX_RT_Msk;
+
+        constexpr uint8_t EN_CRC_Pos = 3u;
+        constexpr uint8_t EN_CRC_Msk = 1u << EN_CRC_Pos;
+        constexpr uint8_t EN_CRC = EN_CRC_Msk;
+
+        constexpr uint8_t CRCO_Pos = 2u;
+        constexpr uint8_t CRCO_Msk = 1u << CRCO_Pos;
+        constexpr uint8_t CRCO = CRCO_Msk;
+
+        constexpr uint8_t PWR_UP_Pos = 1u;
+        constexpr uint8_t PWR_UP_Msk = 1u << PWR_UP_Pos;
+        constexpr uint8_t PWR_UP = PWR_UP_Msk;
+
+        constexpr uint8_t PRIM_RX_Pos = 0u;
+        constexpr uint8_t PRIM_RX_Msk = 1u << PRIM_RX_Pos;
+        constexpr uint8_t PRIM_RX = PRIM_RX_Msk;
+    }
+
+    namespace EN_AA
+	{
+        constexpr uint8_t Mask = 0x3F;
+
+        constexpr uint8_t P5_Pos = 5u;
+        constexpr uint8_t P5_Msk = 1u << P5_Pos;
+        constexpr uint8_t P5 = P5_Msk;
+
+        constexpr uint8_t P4_Pos = 4u;
+        constexpr uint8_t P4_Msk = 1u << P4_Pos;
+        constexpr uint8_t P4 = P4_Msk;
+
+        constexpr uint8_t P3_Pos = 3u;
+        constexpr uint8_t P3_Msk = 1u << P3_Pos;
+        constexpr uint8_t P3 = P3_Msk;
+
+        constexpr uint8_t P2_Pos = 2u;
+        constexpr uint8_t P2_Msk = 1u << P2_Pos;
+        constexpr uint8_t P2 = P2_Msk;
+
+        constexpr uint8_t P1_Pos = 1u;
+        constexpr uint8_t P1_Msk = 1u << P1_Pos;
+        constexpr uint8_t P1 = P1_Msk;
+
+        constexpr uint8_t P0_Pos = 0u;
+        constexpr uint8_t P0_Msk = 1u << P0_Pos;
+        constexpr uint8_t P0 = P0_Msk;
+    }
+
+    namespace EN_RXADDR
+	{
+        constexpr uint8_t Mask = 0x3F;
+
+        constexpr uint8_t P5_Pos = 5u;
+        constexpr uint8_t P5_Msk = 1u << P5_Pos;
+        constexpr uint8_t P5 = P5_Msk;
+
+        constexpr uint8_t P4_Pos = 4u;
+        constexpr uint8_t P4_Msk = 1u << P4_Pos;
+        constexpr uint8_t P4 = P4_Msk;
+
+        constexpr uint8_t P3_Pos = 3u;
+        constexpr uint8_t P3_Msk = 1u << P3_Pos;
+        constexpr uint8_t P3 = P3_Msk;
+
+        constexpr uint8_t P2_Pos = 2u;
+        constexpr uint8_t P2_Msk = 1u << P2_Pos;
+        constexpr uint8_t P2 = P2_Msk;
+
+        constexpr uint8_t P1_Pos = 1u;
+        constexpr uint8_t P1_Msk = 1u << P1_Pos;
+        constexpr uint8_t P1 = P1_Msk;
+
+        constexpr uint8_t P0_Pos = 0u;
+        constexpr uint8_t P0_Msk = 1u << P0_Pos;
+        constexpr uint8_t P0 = P0_Msk;
+    }
+
+    namespace SETUP_AW
+    {
+        constexpr uint8_t Msk = 0x03;
+
+        constexpr uint8_t AW_Pos = 0u;
+        constexpr uint8_t AW_Wid = 0x03;
+        constexpr uint8_t AW_Msk = AW_Wid << AW_Pos;
+        constexpr uint8_t AW = AW_Msk;
+    }
+
+    namespace SETUP_RETR
+	{
+        constexpr uint8_t Mask = 0xFF;
+
+        constexpr uint8_t ARD_Pos = 4u;
+        constexpr uint8_t ARD_Msk = 0x0F << ARD_Pos;
+        constexpr uint8_t ARD = ARD_Msk;
+
+        constexpr uint8_t ARC_Pos = 0u;
+        constexpr uint8_t ARC_Msk = 0x0F << ARC_Pos;
+        constexpr uint8_t ARC = ARC_Msk;
+    }
+
+    namespace RF_CH
+	{
+        constexpr uint8_t Mask = 0x7F;
+    }
+
+    namespace RF_SETUP
+	{
+        constexpr uint8_t Mask = 0x1F;
+
+        constexpr uint8_t RF_DR_LOW_Pos = 5u;
+        constexpr uint8_t RF_DR_LOW_Msk = 1u << RF_DR_LOW_Pos;
+        constexpr uint8_t RF_DR_LOW = RF_DR_LOW_Msk;
+
+        constexpr uint8_t PLL_LOCK_Pos = 4u;
+        constexpr uint8_t PLL_LOCK_Msk = 1u << PLL_LOCK_Pos;
+        constexpr uint8_t PLL_LOCK = PLL_LOCK_Msk;
+
+        constexpr uint8_t RF_DR_HIGH_Pos = 3u;
+        constexpr uint8_t RF_DR_HIGH_Msk = 1u << RF_DR_HIGH_Pos;
+        constexpr uint8_t RF_DR_HIGH = RF_DR_HIGH_Msk;
+
+        constexpr uint8_t RF_DR_Pos = 3u;
+        constexpr uint8_t RF_DR_Msk = 1u << RF_DR_Pos;
+        constexpr uint8_t RF_DR = RF_DR_Msk;
+
+        constexpr uint8_t RF_PWR_Pos = 1u;
+        constexpr uint8_t RF_PWR_Wid = 0x03;
+        constexpr uint8_t RF_PWR_Msk = RF_PWR_Wid << RF_PWR_Pos;
+        constexpr uint8_t RF_PWR = RF_PWR_Msk;
+
+        constexpr uint8_t LNA_HCURR_Pos = 0u;
+        constexpr uint8_t LNA_HCURR_Msk = 1u << LNA_HCURR_Pos;
+        constexpr uint8_t LNA_HCURR = LNA_HCURR_Msk;
+    }
+
+    namespace STATUS
+    {
+        constexpr uint8_t Mask          = 0x7F;
+
+        constexpr uint8_t RX_DR_Pos     = 6u;
+        constexpr uint8_t RX_DR_Msk     = 1u << RX_DR_Pos;
+        constexpr uint8_t RX_DR         = RX_DR_Msk;
+
+        constexpr uint8_t TX_DS_Pos     = 5u;
+        constexpr uint8_t TX_DS_Msk     = 1u << TX_DS_Pos;
+        constexpr uint8_t TX_DS         = TX_DS_Msk;
+
+        constexpr uint8_t MAX_RT_Pos    = 4u;
+        constexpr uint8_t MAX_RT_Msk    = 1u << MAX_RT_Pos;
+        constexpr uint8_t MAX_RT        = MAX_RT_Msk;
+
+        constexpr uint8_t RX_P_NO_Pos   = 1u;
+        constexpr uint8_t RX_P_NO_Wid   = 0x07;
+        constexpr uint8_t RX_P_NO_Msk   = RX_P_NO_Wid << RX_P_NO_Pos;
+        constexpr uint8_t RX_P_NO       = RX_P_NO_Msk;
+
+        constexpr uint8_t TX_FULL_Pos   = 0u;
+        constexpr uint8_t TX_FULL_Msk   = 1u << TX_FULL_Pos;
+        constexpr uint8_t TX_FULL       = TX_FULL_Msk;
+	}
+
+    namespace OBSERVE_TX
+    {
+        constexpr uint8_t Mask = 0xFF;
+
+        constexpr uint8_t PLOS_CNT_Pos = 4u;
+        constexpr uint8_t PLOS_CNT_Wid = 0x0F;
+        constexpr uint8_t PLOS_CNT_Msk = PLOS_CNT_Wid << PLOS_CNT_Pos;
+        constexpr uint8_t PLOS_CNT = PLOS_CNT_Msk;
+
+        constexpr uint8_t ARC_CNT_Pos = 0u;
+        constexpr uint8_t ARC_CNT_Wid = 0x0F;
+        constexpr uint8_t ARC_CNT_Msk = ARC_CNT_Wid << ARC_CNT_Pos;
+        constexpr uint8_t ARC_CNT = ARC_CNT_Msk;
+    }
+
+    namespace CD
+    {
+        constexpr uint8_t Mask      = 0x01;
+        constexpr uint8_t Reset     = 0x00;
+
+        constexpr uint8_t CD_Pos    = 0u;
+        constexpr uint8_t CD_Msk    = 1u << CD_Pos;
+        constexpr uint8_t CD        = CD_Msk;
+    }
+
+    namespace RX_ADDR_P0
+    {
+        constexpr uint64_t Mask     = 0xFFFFFFFFFF;
+        constexpr uint64_t Reset    = 0xE7E7E7E7E7;
+    }
+
+    namespace RX_ADDR_P1
+    {
+        constexpr uint64_t Mask     = 0xFFFFFFFFFF;
+        constexpr uint64_t Reset    = 0xC2C2C2C2C2;
+    }
+
+    namespace RX_ADDR_P2
+    {
+        constexpr uint8_t Mask  = 0xFF;
+        constexpr uint8_t Reset = 0xC3;
+    }
+
+    namespace RX_ADDR_P3
+    {
+        constexpr uint8_t Mask  = 0xFF;
+        constexpr uint8_t Reset = 0xC4;
+    }
+
+    namespace RX_ADDR_P4
+    {
+        constexpr uint8_t Mask  = 0xFF;
+        constexpr uint8_t Reset = 0xC5;
+    }
+
+    namespace RX_ADDR_P5
+    {
+        constexpr uint8_t Mask  = 0xFF;
+        constexpr uint8_t Reset = 0xC6;
+    }
+
+    namespace TX_ADDR
+    {
+        constexpr uint64_t Mask     = 0xFFFFFFFFFF;
+        constexpr uint64_t Reset    = 0xE7E7E7E7E7;
+    }
+
+    namespace RX_PW
+    {
+        constexpr uint8_t Mask  = 0x3F;
+        constexpr uint8_t Reset = 0x00;
+    }
+
+    namespace FIFO_STATUS
+    {
+        constexpr uint8_t Mask = 0x7F;
+
+        constexpr uint8_t TX_REUSE_Pos = 6u;
+        constexpr uint8_t TX_REUSE_Msk = 1u << TX_REUSE_Pos;
+        constexpr uint8_t TX_REUSE = TX_REUSE_Msk;
+
+        constexpr uint8_t TX_FULL_Pos = 5u;
+        constexpr uint8_t TX_FULL_Msk = 1u << TX_FULL_Pos;
+        constexpr uint8_t TX_FULL = TX_FULL_Msk;
+
+        constexpr uint8_t TX_EMPTY_Pos = 4u;
+        constexpr uint8_t TX_EMPTY_Msk = 1u << TX_EMPTY_Pos;
+        constexpr uint8_t TX_EMPTY = TX_EMPTY_Msk;
+
+        constexpr uint8_t RX_FULL_Pos = 1u;
+        constexpr uint8_t RX_FULL_Msk = 1u << RX_FULL_Pos;
+        constexpr uint8_t RX_FULL = RX_FULL_Msk;
+
+        constexpr uint8_t RX_EMPTY_Pos = 0u;
+        constexpr uint8_t RX_EMPTY_Msk = 1u << RX_EMPTY_Pos;
+        constexpr uint8_t RX_EMPTY = RX_EMPTY_Msk;
+    }
+
+    namespace DYNPD
+	{
+        constexpr uint8_t Mask = 0x3F;
+
+        constexpr uint8_t DPL_P5_Pos = 5u;
+        constexpr uint8_t DPL_P5_Msk = 1u << DPL_P5_Pos;
+        constexpr uint8_t DPL_P5 = DPL_P5_Msk;
+
+        constexpr uint8_t DPL_P4_Pos = 4u;
+        constexpr uint8_t DPL_P4_Msk = 1u << DPL_P4_Pos;
+        constexpr uint8_t DPL_P4 = DPL_P4_Msk;
+
+        constexpr uint8_t DPL_P3_Pos = 3u;
+        constexpr uint8_t DPL_P3_Msk = 1u << DPL_P3_Pos;
+        constexpr uint8_t DPL_P3 = DPL_P3_Msk;
+
+        constexpr uint8_t DPL_P2_Pos = 2u;
+        constexpr uint8_t DPL_P2_Msk = 1u << DPL_P2_Pos;
+        constexpr uint8_t DPL_P2 = DPL_P2_Msk;
+
+        constexpr uint8_t DPL_P1_Pos = 1u;
+        constexpr uint8_t DPL_P1_Msk = 1u << DPL_P1_Pos;
+        constexpr uint8_t DPL_P1 = DPL_P1_Msk;
+
+        constexpr uint8_t DPL_P0_Pos = 0u;
+        constexpr uint8_t DPL_P0_Msk = 1u << DPL_P0_Pos;
+        constexpr uint8_t DPL_P0 = DPL_P0_Msk;
+    }
+
+    namespace FEATURE
+	{
+        constexpr uint8_t MSK = 0x07;
+
+        constexpr uint8_t EN_DPL_Pos = 2u;
+        constexpr uint8_t EN_DPL_Msk = 1u << EN_DPL_Pos;
+        constexpr uint8_t EN_DPL = EN_DPL_Msk;
+
+        constexpr uint8_t EN_ACK_PAY_Pos = 1u;
+        constexpr uint8_t EN_ACK_PAY_Msk = 1u << EN_ACK_PAY_Pos;
+        constexpr uint8_t EN_ACK_PAY = EN_ACK_PAY_Msk;
+
+        constexpr uint8_t EN_DYN_ACK_Pos = 0u;
+        constexpr uint8_t EN_DYN_ACK_Msk = 1u << EN_DYN_ACK_Pos;
+        constexpr uint8_t EN_DYN_ACK = EN_DYN_ACK_Msk;
+    }
+
+}
 
 
 #endif /* NRF24L01_DEFINITIONS_HPP */
