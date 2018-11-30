@@ -22,11 +22,10 @@ namespace NRF24L
 
     enum class PowerAmplitude : uint8_t
     {
-        MIN,
-        LOW,
-        HIGH,
-        MAX,
-        ERROR
+        MIN     = 0u,   /**< -18 dBm */
+        LOW     = 2u,   /**< -12 dBm */
+        HIGH    = 4u,   /**<  -6 dBm */
+        MAX     = 6u    /**<   0 dBm */
     };
 
     enum class DataRate : uint8_t
