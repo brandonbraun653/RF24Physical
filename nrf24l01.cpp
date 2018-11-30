@@ -58,9 +58,12 @@ namespace NRF24L
         memset(spi_rxbuff, 0, sizeof(spi_rxbuff));
 
         /*-------------------------------------------------
-        Default address width is 5 bytes
+        Initialize class variables
         -------------------------------------------------*/
-        addr_width = 5u;
+        addr_width = MAX_ADDR_WID;
+        payload_size = PAYLOAD_LEN;
+        dynamic_payloads_enabled = false;
+        pVariant = false;
     }
 
     bool NRF24L01::begin()
@@ -179,19 +182,31 @@ namespace NRF24L
 
     void NRF24L01::stopListening()
     {
+        /*-------------------------------------------------
+        Set the chip into standby mode I
+        -------------------------------------------------*/
         chipEnable->write(State::LOW);
-
         delayMilliseconds(1);
 
+        /*-------------------------------------------------
+        EN_ACK_PAY sets a dynamic payload length. The buffer needs to be flushed so
+        we don't automatically transmit data the next time we write chipEnable high.
+        -------------------------------------------------*/
         if (read_register(Register::FEATURE) & FEATURE::EN_ACK_PAY)
         {
             delayMilliseconds(1);
             flush_tx();
         }
 
+        /*-------------------------------------------------
+        Disable RX mode
+        -------------------------------------------------*/
         uint8_t cfg = read_register(Register::CONFIG) & ~CONFIG::PRIM_RX;
         write_register(Register::CONFIG, cfg);
 
+        /*-------------------------------------------------
+        Ensure RX Pipe 0 is ready for listening
+        -------------------------------------------------*/
         uint8_t en_rx = read_register(Register::EN_RXADDR) | pipeEnableRXAddressReg[0];
         write_register(Register::EN_RXADDR, en_rx);
     }
@@ -257,8 +272,20 @@ namespace NRF24L
 
     void NRF24L01::openWritePipe(const uint8_t *const address)
     {
+        /*-------------------------------------------------
+        Set the receive address for pipe 0, this one has a maximum of 5 byte width
+        -------------------------------------------------*/
         write_register(Register::RX_ADDR_P0, address, addr_width);
+
+        /*-------------------------------------------------
+        Make sure we transmit back to the same address we receive from
+        -------------------------------------------------*/
         write_register(Register::TX_ADDR, address, addr_width);
+
+        /*-------------------------------------------------
+        Set a static payload length for all receptions on pipe 0. There must also be
+        an equal number of bytes clocked into the TX_FIFO when data is transmitted out.
+        -------------------------------------------------*/
         write_register(Register::RX_PW_P0, static_cast<uint8_t>(payload_size));
     }
 
@@ -646,20 +673,12 @@ namespace NRF24L
 
     void NRF24L01::setPALevel(const PowerAmplitude level)
     {
-        uint8_t pwr = static_cast<uint8_t>(level);
+        /*-------------------------------------------------
+        Merge bits from level into setup according to a mask
+        https://graphics.stanford.edu/~seander/bithacks.html#MaskedMerge
+        -------------------------------------------------*/
         uint8_t setup = read_register(Register::RF_SETUP);
-
-        if(pwr > 3)
-        {
-            /*-------------------------------------------------
-            +1 to support the SI24R1 chip extra bit
-            -------------------------------------------------*/
-            setup |= (static_cast<uint8_t>(PowerAmplitude::MAX) << 1) + 1;
-        }
-        else
-        {
-            setup |= (pwr << 1) + 1;
-        }
+        setup ^= (setup ^ static_cast<uint8_t>(level)) & RF_SETUP::RF_PWR_Msk;
 
         write_register(Register::RF_SETUP, setup);
     }
