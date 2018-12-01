@@ -341,6 +341,7 @@ namespace NRF24L
         *   @note Optimization: This function now leaves the CE pin high, so the radio
         *   will remain in TX or STANDBY-II Mode until a txStandBy() command is issued. Can be used as an alternative to startWrite()
         *   if writing multiple payloads at once.
+        *
         *   @warning It is important to never keep the nRF24L01 in TX mode with FIFO full for more than 4ms at a time. If the auto
         *   retransmit/autoAck is enabled, the nRF24L01 is never in TX mode long enough to disobey this rule. Allow the FIFO
         *   to clear by issuing txStandBy() or ensure appropriate time between transmissions.
@@ -350,13 +351,14 @@ namespace NRF24L
         *   @see startWrite()
         *   @see writeBlocking()
         *
-        *   For single noAck writes see:
+        *   For single NOACK writes see:
         *   @see enableDynamicAck()
         *   @see setAutoAck()
         *
-        *   @param buf Pointer to the data to be sent
-        *   @param len Number of bytes to be sent
-        *   @param multicast Request ACK (0) or NOACK (1)
+        *   @param[in] buffer       Pointer to the data to be sent
+        *   @param[in] len          Number of bytes to be sent
+        *   @param[in] multicast    Request ACK (false) or NOACK (true)
+        *   @param[in] startTX      Starts the transfer immediately if true
         *   @return True if the payload was delivered successfully false if not
         */
         void startFastWrite(const void *const buffer, size_t len, const bool multicast, const bool startTx = true) ;
@@ -869,6 +871,11 @@ namespace NRF24L
     private:
         uint8_t write_cmd(const uint8_t cmd);
 
+        bool registerBitmaskSet(const uint8_t reg, const uint8_t bitmask);
+        bool registerAnySet(const uint8_t reg, const uint8_t bitmask);
+        void clearRegisterBits(const uint8_t reg, const uint8_t bitmask);
+        void setRegisterBits(const uint8_t reg, const uint8_t bitmask);
+
         bool pVariant = false;
         bool dynamic_payloads_enabled = false;
         size_t addr_width = 0;
@@ -882,6 +889,6 @@ namespace NRF24L
         uint8_t spi_txbuff[SPI_BUFFER_LEN];
     };
 
-};
+}
 
 #endif /* NRF24L01_HPP */
