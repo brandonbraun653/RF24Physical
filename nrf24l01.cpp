@@ -249,25 +249,45 @@ namespace NRF24L
 
     bool NRF24L01::write(const void *const buffer, size_t len, const bool multicast)
     {
+        bool result = false;
+
+        /*-------------------------------------------------
+        Immediately dump data into the TX FIFO. Assuming we are in
+        the correct mode, this should start the transfer.
+        -------------------------------------------------*/
         startFastWrite(buffer, len, multicast);
 
-        while (!(get_status() & (STATUS::TX_DS | STATUS::MAX_RT)))
+        /*-------------------------------------------------
+        Wait for the Data Sent or Max Retry interrupt to occur
+        -------------------------------------------------*/
+        while (!registerAnySet(Register::STATUS, (STATUS::TX_DS | STATUS::MAX_RT)))
         {
-            delayMilliseconds(100);
+            delayMilliseconds(10);
         }
 
+        /*-------------------------------------------------
+        Go back to standby mode
+        -------------------------------------------------*/
         chipEnable->write(State::LOW);
 
-        uint8_t status_val = STATUS::RX_DR | STATUS::TX_DS | STATUS::MAX_RT;
-        uint8_t status = write_register(Register::STATUS, status_val);
-
-        if (status & STATUS::MAX_RT)
+        /*-------------------------------------------------
+        If we hit the Max Retries, we have a problem and the whole TX FIFO is screwed
+        -------------------------------------------------*/
+        if (registerBitmaskSet(Register::STATUS, STATUS::MAX_RT))
         {
             flush_tx();
-            return false;
+        }
+        else
+        {
+            result = true;
         }
 
-        return true;
+        /*-------------------------------------------------
+        Clear all the interrupt flags
+        -------------------------------------------------*/
+        setRegisterBits(Register::STATUS, (STATUS::RX_DR | STATUS::TX_DS | STATUS::MAX_RT));
+
+        return result;
     }
 
     void NRF24L01::openWritePipe(const uint8_t *const address)
@@ -278,7 +298,7 @@ namespace NRF24L
         write_register(Register::RX_ADDR_P0, address, addr_width);
 
         /*-------------------------------------------------
-        Make sure we transmit back to the same address we receive from
+        Make sure we transmit back to the same address we expect receive from
         -------------------------------------------------*/
         write_register(Register::TX_ADDR, address, addr_width);
 
@@ -336,7 +356,7 @@ namespace NRF24L
         If not powered up already, do it. The worst startup delay is
         about 5mS, so just wait that amount.
         -------------------------------------------------*/
-        if(!(read_register(Register::CONFIG) & CONFIG::PWR_UP))
+        if(!registerBitmaskSet(Register::CONFIG, CONFIG::PWR_UP))
         {
             write_register(Register::CONFIG, CONFIG::PWR_UP);
             delayMilliseconds(5);
@@ -346,15 +366,10 @@ namespace NRF24L
     void NRF24L01::powerDown()
     {
         /*-------------------------------------------------
-        Make sure the enable pin is low to force standby mode
+        Force standby mode and power down the chip
         -------------------------------------------------*/
         chipEnable->write(State::LOW);
-
-        /*-------------------------------------------------
-        Twiddle that power bit real good
-        -------------------------------------------------*/
-        uint8_t reg = read_register(Register::CONFIG) & ~CONFIG::PWR_UP;
-        write_register(Register::CONFIG, reg);
+        clearRegisterBits(Register::CONFIG, CONFIG::PWR_UP);
     }
 
     bool NRF24L01::writeFast(const void *const buffer, size_t len)
@@ -364,17 +379,29 @@ namespace NRF24L
 
     bool NRF24L01::writeFast(const void *const buffer, size_t len, const bool multicast)
     {
-        //TODO: This can be simplified
-        while (get_status() & STATUS::TX_FULL)
-        {
-            if (get_status() & STATUS::MAX_RT)
+        /*-------------------------------------------------
+        Exit cleanly if we errored out previously
+        -------------------------------------------------*/
+        uint8_t status = get_status();
+
+        do
+	    {
+            if(status & STATUS::MAX_RT)
             {
-                write_register(Register::STATUS, STATUS::MAX_RT);
+                clearRegisterBits(Register::STATUS, STATUS::MAX_RT);
                 return false;
             }
-        }
+            else
+            {
+                status = get_status();
+            }
+	    } while (status & STATUS::TX_FULL);
 
+        /*-------------------------------------------------
+        Write data and return without checking the status of the transfer.
+        -------------------------------------------------*/
         startFastWrite(buffer, len, multicast);
+        return true;
     }
 
     bool NRF24L01::writeBlocking(const void *const buffer, size_t len, uint32_t timeout)
@@ -384,6 +411,9 @@ namespace NRF24L
 
     void NRF24L01::startFastWrite(const void *const buffer, size_t len, const bool multicast, bool startTx)
     {
+        /*-------------------------------------------------
+        Decide if we want to transmit with ACK or with NOACK
+        -------------------------------------------------*/
         uint8_t payloadType = Command::W_TX_PAYLOAD;
 
         if (multicast)
@@ -391,6 +421,9 @@ namespace NRF24L
             payloadType = Command::W_TX_PAYLOAD_NO_ACK;
         }
 
+        /*-------------------------------------------------
+        Write the payload to the TX FIFO and optionally start the transfer
+        -------------------------------------------------*/
         write_payload(buffer, len, payloadType);
 
         if (startTx)
@@ -401,6 +434,9 @@ namespace NRF24L
 
     void NRF24L01::startWrite(const void *const buffer, size_t len, const bool multicast)
     {
+        /*-------------------------------------------------
+        Decide if we want to transmit with ACK or with NOACK
+        -------------------------------------------------*/
         uint8_t payloadType = Command::W_TX_PAYLOAD;
 
         if (multicast)
@@ -408,6 +444,9 @@ namespace NRF24L
             payloadType = Command::W_TX_PAYLOAD_NO_ACK;
         }
 
+        /*-------------------------------------------------
+        Write the payload to the TX FIFO and start the transfer
+        -------------------------------------------------*/
         write_payload(buffer, len, payloadType);
 
         chipEnable->write(State::HIGH);
@@ -416,11 +455,18 @@ namespace NRF24L
 
     bool NRF24L01::txStandBy()
     {
-        while (!(read_register(Register::FIFO_STATUS) & FIFO_STATUS::TX_EMPTY))
+        /*-------------------------------------------------
+        Wait for the TX FIFO to signal it's empty
+        -------------------------------------------------*/
+        while (!registerBitmaskSet(Register::FIFO_STATUS, FIFO_STATUS::TX_EMPTY))
         {
-            if (get_status() & STATUS::MAX_RT)
+            /*-------------------------------------------------
+            If we hit the Max Retries, we have a problem and the whole TX FIFO is screwed.
+            Go back to standby mode and clear out the FIFO.
+            -------------------------------------------------*/
+            if (registerBitmaskSet(Register::STATUS, STATUS::MAX_RT))
             {
-                write_register(Register::STATUS, STATUS::MAX_RT);
+                setRegisterBits(Register::STATUS, STATUS::MAX_RT);
                 chipEnable->write(State::LOW);
                 flush_tx();
                 return false;
@@ -955,4 +1001,29 @@ namespace NRF24L
         /* Give back the status register value */
         return spi_rxbuff[0];
     }
-};
+
+    bool NRF24L01::registerBitmaskSet(const uint8_t reg, const uint8_t bitmask)
+    {
+        return (read_register(reg) & bitmask) == bitmask;
+    }
+
+    bool NRF24L01::registerAnySet(const uint8_t reg, const uint8_t bitmask)
+    {
+        return read_register(reg) & bitmask;
+    }
+
+    void NRF24L01::clearRegisterBits(const uint8_t reg, const uint8_t bitmask)
+    {
+        uint8_t regVal = read_register(reg);
+        regVal &= ~bitmask;
+        write_register(reg, regVal);
+    }
+
+    void NRF24L01::setRegisterBits(const uint8_t reg, const uint8_t bitmask)
+    {
+        uint8_t regVal = read_register(reg);
+        regVal |= bitmask;
+        write_register(reg, regVal);
+    }
+
+}
