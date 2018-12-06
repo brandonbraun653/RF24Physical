@@ -5,6 +5,7 @@
 /* C/C++ Includes */
 #include <stdint.h>
 #include <cstdio>
+#include <array>
 
 /* Chimera Includes */
 #include <Chimera/gpio.hpp>
@@ -885,8 +886,8 @@ namespace NRF24L
         Chimera::SPI::SPIClass_sPtr spi;
         Chimera::GPIO::GPIOClass_sPtr chipEnable;
 
-        uint8_t spi_rxbuff[SPI_BUFFER_LEN];
-        uint8_t spi_txbuff[SPI_BUFFER_LEN];
+        std::array<uint8_t, SPI_BUFFER_LEN> spi_txbuff;
+        std::array<uint8_t, SPI_BUFFER_LEN> spi_rxbuff;
     };
 
 }

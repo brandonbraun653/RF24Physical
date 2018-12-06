@@ -54,8 +54,8 @@ namespace NRF24L
         this->spi = spiInstance;
         this->chipEnable = chipEnable;
 
-        memset(spi_txbuff, 0, sizeof(spi_txbuff));
-        memset(spi_rxbuff, 0, sizeof(spi_rxbuff));
+        memset(spi_txbuff.begin(), 0, spi_txbuff.size());
+        memset(spi_rxbuff.begin(), 0, spi_rxbuff.size());
 
         /*-------------------------------------------------
         Initialize class variables
@@ -494,7 +494,7 @@ namespace NRF24L
         memcpy(&spi_txbuff[1], current, size);
 
         begin_transaction();
-        spi->writeBytes(spi_txbuff, size);
+        spi->writeBytes(spi_txbuff.begin(), size);
         end_transaction();
     }
 
@@ -600,7 +600,7 @@ namespace NRF24L
         spi_rxbuff[1] = Command::NOP;
 
         begin_transaction();
-        spi->readWriteBytes(spi_txbuff, spi_rxbuff, 2, false);
+        spi->readWriteBytes(spi_txbuff.begin(), spi_rxbuff.begin(), 2, false);
         end_transaction();
 
         result = spi_rxbuff[1];
@@ -846,7 +846,7 @@ namespace NRF24L
         memset(&spi_txbuff[1], Command::NOP, len);
 
         begin_transaction();
-        spi_write_read(spi_txbuff, spi_rxbuff, len);
+        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), len);
         end_transaction();
 
         /* Return only the status code of the chip. The register values will be in the rx buff */
@@ -860,7 +860,7 @@ namespace NRF24L
         spi_txbuff[1] = Command::NOP;
 
         begin_transaction();
-        spi_write_read(spi_txbuff, spi_rxbuff, txLength);
+        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), txLength);
         end_transaction();
 
         /* Current register value is in the second byte of the receive buffer */
@@ -879,7 +879,7 @@ namespace NRF24L
 
         len += 1;
         begin_transaction();
-        spi_write_read(spi_txbuff, spi_rxbuff, len);
+        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), len);
         end_transaction();
 
         /* Status code is in the first byte of the receive buffer */
@@ -893,7 +893,7 @@ namespace NRF24L
         spi_txbuff[1] = value;
 
         begin_transaction();
-        spi_write_read(spi_txbuff, spi_rxbuff, txLength);
+        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), txLength);
         end_transaction();
 
         /* Status code is in the first byte of the receive buffer */
@@ -919,7 +919,7 @@ namespace NRF24L
         memset(&spi_txbuff[len], 0, blank_len);     /* Null out the remaining buffer space*/
 
         begin_transaction();
-        spi_write_read(spi_txbuff, spi_rxbuff, size);
+        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), size);
         end_transaction();
 
         return spi_rxbuff[0];
@@ -946,13 +946,13 @@ namespace NRF24L
         memset(&spi_txbuff[1], Command::NOP, (size - 1));
 
         begin_transaction();
-        spi_write_read(spi_txbuff, spi_rxbuff, size);
+        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), size);
         end_transaction();
 
         /*-------------------------------------------------
         The status byte is first, RX payload is all remaining
         -------------------------------------------------*/
-        memcpy(rx_buf, spi_rxbuff, (size - 1));
+        memcpy(rx_buf, spi_rxbuff.begin(), (size - 1));
         return spi_rxbuff[0];
     }
 
@@ -995,7 +995,7 @@ namespace NRF24L
         spi_txbuff[0] = cmd;
 
         begin_transaction();
-        spi_write_read(spi_txbuff, spi_rxbuff, txLength);
+        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), txLength);
         end_transaction();
 
         /* Give back the status register value */
