@@ -1,11 +1,17 @@
 
+/* C++ Includes */
+#include <array>
+
+/* FreeRTOS Includes */
 #include "FreeRTOS.h"
 #include "task.h"
 
+/* Chimera Includes */
 #include <Chimera/gpio.hpp>
 #include <Chimera/spi.hpp>
 #include <Chimera/threading.hpp>
 
+/* Project Includes s*/
 #include "nrf24l01.hpp"
 
 using namespace NRF24L;
@@ -15,6 +21,7 @@ using namespace Chimera::SPI;
 
 static uint32_t delayTime = 500;
 const uint8_t address[5] = { 0x00, 0x00, 0x00, 0x00, 0x01 };
+const std::array<uint8_t, 5> testArray = { 1, 2, 3, 4, 5 };
 const char testText[12] = "hello world";
 
 void senderThread(void * argument)
