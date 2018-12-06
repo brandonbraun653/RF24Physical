@@ -22,7 +22,7 @@
       </KeyValue>
       <KeyValue>
         <Key>com.sysprogs.mcuoptions.ignore_startup_file</Key>
-        <Value />
+        <Value>1</Value>
       </KeyValue>
       <KeyValue>
         <Key>com.sysprogs.toolchainoptions.arm.libctype</Key>
@@ -36,9 +36,7 @@
   </MCUProperties>
   <BSPSourceFolderName>Device-specific files</BSPSourceFolderName>
   <MCUMakFile>stm32.mak</MCUMakFile>
-  <ReferencedFrameworks>
-    <string>com.sysprogs.arm.stm32.hal</string>
-  </ReferencedFrameworks>
+  <ReferencedFrameworks />
   <FrameworkProperties>
     <Entries />
   </FrameworkProperties>

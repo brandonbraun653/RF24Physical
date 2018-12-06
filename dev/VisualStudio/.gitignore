@@ -27,6 +27,14 @@ bld/
 [Oo]bj/
 [Ll]og/
 
+Debug-C++11/
+Debug-C++14/
+Debug-C++17/
+Release-C++11/
+Release-C++14/
+Release-C++17/
+VisualGDBCache/
+
 # Visual Studio 2015/2017 cache/options directory
 .vs/
 # Uncomment if you have tasks that create the project's static files in wwwroot
@@ -87,6 +95,9 @@ StyleCopReport.xml
 *.pidb
 *.svclog
 *.scc
+*.o
+*.dep 
+*.bin
 
 # Chutzpah Test files
 _Chutzpah*

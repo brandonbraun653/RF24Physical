@@ -7,14 +7,26 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "C++Compilation", "C++Compil
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|VisualGDB = Debug|VisualGDB
-		Release|VisualGDB = Release|VisualGDB
+		Debug-C++11|VisualGDB = Debug-C++11|VisualGDB
+		Debug-C++14|VisualGDB = Debug-C++14|VisualGDB
+		Debug-C++17|VisualGDB = Debug-C++17|VisualGDB
+		Release-C++11|VisualGDB = Release-C++11|VisualGDB
+		Release-C++14|VisualGDB = Release-C++14|VisualGDB
+		Release-C++17|VisualGDB = Release-C++17|VisualGDB
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Debug|VisualGDB.ActiveCfg = Debug|VisualGDB
-		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Debug|VisualGDB.Build.0 = Debug|VisualGDB
-		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Release|VisualGDB.ActiveCfg = Release|VisualGDB
-		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Release|VisualGDB.Build.0 = Release|VisualGDB
+		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Debug-C++11|VisualGDB.ActiveCfg = Debug-C++11|VisualGDB
+		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Debug-C++11|VisualGDB.Build.0 = Debug-C++11|VisualGDB
+		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Debug-C++14|VisualGDB.ActiveCfg = Debug-C++14|VisualGDB
+		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Debug-C++14|VisualGDB.Build.0 = Debug-C++14|VisualGDB
+		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Debug-C++17|VisualGDB.ActiveCfg = Debug-C++17|VisualGDB
+		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Debug-C++17|VisualGDB.Build.0 = Debug-C++17|VisualGDB
+		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Release-C++11|VisualGDB.ActiveCfg = Release-C++11|VisualGDB
+		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Release-C++11|VisualGDB.Build.0 = Release-C++11|VisualGDB
+		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Release-C++14|VisualGDB.ActiveCfg = Release-C++14|VisualGDB
+		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Release-C++14|VisualGDB.Build.0 = Release-C++14|VisualGDB
+		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Release-C++17|VisualGDB.ActiveCfg = Release-C++17|VisualGDB
+		{4396B9F9-9095-4511-B07B-AEDE4E11A6E8}.Release-C++17|VisualGDB.Build.0 = Release-C++17|VisualGDB
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
