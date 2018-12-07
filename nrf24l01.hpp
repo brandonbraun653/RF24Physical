@@ -2,8 +2,8 @@
 #ifndef NRF24L01_HPP
 #define NRF24L01_HPP
 
-/* C/C++ Includes */
-#include <stdint.h>
+/* C++ Includes */
+#include <cstdint>
 #include <cstdio>
 #include <array>
 
@@ -23,24 +23,24 @@ namespace NRF24L
 
     enum class PowerAmplitude : uint8_t
     {
-        MIN     = 0u,   /**< -18 dBm */
-        LOW     = 2u,   /**< -12 dBm */
-        HIGH    = 4u,   /**<  -6 dBm */
-        MAX     = 6u    /**<   0 dBm */
+        MIN = 0u,       /**< -18 dBm */
+        LOW = 2u,       /**< -12 dBm */
+        HIGH = 4u,      /**<  -6 dBm */
+        MAX = 6u        /**<   0 dBm */
     };
 
     enum class DataRate : uint8_t
     {
-        DR_1MBPS,
-        DR_2MBPS,
-        DR_250KBPS
+        DR_1MBPS,       /**< 1 MBPS */
+        DR_2MBPS,       /**< 2 MBPS */
+        DR_250KBPS      /**< 250 KBPS */
     };
 
     enum class CRCLength : uint8_t
     {
-        CRC_DISABLED,
-        CRC_8,
-        CRC_16
+        CRC_DISABLED,   /**< No CRC */
+        CRC_8,          /**< 8 Bit CRC */
+        CRC_16          /**< 16 Bit CRC */
     };
 
     /**
@@ -118,7 +118,7 @@ namespace NRF24L
         *   @endcode
         *   @return True if there is a payload available, false if none is
         */
-        bool available(uint8_t *const pipeNum);
+        bool available(uint8_t &pipeNum);
 
         /**
         *   Read the available payload
@@ -142,7 +142,18 @@ namespace NRF24L
         *   @endcode
         *   @return No return value. Use available().
         */
-        void read(void *const buffer, size_t len);
+        void read(uint8_t *const buffer, size_t len);
+
+        /**
+         *  Read the available payload into an std::array<>
+         */
+        template <typename T, std::size_t S>
+            void read(std::array<T, S> buffer)
+            {
+                auto array = reinterpret_cast<uint8_t *const>(buffer.data());
+                auto constexpr byteLen = buffer.size() * sizeof(T);
+                read(array, byteLen);
+            }
 
         /**
         *   Be sure to call openWritingPipe() first to set the destination
@@ -167,7 +178,16 @@ namespace NRF24L
         *   @endcode
         *   @return True if the payload was delivered successfully false if not
         */
-        bool write(const void *const buffer, size_t len);
+        bool write(const uint8_t *const buffer, size_t len);
+
+        template <typename T, std::size_t S>
+            bool write(const std::array<T, S> buffer)
+            {
+                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
+                auto constexpr byteLen = buffer.size() * sizeof(T);
+
+                return write(array, byteLen);
+            }
 
         /**
         *   Write for single NOACK writes. Optionally disables acknowledgments/auto retries for a single write.
@@ -183,7 +203,16 @@ namespace NRF24L
         *   @param len Number of bytes to be sent
         *   @param multicast Request ACK (0), NOACK (1)
         */
-        bool write(const void *const buffer, size_t len, const bool multicast);
+        bool write(const uint8_t *const buffer, size_t len, const bool multicast);
+
+        template <typename T, std::size_t S>
+            bool write(const std::array<T, S> buffer, const bool multicast)
+            {
+                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
+                auto constexpr byteLen = buffer.size() * sizeof(T);
+
+                return write(array, byteLen, multicast);
+            }
 
         /**
         *   Open a pipe for writing via byte array. Old addressing format retained
@@ -293,7 +322,16 @@ namespace NRF24L
         *   @param len Number of bytes to be sent
         *   @return True if the payload was delivered successfully false if not
         */
-        bool writeFast(const void *const buffer, size_t len);
+        bool writeFast(const uint8_t *const buffer, size_t len);
+
+        template <typename T, std::size_t S>
+            void startWrite(const std::array<T, S> buffer)
+            {
+                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
+                auto constexpr byteLen = buffer.size() * sizeof(T);
+
+                return startWrite(array, byteLen);
+            }
 
         /**
         *       WriteFast for single NOACK writes. Disables acknowledgments/auto retries for a single write.
@@ -306,7 +344,16 @@ namespace NRF24L
         *       @param len Number of bytes to be sent
         *       @param multicast Request ACK (0) or NOACK (1)
         */
-        bool writeFast(const void *buf, size_t len, const bool multicast);
+        bool writeFast(const uint8_t *const buf, size_t len, const bool multicast);
+
+        template <typename T, std::size_t S>
+            bool writeFast(const std::array<T, S> buffer, const bool multicast)
+            {
+                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
+                auto constexpr byteLen = buffer.size() * sizeof(T);
+
+                return writeFast(array, byteLen, multicast);
+            }
 
         /**
         *   This function extends the auto-retry mechanism to any specified duration.
@@ -334,7 +381,16 @@ namespace NRF24L
         *   @param timeout User defined timeout in milliseconds.
         *   @return True if the payload was loaded into the buffer successfully false if not
         */
-        bool writeBlocking(const void *const buffer, size_t len, uint32_t timeout);
+        bool writeBlocking(const uint8_t *const buffer, size_t len, uint32_t timeout);
+
+        template <typename T, std::size_t S>
+            void writeBlocking(const std::array<T, S> buffer, uint32_t timeout)
+            {
+                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
+                auto constexpr byteLen = buffer.size() * sizeof(T);
+
+                writeBlocking(array, byteLen, timeout);
+            }
 
         /**
         *   Non-blocking write to the open writing pipe used for buffered writes
@@ -362,7 +418,16 @@ namespace NRF24L
         *   @param[in] startTX      Starts the transfer immediately if true
         *   @return True if the payload was delivered successfully false if not
         */
-        void startFastWrite(const void *const buffer, size_t len, const bool multicast, const bool startTx = true) ;
+        void startFastWrite(const uint8_t *const buffer, size_t len, const bool multicast, const bool startTx = true) ;
+
+        template <typename T, std::size_t S>
+            void startFastWrite(const std::array<T, S> buffer, const bool multicast, const bool startTx = true)
+            {
+                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
+                auto constexpr byteLen = buffer.size() * sizeof(T);
+
+                startFastWrite(array, byteLen, multicast, startTx);
+            }
 
         /**
         *   Non-blocking write to the open writing pipe
@@ -383,7 +448,16 @@ namespace NRF24L
         *   @param len Number of bytes to be sent
         *   @param multicast Request ACK (0) or NOACK (1)
         */
-        void startWrite(const void *const buffer, size_t len, const bool multicast);
+        void startWrite(const uint8_t *const buffer, size_t len, const bool multicast);
+
+        template <typename T, std::size_t S>
+            void startWrite(const std::array<T, S> buffer, const bool multicast)
+            {
+                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
+                auto constexpr byteLen = buffer.size() * sizeof(T);
+
+                startWrite(array, byteLen, multicast);
+            }
 
         /**
         *   This function should be called as soon as transmission is finished to
@@ -447,7 +521,16 @@ namespace NRF24L
         *   @param len Length of the data to send, up to 32 bytes max.  Not affected
         *   by the static payload set by setPayloadSize().
         */
-        void writeAckPayload(const uint8_t pipe, const void *const buffer, size_t len);
+        void writeAckPayload(const uint8_t pipe, const uint8_t *const buffer, size_t len);
+
+        template <typename T, std::size_t S>
+            void writeAckPayload(const uint8_t pipe, const std::array<T, S> buffer)
+            {
+                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
+                auto constexpr byteLen = buffer.size() * sizeof(T);
+
+                writeAckPayload(pipe, array, byteLen);
+            }
 
         /**
         *   Determine if an ACK payload was received in the most recent call to
@@ -764,7 +847,16 @@ namespace NRF24L
         *   @param len How many bytes of data to transfer
         *   @return Current value of status register
         */
-        uint8_t read_register(const uint8_t reg, uint8_t *const buffer, size_t len);
+        uint8_t readRegister(const uint8_t reg, uint8_t *const buffer, size_t len);
+
+        template <typename T, std::size_t S>
+            uint8_t readRegister(const uint8_t reg, std::array<T, S> buffer)
+            {
+                auto array = reinterpret_cast<uint8_t *const>(buffer.data());
+                auto constexpr byteLen = buffer.size() * sizeof(T);
+
+                return writeRegister(reg, array, byteLen);
+            }
 
         /**
         *   Read single byte from a register
@@ -772,7 +864,7 @@ namespace NRF24L
         *   @param reg Which register. Use constants from nRF24L01.h
         *   @return Current value of register @p reg
         */
-        uint8_t read_register(const uint8_t reg);
+        uint8_t readRegister(const uint8_t reg);
 
         /**
         *   Write a chunk of data to a register
@@ -782,7 +874,16 @@ namespace NRF24L
         *   @param len How many bytes of data to transfer
         *   @return Current value of status register
         */
-        uint8_t write_register(const uint8_t reg, const uint8_t *const buffer, size_t len);
+        uint8_t writeRegister(const uint8_t reg, const uint8_t *const buffer, size_t len);
+
+        template <typename T, std::size_t S>
+            uint8_t writeRegister(const uint8_t reg, const std::array<T, S> buffer)
+            {
+                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
+                auto constexpr byteLen = buffer.size() * sizeof(T);
+
+                return writeRegister(reg, array, byteLen);
+            }
 
         /**
         *   Write a single byte to a register
@@ -791,7 +892,7 @@ namespace NRF24L
         *   @param value The new value to write
         *   @return Current value of status register
         */
-        uint8_t write_register(const uint8_t reg, const uint8_t value);
+        uint8_t writeRegister(const uint8_t reg, const uint8_t value);
 
         /**
         *   Write the transmit payload
@@ -802,7 +903,16 @@ namespace NRF24L
         *   @param len Number of bytes to be sent
         *   @return Current value of status register
         */
-        uint8_t write_payload(const void *const buffer, size_t len, const uint8_t writeType);
+        uint8_t writePayload(const uint8_t *const buffer, size_t len, const uint8_t writeType);
+
+        template <typename T, std::size_t S>
+            uint8_t writePayload(const std::array<T, S> buffer, const uint8_t writeType)
+            {
+                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
+                auto constexpr byteLen = buffer.size() * sizeof(T);
+
+                return writePayload(array, byteLen, writeType);
+            }
 
         /**
         *   Read the receive payload
@@ -813,7 +923,16 @@ namespace NRF24L
         *   @param len Maximum number of bytes to read
         *   @return Current value of status register
         */
-        uint8_t read_payload(void *const buffer, size_t len);
+        uint8_t readPayload(uint8_t *const buffer, size_t len);
+
+        template <typename T, std::size_t S>
+            uint8_t readPayload(std::array<T, S> buffer)
+            {
+                auto array = reinterpret_cast<uint8_t *const>(buffer.data());
+                auto constexpr byteLen = buffer.size() * sizeof(T);
+
+                return readPayload(array, byteLen);
+            }
 
         /**
         *   Retrieve the current status of the chip

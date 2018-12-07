@@ -22,7 +22,7 @@ using namespace Chimera::SPI;
 static uint32_t delayTime = 500;
 const uint8_t address[5] = { 0x00, 0x00, 0x00, 0x00, 0x01 };
 const std::array<uint8_t, 5> testArray = { 1, 2, 3, 4, 5 };
-const char testText[12] = "hello world";
+const std::array<char, sizeof("hello world")> testText = {"hello world"};
 
 void senderThread(void * argument)
 {
@@ -68,8 +68,9 @@ void senderThread(void * argument)
     else
     {
         initialized = true;
+        radio->setChannel(0);
         radio->openWritePipe(address);
-        radio->setPALevel(PowerAmplitude::MIN);
+        radio->setPALevel(PowerAmplitude::MAX);
         radio->stopListening();
     }
 
@@ -78,9 +79,9 @@ void senderThread(void * argument)
     {
         if (initialized)
         {
-            if (!radio->write(reinterpret_cast<const void *const>(testText), sizeof(testText)))
+            if (!radio->write(testText))
             {
-                printf("Write failed\r\n");
+                //printf("Write failed\r\n");
             }
         }
         vTaskDelayUntil(&lastTimeWoken, pdMS_TO_TICKS(1000));
