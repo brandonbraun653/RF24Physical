@@ -79,7 +79,7 @@ void senderThread(void * argument)
     {
         if (initialized)
         {
-            if (!radio->write(testText))
+            if (!radio->write(testText, true))
             {
                 //printf("Write failed\r\n");
             }
