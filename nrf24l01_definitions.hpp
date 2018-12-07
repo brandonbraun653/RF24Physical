@@ -244,6 +244,26 @@ namespace NRF24L
         constexpr uint8_t TX_FULL_Pos   = 0u;
         constexpr uint8_t TX_FULL_Msk   = 1u << TX_FULL_Pos;
         constexpr uint8_t TX_FULL       = TX_FULL_Msk;
+
+        #if defined(DEBUG)
+        typedef struct
+        {
+            bool Bit_RX_DR = false;
+            bool Bit_TX_DS = false;
+            bool Bit_MAX_RT = false;
+            bool Bit_TX_FULL = false;
+            uint8_t Field_RX_P_NO = 0u; 
+
+            void convert(const uint8_t reg)
+            {
+                Bit_RX_DR = reg & RX_DR;
+                Bit_TX_DS = reg & TX_DS;
+                Bit_MAX_RT = reg & MAX_RT;
+                Bit_TX_FULL = reg & TX_FULL;
+                Field_RX_P_NO = reg & RX_P_NO;
+            }
+        } BitField;
+        #endif
 	}
 
     namespace OBSERVE_TX

@@ -851,6 +851,10 @@ namespace NRF24L
         spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), len);
         end_transaction();
 
+        #if defined(DEBUG)
+        statusReg.convert(spi_rxbuff[0]);
+        #endif
+
         /* Return only the status code of the chip. The register values will be in the rx buff */
         return spi_rxbuff[0];
     }
@@ -864,6 +868,10 @@ namespace NRF24L
         begin_transaction();
         spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), txLength);
         end_transaction();
+
+        #if defined(DEBUG)
+        statusReg.convert(spi_rxbuff[0]);
+        #endif 
 
         /* Current register value is in the second byte of the receive buffer */
         return spi_rxbuff[1];
@@ -884,6 +892,10 @@ namespace NRF24L
         spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), len);
         end_transaction();
 
+        #if defined(DEBUG)
+        statusReg.convert(spi_rxbuff[0]);
+        #endif
+
         /* Status code is in the first byte of the receive buffer */
         return spi_rxbuff[0];
     }
@@ -897,6 +909,10 @@ namespace NRF24L
         begin_transaction();
         spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), txLength);
         end_transaction();
+
+        #if defined(DEBUG)
+        statusReg.convert(spi_rxbuff[0]);
+        #endif
 
         /* Status code is in the first byte of the receive buffer */
         return spi_rxbuff[0];
@@ -924,6 +940,10 @@ namespace NRF24L
         spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), size);
         end_transaction();
 
+        #if defined(DEBUG)
+        statusReg.convert(spi_rxbuff[0]);
+        #endif
+
         return spi_rxbuff[0];
     }
 
@@ -950,6 +970,10 @@ namespace NRF24L
         begin_transaction();
         spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), size);
         end_transaction();
+
+        #if defined(DEBUG)
+        statusReg.convert(spi_rxbuff[0]);
+        #endif
 
         /*-------------------------------------------------
         The status byte is first, RX payload is all remaining

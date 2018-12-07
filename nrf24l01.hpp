@@ -1007,6 +1007,10 @@ namespace NRF24L
 
         std::array<uint8_t, SPI_BUFFER_LEN> spi_txbuff;
         std::array<uint8_t, SPI_BUFFER_LEN> spi_rxbuff;
+
+        #if defined(DEBUG)
+        STATUS::BitField statusReg;
+        #endif 
     };
 
 }
