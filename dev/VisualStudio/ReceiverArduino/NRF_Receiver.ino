@@ -5,7 +5,7 @@
 #include <RF24.h>
 
 RF24 radio(7, 8);
-const byte address[5] = { 0x00, 0x00, 0x00, 0x00, 0x01 };
+const byte address[5] = { 0xE7, 0xE7, 0xE7, 0xE7, 0xE7 };
 
 void setup() 
 {
@@ -22,6 +22,8 @@ void setup()
     radio.setChannel(0);
     radio.openReadingPipe(0, address);
     radio.setPALevel(RF24_PA_MAX);
+    radio.setAutoAck(true);
+
     radio.startListening();
 }
 

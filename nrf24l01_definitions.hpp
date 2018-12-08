@@ -15,6 +15,15 @@ namespace NRF24L
     constexpr size_t PAYLOAD_LEN = 32;
     constexpr size_t SPI_BUFFER_LEN = 1 + PAYLOAD_LEN;    /* Accounts for max payload of 32 bytes + 1 byte for the command */
 
+    enum class Mode : uint8_t
+    {
+        POWER_DOWN,
+        STANDBY_I,
+        STANDBY_II,
+        RX,
+        TX
+    };
+
     /*----------------------------------------------
     Command Instructions
     ----------------------------------------------*/
@@ -252,7 +261,7 @@ namespace NRF24L
             bool Bit_TX_DS = false;
             bool Bit_MAX_RT = false;
             bool Bit_TX_FULL = false;
-            uint8_t Field_RX_P_NO = 0u; 
+            uint8_t Field_RX_P_NO = 0u;
 
             void convert(const uint8_t reg)
             {

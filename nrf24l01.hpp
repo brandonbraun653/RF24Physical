@@ -150,6 +150,8 @@ namespace NRF24L
         template <typename T, std::size_t S>
             void read(std::array<T, S> buffer)
             {
+                static_assert(S >= PAYLOAD_LEN, "Cannot read into an std::array that is smaller than PAYLOAD_LEN");
+
                 auto array = reinterpret_cast<uint8_t *const>(buffer.data());
                 auto constexpr byteLen = buffer.size() * sizeof(T);
                 read(array, byteLen);
@@ -203,15 +205,15 @@ namespace NRF24L
         *   @param len Number of bytes to be sent
         *   @param multicast Request ACK (0), NOACK (1)
         */
-        bool write(const uint8_t *const buffer, size_t len, const bool multicast);
+        bool write(const uint8_t *const buffer, size_t len, const bool ack);
 
         template <typename T, std::size_t S>
-            bool write(const std::array<T, S> buffer, const bool multicast)
+            bool write(const std::array<T, S> buffer, const bool ack)
             {
                 auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
                 auto constexpr byteLen = buffer.size() * sizeof(T);
 
-                return write(array, byteLen, multicast);
+                return write(array, byteLen, ack);
             }
 
         /**
@@ -418,15 +420,15 @@ namespace NRF24L
         *   @param[in] startTX      Starts the transfer immediately if true
         *   @return True if the payload was delivered successfully false if not
         */
-        void startFastWrite(const uint8_t *const buffer, size_t len, const bool multicast, const bool startTx = true) ;
+        void startFastWrite(const uint8_t *const buffer, size_t len, const bool ack, const bool startTx = true) ;
 
         template <typename T, std::size_t S>
-            void startFastWrite(const std::array<T, S> buffer, const bool multicast, const bool startTx = true)
+            void startFastWrite(const std::array<T, S> buffer, const bool ack, const bool startTx = true)
             {
                 auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
                 auto constexpr byteLen = buffer.size() * sizeof(T);
 
-                startFastWrite(array, byteLen, multicast, startTx);
+                startFastWrite(array, byteLen, ack, startTx);
             }
 
         /**
@@ -586,7 +588,7 @@ namespace NRF24L
         *   Can be safely called without having previously opened a pipe.
         *   @param pipe Which pipe # to close, 0-5.
         */
-        void closeReadingPipe(const uint8_t pipe);
+        void closeReadPipe(const uint8_t pipe);
 
 
         /* Optional reconfiguration */
@@ -672,13 +674,21 @@ namespace NRF24L
         *
         *   @return Current value of status register
         */
-        uint8_t flush_tx();
+        uint8_t flushTX();
 
         /**
         * TODO: ADD DOC
         *
         */
-        uint8_t flush_rx();
+        uint8_t flushRX();
+
+        /**
+        * TODO: ADD DOC
+        *
+        */
+        void activateFeatures();
+
+        void deactivateFeatures();
 
         /**
         *   Enable custom payloads on the acknowledge packets
@@ -690,6 +700,12 @@ namespace NRF24L
         *   enableDynamicPayloads() to enable on all pipes.
         */
         void enableAckPayload();
+
+        /**
+        * TODO: ADD DOC
+        *
+        */
+        void disableAckPayload();
 
         /**
         *   Enable dynamically-sized payloads
@@ -939,7 +955,7 @@ namespace NRF24L
         *
         *   @return Current value of status register
         */
-        uint8_t get_status();
+        uint8_t getStatus();
 
      protected:
 
@@ -989,18 +1005,21 @@ namespace NRF24L
         virtual void end_transaction();
 
     private:
-        uint8_t write_cmd(const uint8_t cmd);
+        uint8_t writeCMD(const uint8_t cmd);
 
-        bool registerBitmaskSet(const uint8_t reg, const uint8_t bitmask);
-        bool registerAnySet(const uint8_t reg, const uint8_t bitmask);
+        bool registerIsBitmaskSet(const uint8_t reg, const uint8_t bitmask);
+        bool registerIsAnySet(const uint8_t reg, const uint8_t bitmask);
         void clearRegisterBits(const uint8_t reg, const uint8_t bitmask);
         void setRegisterBits(const uint8_t reg, const uint8_t bitmask);
 
         bool pVariant = false;
+        bool features_activated = false;
         bool dynamic_payloads_enabled = false;
         size_t addr_width = 0;
         size_t payload_size = 0;
-        uint8_t pipe0_reading_address[5];
+        std::array<uint8_t, 5> pipe0_reading_address;
+
+        NRF24L::Mode currentMode = Mode::POWER_DOWN;
 
         Chimera::SPI::SPIClass_sPtr spi;
         Chimera::GPIO::GPIOClass_sPtr chipEnable;
@@ -1010,7 +1029,7 @@ namespace NRF24L
 
         #if defined(DEBUG)
         STATUS::BitField statusReg;
-        #endif 
+        #endif
     };
 
 }
