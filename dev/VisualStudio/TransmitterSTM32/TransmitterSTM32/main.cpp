@@ -5,6 +5,7 @@
 #include <Chimera/chimera.hpp>
 #include <Chimera/config.hpp>
 #include <Chimera/threading.hpp>
+#include <Chimera/utilities.hpp>
 
 #include "sender_thread.hpp"
 
@@ -22,7 +23,6 @@ int main(void)
     InitializeSamplingProfiler();
     InitializeInstrumentingProfiler();
     #endif
-
 
     addThread(ledThread, "led", 200, NULL, 2, &ledTask);
     addThread(senderThread, "sender", 500, NULL, 2, &senderTask);

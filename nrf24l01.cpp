@@ -14,9 +14,7 @@ namespace NRF24L
     using namespace Chimera;
     using namespace Chimera::GPIO;
 
-    static constexpr uint8_t numPipes = 6;
-
-    static const uint8_t pipeRXAddressReg[numPipes] =
+    static const std::array<uint8_t, MAX_NUM_PIPES> pipeRXAddressReg =
     {
         Register::RX_ADDR_P0,
         Register::RX_ADDR_P1,
@@ -25,9 +23,9 @@ namespace NRF24L
         Register::RX_ADDR_P4,
         Register::RX_ADDR_P5
     };
-    static_assert(sizeof(pipeRXAddressReg) == (numPipes * sizeof(numPipes)), "Too many/few items in the array!");
+    static_assert(pipeRXAddressReg.size() == MAX_NUM_PIPES, "Too many/few items in the array!");
 
-    static const uint8_t pipeEnableRXAddressReg[numPipes] =
+    static const std::array<uint8_t, MAX_NUM_PIPES> pipeEnableRXAddressReg =
     {
         EN_RXADDR::P0,
         EN_RXADDR::P1,
@@ -36,9 +34,9 @@ namespace NRF24L
         EN_RXADDR::P4,
         EN_RXADDR::P5
     };
-    static_assert(sizeof(pipeEnableRXAddressReg) == (numPipes * sizeof(numPipes)), "Too many/few items in the array!");
+    static_assert(pipeEnableRXAddressReg.size() == MAX_NUM_PIPES, "Too many/few items in the array!");
 
-    static const uint8_t pipeRXPayloadWidthReg[numPipes] =
+    static const std::array<uint8_t, MAX_NUM_PIPES> pipeRXPayloadWidthReg =
     {
         Register::RX_PW_P0,
         Register::RX_PW_P1,
@@ -47,7 +45,7 @@ namespace NRF24L
         Register::RX_PW_P4,
         Register::RX_PW_P5
     };
-    static_assert(sizeof(pipeRXPayloadWidthReg) == (numPipes * sizeof(numPipes)), "Too many/few items in the array!");
+    static_assert(pipeRXPayloadWidthReg.size() == MAX_NUM_PIPES, "Too many/few items in the array!");
 
     NRF24L01::NRF24L01(Chimera::SPI::SPIClass_sPtr spiInstance, Chimera::GPIO::GPIOClass_sPtr chipEnable)
     {
@@ -60,8 +58,8 @@ namespace NRF24L
         /*-------------------------------------------------
         Initialize class variables
         -------------------------------------------------*/
-        addr_width = MAX_ADDR_WID;
-        payload_size = PAYLOAD_LEN;
+        addr_width = MAX_ADDRESS_WIDTH;
+        payload_size = MAX_PAYLOAD_WIDTH;
         dynamic_payloads_enabled = false;
         pVariant = false;
     }
@@ -226,102 +224,149 @@ namespace NRF24L
         writeRegister(Register::STATUS, statusVal);
     }
 
-    bool NRF24L01::write(const uint8_t *const buffer, size_t len)
+    void NRF24L01::read(char *const buffer, size_t len)
     {
-        return write(buffer, len, false);
+        read(reinterpret_cast<uint8_t *const>(buffer), len);
     }
 
-    bool NRF24L01::write(const uint8_t *const buffer, size_t len, const bool ack)
+    bool NRF24L01::write(const uint8_t *const buffer, size_t len, const bool requestACK, const bool startTX, const bool autoStandby)
     {
-        bool result = true;
+        constexpr uint32_t busyDelay_mS = 1;
+        bool writeResult = true;
 
         /*-------------------------------------------------
-        Dump data into the TX FIFO and start the transfer
+        Wait for the FIFO to have room for another packet
         -------------------------------------------------*/
-        startFastWrite(buffer, len, ack, true);
-
-        /*-------------------------------------------------
-        Wait for the Data Sent or Max Retry interrupt to occur
-        -------------------------------------------------*/
-        while (!registerIsAnySet(Register::STATUS, (STATUS::TX_DS | STATUS::MAX_RT)))
+        while(txFIFOFull())
         {
-            delayMilliseconds(10);
+            delayMilliseconds(busyDelay_mS);
+
+            /*-------------------------------------------------
+            If max retries hit, we failed and should exit here
+            -------------------------------------------------*/
+            if (registerIsBitmaskSet(Register::STATUS, STATUS::MAX_RT))
+            {
+                flushTX();
+                writeResult = false;
+                break;
+            }
         }
 
-        /*-------------------------------------------------
-        Go back to standby mode
-        -------------------------------------------------*/
-        chipEnable->write(State::LOW);
-        currentMode = Mode::STANDBY_I;
-
-        /*-------------------------------------------------
-        If we hit the Max Retries, we have a problem and the whole TX FIFO is screwed
-        -------------------------------------------------*/
-        if (registerIsBitmaskSet(Register::STATUS, STATUS::MAX_RT))
+        if (writeResult)
         {
-            flushTX();
-            result = false;
+            /*-------------------------------------------------
+            Dump data into the TX FIFO and start the transfer
+            -------------------------------------------------*/
+            startFastWrite(buffer, len, requestACK, startTX);
+
+            /*-------------------------------------------------
+            Handle ACK/NACK should we be starting the transfer
+            -------------------------------------------------*/
+            if (startTX)
+            {
+                /*-------------------------------------------------
+                Wait for the Data Sent or Max Retry interrupt to occur
+                -------------------------------------------------*/
+                while (!registerIsAnySet(Register::STATUS, (STATUS::TX_DS | STATUS::MAX_RT)))
+                {
+                    delayMilliseconds(busyDelay_mS);
+                }
+
+                /*-------------------------------------------------
+                Wait for the FIFO to clear or Max Retries hit
+                -------------------------------------------------*/
+                if (autoStandby)
+                {
+                    while (!txFIFOEmpty() && !registerIsBitmaskSet(Register::STATUS, STATUS::MAX_RT))
+                    {
+                        delayMilliseconds(busyDelay_mS);
+                    }
+
+                    chipEnable->write(State::LOW);
+                    currentMode = Mode::STANDBY_I;
+                }
+
+                /*-------------------------------------------------
+                If we hit the Max Retries, we have a problem and the whole TX FIFO is screwed
+                -------------------------------------------------*/
+                if (registerIsBitmaskSet(Register::STATUS, STATUS::MAX_RT))
+                {
+                    flushTX();
+                    writeResult = false;
+                }
+
+                /*-------------------------------------------------
+                Clear all the interrupt flags
+                -------------------------------------------------*/
+                setRegisterBits(Register::STATUS, STATUS::RX_DR | STATUS::TX_DS | STATUS::MAX_RT);
+            }
+
         }
 
-        /*-------------------------------------------------
-        Clear all the interrupt flags
-        -------------------------------------------------*/
-        setRegisterBits(Register::STATUS, STATUS::RX_DR | STATUS::TX_DS | STATUS::MAX_RT);
-
-        return result;
+        return writeResult;
     }
 
-    void NRF24L01::openWritePipe(const uint8_t *const address)
+    bool NRF24L01::write(const char *const buffer, size_t len, const bool requestACK, const bool startTX, const bool autoStandby)
+    {
+        return write(reinterpret_cast<const uint8_t *const>(buffer), len, requestACK, startTX, autoStandby);
+    }
+
+    void NRF24L01::openWritePipe(const std::array<uint8_t, MAX_ADDRESS_WIDTH> address)
     {
         /*-------------------------------------------------
         Set the receive address for pipe 0, this one has a maximum of 5 byte width
         -------------------------------------------------*/
-        writeRegister(Register::RX_ADDR_P0, address, addr_width);
+        writeRegister(Register::RX_ADDR_P0, address.begin(), addr_width);
 
         /*-------------------------------------------------
         Make sure we transmit back to the same address we expect receive from
         -------------------------------------------------*/
-        writeRegister(Register::TX_ADDR, address, addr_width);
+        writeRegister(Register::TX_ADDR, address.begin(), addr_width);
 
         /*-------------------------------------------------
         Set a static payload length for all receptions on pipe 0. There must also be
         an equal number of bytes clocked into the TX_FIFO when data is transmitted out.
         -------------------------------------------------*/
-        writeRegister(Register::RX_PW_P0, static_cast<uint8_t>(payload_size));
+        writeRegister(Register::RX_PW_P0, payload_size);
     }
 
-    void NRF24L01::openReadPipe(const uint8_t number, const uint8_t *const address)
+    void NRF24L01::openReadPipe(const Pipe pipe, const std::array<uint8_t, MAX_ADDRESS_WIDTH> address, const bool autoAck)
     {
-        if(number < numPipes)
+        if(pipe < MAX_NUM_PIPES)
         {
             /*-------------------------------------------------
             Pipes 0 & 1 can use the full 5 byte width. The rest only use the LSB.
             -------------------------------------------------*/
-            if(number < 2)
+            if(pipe < 2)
             {
                 /*-------------------------------------------------
                 Write only as many bytes as were set in SETUP_AW
                 -------------------------------------------------*/
-                writeRegister(pipeRXAddressReg[number], address, addr_width);
+                writeRegister(pipeRXAddressReg[pipe], address.begin(), addr_width);
 
                 /*-------------------------------------------------
                 Save pipe 0 address for future use
                 -------------------------------------------------*/
-                if(number == 0)
+                if(pipe == 0)
                 {
-                    memcpy(pipe0_reading_address.begin(), address, addr_width);
+                    memcpy(pipe0_reading_address.begin(), address.begin(), addr_width);
                 }
             }
             else
             {
-                writeRegister(pipeRXAddressReg[number], address, 1);
+                writeRegister(pipeRXAddressReg[pipe], address.begin(), 1);
             }
+
+            /*-------------------------------------------------
+            Turn on/off the auto acknowledge feature
+            -------------------------------------------------*/
+            setAutoAck(pipe, autoAck);
 
             /*-------------------------------------------------
             Let the pipe know how wide the payload will be, then turn it on
             -------------------------------------------------*/
-            writeRegister(pipeRXPayloadWidthReg[number], payload_size);
-            setRegisterBits(Register::EN_RXADDR, pipeEnableRXAddressReg[number]);
+            writeRegister(pipeRXPayloadWidthReg[pipe], payload_size);
+            setRegisterBits(Register::EN_RXADDR, pipeEnableRXAddressReg[pipe]);
         }
     }
 
@@ -335,6 +380,16 @@ namespace NRF24L
     bool NRF24L01::rxFifoFull()
     {
         return readRegister(Register::FIFO_STATUS) & FIFO_STATUS::RX_FULL;
+    }
+
+    bool NRF24L01::txFIFOFull()
+    {
+        return readRegister(Register::FIFO_STATUS) & FIFO_STATUS::TX_FULL;
+    }
+
+    bool NRF24L01::txFIFOEmpty()
+    {
+        return readRegister(Register::FIFO_STATUS) & FIFO_STATUS::TX_EMPTY;
     }
 
     void NRF24L01::powerUp()
@@ -362,48 +417,11 @@ namespace NRF24L
         currentMode = Mode::POWER_DOWN;
     }
 
-    bool NRF24L01::writeFast(const uint8_t *const buffer, size_t len)
-    {
-        return writeFast(buffer, len, false);
-    }
-
-    bool NRF24L01::writeFast(const uint8_t *const buffer, size_t len, const bool multicast)
-    {
-        /*-------------------------------------------------
-        Exit cleanly if we errored out previously
-        -------------------------------------------------*/
-        uint8_t status = getStatus();
-
-        do
-	    {
-            if(status & STATUS::MAX_RT)
-            {
-                clearRegisterBits(Register::STATUS, STATUS::MAX_RT);
-                return false;
-            }
-            else
-            {
-                status = getStatus();
-            }
-	    } while (status & STATUS::TX_FULL);
-
-        /*-------------------------------------------------
-        Write data and return without checking the status of the transfer.
-        -------------------------------------------------*/
-        startFastWrite(buffer, len, multicast);
-        return true;
-    }
-
-    bool NRF24L01::writeBlocking(const uint8_t *const buffer, size_t len, uint32_t timeout)
-    {
-        return false;
-    }
-
-    void NRF24L01::startFastWrite(const uint8_t *const buffer, size_t len, const bool ack, bool startTx)
+    void NRF24L01::startFastWrite(const uint8_t *const buffer, size_t len, const bool requestACK, const bool startTX)
     {
         uint8_t payloadType = 0u;
 
-        if (ack)
+        if (requestACK)
         {
             /*-------------------------------------------------
             Force waiting for the RX device to send an ACK packet
@@ -425,32 +443,11 @@ namespace NRF24L
         -------------------------------------------------*/
         writePayload(buffer, len, payloadType);
 
-        if (startTx)
+        if (startTX)
         {
             chipEnable->write(State::HIGH);
             currentMode = Mode::STANDBY_II;
         }
-    }
-
-    void NRF24L01::startWrite(const uint8_t *const buffer, size_t len, const bool multicast)
-    {
-        /*-------------------------------------------------
-        Decide if we want to transmit with ACK or with NOACK
-        -------------------------------------------------*/
-        uint8_t payloadType = Command::W_TX_PAYLOAD;
-
-        if (multicast)
-        {
-            payloadType = Command::W_TX_PAYLOAD_NO_ACK;
-        }
-
-        /*-------------------------------------------------
-        Write the payload to the TX FIFO and start the transfer
-        -------------------------------------------------*/
-        writePayload(buffer, len, payloadType);
-
-        chipEnable->write(State::HIGH);
-        chipEnable->write(State::LOW);
     }
 
     bool NRF24L01::txStandBy()
@@ -519,14 +516,9 @@ namespace NRF24L
         chipEnable->write(State::HIGH);
     }
 
-    bool NRF24L01::testCarrier()
-    {
-        return (readRegister(Register::CD) & 0x01);
-    }
-
     void NRF24L01::closeReadPipe(const uint8_t pipe)
     {
-        if (pipe < numPipes)
+        if (pipe < MAX_NUM_PIPES)
         {
             uint8_t rxaddrVal = readRegister(Register::EN_RXADDR) & ~pipeEnableRXAddressReg[pipe];
             writeRegister(Register::EN_RXADDR, rxaddrVal);
@@ -719,7 +711,7 @@ namespace NRF24L
         return pVariant;
     }
 
-    void NRF24L01::setAutoAck(const bool enable)
+    void NRF24L01::setAutoAckAll(const bool enable)
     {
         if (enable)
         {
@@ -731,9 +723,9 @@ namespace NRF24L
         }
     }
 
-    void NRF24L01::setAutoAck(const uint8_t pipe, const bool enable)
+    void NRF24L01::setAutoAck(const Pipe pipe, const bool enable)
     {
-        if (pipe <= 6)
+        if (pipe < MAX_NUM_PIPES)
         {
             uint8_t en_aa = readRegister(Register::EN_AA);
 
@@ -870,9 +862,9 @@ namespace NRF24L
 
     uint8_t NRF24L01::readRegister(const uint8_t reg, uint8_t *const buf, size_t len)
     {
-        if(len > PAYLOAD_LEN)
+        if(len > MAX_PAYLOAD_WIDTH)
         {
-            len = PAYLOAD_LEN;
+            len = MAX_PAYLOAD_WIDTH;
         }
 
         spi_txbuff[0] = (Command::R_REGISTER | (Command::REGISTER_MASK & reg));
@@ -910,9 +902,9 @@ namespace NRF24L
 
     uint8_t NRF24L01::writeRegister(const uint8_t reg, const uint8_t *const buf, size_t len)
     {
-        if(len > PAYLOAD_LEN)
+        if(len > MAX_PAYLOAD_WIDTH)
         {
-            len = PAYLOAD_LEN;
+            len = MAX_PAYLOAD_WIDTH;
         }
 
         spi_txbuff[0] = (Command::W_REGISTER | (Command::REGISTER_MASK & reg));
@@ -976,28 +968,31 @@ namespace NRF24L
         return spi_rxbuff[0];
     }
 
-    uint8_t NRF24L01::readPayload(uint8_t *const buf, size_t len)
+    uint8_t NRF24L01::readPayload(uint8_t *const buffer, size_t len)
     {
-        if(len > payload_size)
-        {
-            len = payload_size;
-        }
+        /*-------------------------------------------------
+        Cap the data length
+        -------------------------------------------------*/
+        len = std::min(len, MAX_PAYLOAD_WIDTH);
 
         /*-------------------------------------------------
-        Calculate the number of bytes that do nothing
+        Calculate the number of bytes that do nothing. This is important for
+        fixed payload widths as the full width must be read out each time.
         -------------------------------------------------*/
-        uint8_t *const rx_buf = reinterpret_cast<uint8_t *const>(buf);
         uint8_t blank_len = static_cast<uint8_t>(dynamic_payloads_enabled ? 0 : (payload_size - len));
-        size_t size = len + blank_len + 1;
+        size_t size = len + blank_len;
 
         /*-------------------------------------------------
         Format the read command and fill the rest with NOPs
         -------------------------------------------------*/
         spi_txbuff[0] = Command::R_RX_PAYLOAD;
-        memset(&spi_txbuff[1], Command::NOP, (size - 1));
+        memset(&spi_txbuff[1], Command::NOP, size);
 
+        /*-------------------------------------------------
+        Read out the payload. The +1 is for the read command.
+        -------------------------------------------------*/
         begin_transaction();
-        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), size);
+        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), size + 1);
         end_transaction();
 
         #if defined(DEBUG)
@@ -1005,9 +1000,9 @@ namespace NRF24L
         #endif
 
         /*-------------------------------------------------
-        The status byte is first, RX payload is all remaining
+        The status byte is first, RX payload is all remaining bytes
         -------------------------------------------------*/
-        memcpy(rx_buf, spi_rxbuff.begin(), (size - 1));
+        memcpy(buffer, &spi_rxbuff[1], size);
         return spi_rxbuff[0];
     }
 

@@ -11,7 +11,7 @@
 #include <Chimera/spi.hpp>
 #include <Chimera/threading.hpp>
 
-/* Project Includes s*/
+/* Project Includes */
 #include "nrf24l01.hpp"
 
 using namespace NRF24L;
@@ -20,9 +20,10 @@ using namespace Chimera::GPIO;
 using namespace Chimera::SPI;
 
 static uint32_t delayTime = 500;
-const uint8_t address[5] = { 0xE7, 0xE7, 0xE7, 0xE7, 0xE7 };
+const std::array<uint8_t, MAX_ADDRESS_WIDTH> address = { 0x00, 0x00, 0x00, 0x00, 0x01 };
 const std::array<uint8_t, 5> testArray = { 1, 2, 3, 4, 5 };
-const std::array<char, sizeof("hello world")> testText = {"hello world"};
+
+constexpr std::array<char, sizeof("hello world")> testText = {"hello world"};
 
 void senderThread(void * argument)
 {
@@ -36,7 +37,7 @@ void senderThread(void * argument)
 
     spi = std::make_shared<SPIClass>(3);
 
-    spiSetup.clockFrequency = 1000000;
+    spiSetup.clockFrequency = 8000000;
     spiSetup.bitOrder = BitOrder::MSB_FIRST;
     spiSetup.clockMode = ClockMode::MODE0;
     spiSetup.mode = Chimera::SPI::Mode::MASTER;
@@ -79,9 +80,13 @@ void senderThread(void * argument)
     {
         if (initialized)
         {
-            if (!radio->write(testText, false))
+            if (!radio->write(testText.begin(), testText.size(), true))
             {
-                //printf("Write failed\r\n");
+                printf("Write failed\r\n");
+            }
+            else
+            {
+                printf("Write succeeded\r\n");
             }
         }
         vTaskDelayUntil(&lastTimeWoken, pdMS_TO_TICKS(1000));

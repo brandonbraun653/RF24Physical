@@ -56,218 +56,11 @@ namespace NRF24L
         ~NRF24L01() = default;
 
         /**
-        *   Begin operation of the chip
+        *   Initialize the chip and verify correct setup
         *
-        *   Call this before calling any other methods.
-        *   @code radio.begin() @endcode
+        *   @return True if everything was properly set up, false if not
         */
         bool begin();
-
-        /**
-        *   Start listening on the pipes opened for reading.
-        *
-        *   1. Be sure to call openReadingPipe() first.
-        *   2. Do not call write() while in this mode, without first calling stopListening().
-        *   3. Call available() to check for incoming traffic, and read() to get it.
-        *
-        *   @code
-        *   Open reading pipe 1 using address CCCECCCECC
-        *
-        *   byte address[] = { 0xCC,0xCE,0xCC,0xCE,0xCC };
-        *   radio.openReadingPipe(1,address);
-        *   radio.startListening();
-        *   @endcode
-        */
-        void startListening();
-
-        /**
-        *   Stop listening for incoming messages, and switch to transmit mode.
-        *
-        *   Do this before calling write().
-        *   @code
-        *   radio.stopListening();
-        *   radio.write(&data,sizeof(data));
-        *   @endcode
-        */
-        void stopListening();
-
-        /**
-        *   Check whether there are bytes available to be read
-        *   @code
-        *   if(radio.available()){
-        *     radio.read(&data,sizeof(data));
-        *   }
-        *   @endcode
-        *   @return True if there is a payload available, false if none is
-        */
-        bool available();
-
-        /**
-        *   Test whether there are bytes available to be read in the
-        *   FIFO buffers.
-        *
-        *   @param[out] pipe_num Which pipe has the payload available
-        *
-        *   @code
-        *   uint8_t pipeNum;
-        *   if(radio.available(&pipeNum)){
-        *     radio.read(&data,sizeof(data));
-        *     Serial.print("Got data on pipe");
-        *     Serial.println(pipeNum);
-        *   }
-        *   @endcode
-        *   @return True if there is a payload available, false if none is
-        */
-        bool available(uint8_t &pipeNum);
-
-        /**
-        *   Read the available payload
-        *
-        *   The size of data read is the fixed payload size, see getPayloadSize()
-        *
-        *   @note I specifically chose 'void*' as a data type to make it easier
-        *   for beginners to use.  No casting needed.
-        *
-        *   @note No longer boolean. Use available to determine if packets are
-        *   available. Interrupt flags are now cleared during reads instead of
-        *   when calling available().
-        *
-        *   @param buf Pointer to a buffer where the data should be written
-        *   @param len Maximum number of bytes to read into the buffer
-        *
-        *   @code
-        *   if(radio.available()){
-        *     radio.read(&data,sizeof(data));
-        *   }
-        *   @endcode
-        *   @return No return value. Use available().
-        */
-        void read(uint8_t *const buffer, size_t len);
-
-        /**
-         *  Read the available payload into an std::array<>
-         */
-        template <typename T, std::size_t S>
-            void read(std::array<T, S> buffer)
-            {
-                static_assert(S >= PAYLOAD_LEN, "Cannot read into an std::array that is smaller than PAYLOAD_LEN");
-
-                auto array = reinterpret_cast<uint8_t *const>(buffer.data());
-                auto constexpr byteLen = buffer.size() * sizeof(T);
-                read(array, byteLen);
-            }
-
-        /**
-        *   Be sure to call openWritingPipe() first to set the destination
-        *   of where to write to.
-        *
-        *   This blocks until the message is successfully acknowledged by
-        *   the receiver or the timeout/retransmit maxima are reached.  In
-        *   the current configuration, the max delay here is 60-70ms.
-        *
-        *   The maximum size of data written is the fixed payload size, see
-        *   getPayloadSize().  However, you can write less, and the remainder
-        *   will just be filled with zeros.
-        *
-        *   TX/RX/RT interrupt flags will be cleared every time write is called
-        *
-        *   @param buf Pointer to the data to be sent
-        *   @param len Number of bytes to be sent
-        *
-        *   @code
-        *   radio.stopListening();
-        *   radio.write(&data,sizeof(data));
-        *   @endcode
-        *   @return True if the payload was delivered successfully false if not
-        */
-        bool write(const uint8_t *const buffer, size_t len);
-
-        template <typename T, std::size_t S>
-            bool write(const std::array<T, S> buffer)
-            {
-                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
-                auto constexpr byteLen = buffer.size() * sizeof(T);
-
-                return write(array, byteLen);
-            }
-
-        /**
-        *   Write for single NOACK writes. Optionally disables acknowledgments/auto retries for a single write.
-        *
-        *   @note enableDynamicAck() must be called to enable this feature
-        *
-        *   Can be used with enableAckPayload() to request a response
-        *   @see enableDynamicAck()
-        *   @see setAutoAck()
-        *   @see write()
-        *
-        *   @param buf Pointer to the data to be sent
-        *   @param len Number of bytes to be sent
-        *   @param multicast Request ACK (0), NOACK (1)
-        */
-        bool write(const uint8_t *const buffer, size_t len, const bool ack);
-
-        template <typename T, std::size_t S>
-            bool write(const std::array<T, S> buffer, const bool ack)
-            {
-                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
-                auto constexpr byteLen = buffer.size() * sizeof(T);
-
-                return write(array, byteLen, ack);
-            }
-
-        /**
-        *   Open a pipe for writing via byte array. Old addressing format retained
-        *   for compatibility. Only one writing pipe can be open at once, but you can change the address
-        *   you'll write to. Call stopListening() first.
-        *
-        *   Addresses are assigned via a byte array, default is 5 byte address length
-        *
-        *   @param address The address of the pipe to open. Coordinate these pipe
-        *   addresses amongst nodes on the network.
-        */
-        void openWritePipe(const uint8_t *const address);
-
-        /**
-        *   Open a pipe for reading
-        *
-        *   Up to 6 pipes can be open for reading at once.  Open all the required
-        *   reading pipes, and then call startListening().
-        *
-        *   @see openWritingPipe
-        *   @see setAddressWidth
-        *
-        *   @note Pipes 0 and 1 will store a full 5-byte address. Pipes 2-5 will technically
-        *   only store a single byte, borrowing up to 4 additional bytes from pipe #1 per the
-        *   assigned address width.
-        *   @warning Pipes 1-5 should share the same address, except the first byte.
-        *   Only the first byte in the array should be unique, e.g.
-        *   @code
-        *     uint8_t addresses[][6] = {"1Node","2Node"};
-        *     openReadingPipe(1,addresses[0]);
-        *     openReadingPipe(2,addresses[1]);
-        *   @endcode
-        *
-        *   @warning Pipe 0 is also used by the writing pipe.  So if you open
-        *   pipe 0 for reading, and then startListening(), it will overwrite the
-        *   writing pipe.  Ergo, do an openWritingPipe() again before write().
-        *
-        *   @param number Which pipe# to open, 0-5.
-        *   @param address The 24, 32 or 40 bit address of the pipe to open.
-        */
-        void openReadPipe(const uint8_t number, const uint8_t *const address);
-
-        /**
-        * TODO: ADD DOC
-        *
-        */
-        bool isConnected();
-
-        /**
-        *   Check if the radio needs to be read. Can be used to prevent data loss
-        *   @return True if all three 32-byte radio buffers are full
-        */
-        bool rxFifoFull();
 
         /**
         *   Leave low-power mode - required for normal radio operation after calling powerDown()
@@ -297,169 +90,135 @@ namespace NRF24L
         void powerDown();
 
         /**
-        *   This will not block until the 3 FIFO buffers are filled with data.
-        *   Once the FIFOs are full, writeFast will simply wait for success or
-        *   timeout, and return 1 or 0 respectively. From a user perspective, just
-        *   keep trying to send the same data. The library will keep auto retrying
-        *   the current payload using the built in functionality.
-        *   @warning It is important to never keep the nRF24L01 in TX mode and FIFO full for more than 4ms at a time. If the auto
-        *   retransmit is enabled, the nRF24L01 is never in TX mode long enough to disobey this rule. Allow the FIFO
-        *   to clear by issuing txStandBy() or ensure appropriate time between transmissions.
+        *   Start listening on the pipes opened for reading.
+        *
+        *   1. Be sure to call openReadPipe() first.
+        *   2. Do not call write() while in this mode, without first calling stopListening().
+        *   3. Call available() to check for incoming traffic, and read() to get it.
         *
         *   @code
-        *   Example (Partial blocking):
+        *   Open reading pipe 1 using address CCCECCCECC and auto-acknowledge
         *
-        *   			radio.writeFast(&buf,32);  // Writes 1 payload to the buffers
-        *   			txStandBy();     		   // Returns 0 if failed. 1 if success. Blocks only until MAX_RT timeout or success. Data flushed on fail.
-        *
-        *   			radio.writeFast(&buf,32);  // Writes 1 payload to the buffers
-        *   			txStandBy(1000);		   // Using extended timeouts, returns 1 if success. Retries failed payloads for 1 seconds before returning 0.
+        *   std::array<uint8_t, 5> address = { 0xCC, 0xCE, 0xCC, 0xCE, 0xCC };
+        *   radio.openReadPipe(1, address, true);
+        *   radio.startListening();
         *   @endcode
-        *
-        *   @see txStandBy()
-        *   @see write()
-        *   @see writeBlocking()
-        *
-        *   @param buf Pointer to the data to be sent
-        *   @param len Number of bytes to be sent
-        *   @return True if the payload was delivered successfully false if not
         */
-        bool writeFast(const uint8_t *const buffer, size_t len);
-
-        template <typename T, std::size_t S>
-            void startWrite(const std::array<T, S> buffer)
-            {
-                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
-                auto constexpr byteLen = buffer.size() * sizeof(T);
-
-                return startWrite(array, byteLen);
-            }
+        void startListening();
 
         /**
-        *       WriteFast for single NOACK writes. Disables acknowledgments/auto retries for a single write.
+        *   Stop listening for RX messages and switch to transmit mode.
         *
-        *       @note enableDynamicAck() must be called to enable this feature
-        *       @see enableDynamicAck()
-        *       @see setAutoAck()
-        *
-        *       @param buf Pointer to the data to be sent
-        *       @param len Number of bytes to be sent
-        *       @param multicast Request ACK (0) or NOACK (1)
+        *   @return void
         */
-        bool writeFast(const uint8_t *const buf, size_t len, const bool multicast);
-
-        template <typename T, std::size_t S>
-            bool writeFast(const std::array<T, S> buffer, const bool multicast)
-            {
-                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
-                auto constexpr byteLen = buffer.size() * sizeof(T);
-
-                return writeFast(array, byteLen, multicast);
-            }
+        void stopListening();
 
         /**
-        *   This function extends the auto-retry mechanism to any specified duration.
-        *   It will not block until the 3 FIFO buffers are filled with data.
-        *   If so the library will auto retry until a new payload is written
-        *   or the user specified timeout period is reached.
+        *   Open pipe to an address
+        *
+        *   @param[in]  address The address of the pipe to open
+        *   @return void
+        */
+        void openWritePipe(const std::array<uint8_t, MAX_ADDRESS_WIDTH> address);
+
+        /**
+        *   Open a pipe for reading
+        *
+        *   Up to 6 pipes can be open for reading at once.  Open all the required
+        *   reading pipes, and then call startListening().
+        *
+        *   @see openWritingPipe
+        *   @see setAddressWidth
+        *
+        *   @note Pipes 0 and 1 will store a full 5-byte address. Pipes 2-5 will technically
+        *   only store a single byte, borrowing up to 4 additional bytes from pipe #1 per the
+        *   assigned address width.
+        *
+        *   @warning Pipes 1-5 should share the same address, except the first byte. Only the first byte in the array should be unique
+        *
+        *   @warning Pipe 0 is also used by the writing pipe.  So if you open pipe 0 for reading, and then startListening(), it will overwrite the
+        *   writing pipe.  Ergo, do an openWritingPipe() again before write().
+        *
+        *   @param[in]  number      Which pipe to open, 0-5.
+        *   @param[in]  address     The 24, 32 or 40 bit address of the pipe to open.
+        */
+        void openReadPipe(const Pipe pipe, const std::array<uint8_t, MAX_ADDRESS_WIDTH> address, const bool autoAck = false);
+
+
+
+        /**
+        *   Check if data is available to be read on any pipe.
+        *
+        *   @return True if a payload is available, false if not
+        */
+        bool available();
+
+        /**
+        *   Check if data is available to be read on any pipe. If so, returns which pipe is ready.
+        *
+        *   @param[out]     pipeNum     Which pipe has the payload available
+        *   @return True if there is a payload available, false if none is
+        */
+        bool available(uint8_t &pipeNum);
+
+        /**
+        *   Read the available payload into a buffer
+        *
+        *   The size of data read is the fixed payload size, see getPayloadSize()
+        *
+        *   @param[out] buffer  Pointer to a buffer where the data should be written
+        *   @param[in]  len     Maximum number of bytes to read into the buffer
+        *
+        *   @return void
+        */
+        void read(uint8_t *const buffer, size_t len);
+
+        void read(char *const buffer, size_t len);
+
+        /**
+        *   Writes data onto a previously configured RF channel.
+        *
+        *   This will not block until the 3 internal FIFO buffers are filled with data. Once the FIFOs are full, the function will
+        *   return false, so external code can know to begin the transfers.
+        *
+        *   @note This function can leave the CE pin high (startTX=true, autoStandby=false), so the radio will remain in TX or STANDBY-II Mode
+        *       until a txStandBy() command is issued. See related warning below.
+        *
         *   @warning It is important to never keep the nRF24L01 in TX mode and FIFO full for more than 4ms at a time. If the auto
-        *   retransmit is enabled, the nRF24L01 is never in TX mode long enough to disobey this rule. Allow the FIFO
-        *   to clear by issuing txStandBy() or ensure appropriate time between transmissions.
+        *       retransmit is enabled, the nRF24L01 is never in TX mode long enough to disobey this rule. Allow the FIFO
+        *       to clear by issuing txStandBy() or ensure appropriate time between transmissions.
         *
-        *   @code
-        *   Example (Full blocking):
+        *   Prerequisite Calls:
+        *       1. openWritePipe()
+        *       2. setChannel()
+        *       3. stopListening()
         *
-        *   			radio.writeBlocking(&buf,32,1000); //Wait up to 1 second to write 1 payload to the buffers
-        *   			txStandBy(1000);     			   //Wait up to 1 second for the payload to send. Return 1 if ok, 0 if failed.
-        *   					  				   		   //Blocks only until user timeout or success. Data flushed on fail.
-        *   @endcode
-        *   @note If used from within an interrupt, the interrupt should be disabled until completion, and sei(); called to enable millis().
-        *   @see txStandBy()
-        *   @see write()
-        *   @see writeFast()
-        *
-        *   @param buf Pointer to the data to be sent
-        *   @param len Number of bytes to be sent
-        *   @param timeout User defined timeout in milliseconds.
-        *   @return True if the payload was loaded into the buffer successfully false if not
-        */
-        bool writeBlocking(const uint8_t *const buffer, size_t len, uint32_t timeout);
-
-        template <typename T, std::size_t S>
-            void writeBlocking(const std::array<T, S> buffer, uint32_t timeout)
-            {
-                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
-                auto constexpr byteLen = buffer.size() * sizeof(T);
-
-                writeBlocking(array, byteLen, timeout);
-            }
-
-        /**
-        *   Non-blocking write to the open writing pipe used for buffered writes
-        *
-        *   @note Optimization: This function now leaves the CE pin high, so the radio
-        *   will remain in TX or STANDBY-II Mode until a txStandBy() command is issued. Can be used as an alternative to startWrite()
-        *   if writing multiple payloads at once.
-        *
-        *   @warning It is important to never keep the nRF24L01 in TX mode with FIFO full for more than 4ms at a time. If the auto
-        *   retransmit/autoAck is enabled, the nRF24L01 is never in TX mode long enough to disobey this rule. Allow the FIFO
-        *   to clear by issuing txStandBy() or ensure appropriate time between transmissions.
-        *
-        *   @see write()
-        *   @see writeFast()
-        *   @see startWrite()
-        *   @see writeBlocking()
-        *
-        *   For single NOACK writes see:
-        *   @see enableDynamicAck()
-        *   @see setAutoAck()
-        *
-        *   @param[in] buffer       Pointer to the data to be sent
-        *   @param[in] len          Number of bytes to be sent
-        *   @param[in] multicast    Request ACK (false) or NOACK (true)
-        *   @param[in] startTX      Starts the transfer immediately if true
+        *   @param[in]  buffer          Array of data to be sent
+        *   @param[in]  len             Number of bytes to be sent
+        *   @param[in]  requestACK      Request the RX device to ACK the transmission for this packet
+        *   @param[in]  startTX         Decide whether or not to begin transmitting the FIFO data
+        *   @param[in]  autoStandby     Signals the end of a set of transfers and places the radio into STANDBY_I mode
         *   @return True if the payload was delivered successfully false if not
         */
-        void startFastWrite(const uint8_t *const buffer, size_t len, const bool ack, const bool startTx = true) ;
+        bool write(const uint8_t *const buffer, size_t len, const bool requestACK = false, const bool startTX = true, const bool autoStandby = true);
 
-        template <typename T, std::size_t S>
-            void startFastWrite(const std::array<T, S> buffer, const bool ack, const bool startTx = true)
-            {
-                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
-                auto constexpr byteLen = buffer.size() * sizeof(T);
-
-                startFastWrite(array, byteLen, ack, startTx);
-            }
+        bool write(const char *const buffer, size_t len, const bool requestACK = false, const bool startTX = true, const bool autoStandby = true);
 
         /**
-        *   Non-blocking write to the open writing pipe
+        * TODO: ADD DOC
         *
-        *   Just like write(), but it returns immediately. To find out what happened
-        *   to the send, catch the IRQ and then call whatHappened().
-        *
-        *   @see write()
-        *   @see writeFast()
-        *   @see startFastWrite()
-        *   @see whatHappened()
-        *
-        *   For single noAck writes see:
-        *   @see enableDynamicAck()
-        *   @see setAutoAck()
-        *
-        *   @param buf Pointer to the data to be sent
-        *   @param len Number of bytes to be sent
-        *   @param multicast Request ACK (0) or NOACK (1)
         */
-        void startWrite(const uint8_t *const buffer, size_t len, const bool multicast);
+        bool isConnected();
 
-        template <typename T, std::size_t S>
-            void startWrite(const std::array<T, S> buffer, const bool multicast)
-            {
-                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
-                auto constexpr byteLen = buffer.size() * sizeof(T);
+        /**
+        *   Check if the radio needs to be read. Can be used to prevent data loss
+        *   @return True if all three 32-byte radio buffers are full
+        */
+        bool rxFifoFull();
 
-                startWrite(array, byteLen, multicast);
-            }
+        bool txFIFOFull();
+
+        bool txFIFOEmpty();
 
         /**
         *   This function should be called as soon as transmission is finished to
@@ -572,16 +331,6 @@ namespace NRF24L
         *   a payload is written to the FIFO, or a flush_tx command is given.
         */
         void reUseTX();
-
-        /**
-        *   Test whether there was a carrier on the line for the
-        *   previous listening period.
-        *
-        *   Useful to check for interference on the current channel.
-        *
-        *   @return true if was carrier, false if not
-        */
-        bool testCarrier();
 
         /**
         *   Close a pipe after it has been previously opened.
@@ -761,7 +510,7 @@ namespace NRF24L
         *
         *   @param enable Whether to enable (true) or disable (false) auto-ACKs
         */
-        void setAutoAck(const bool enable);
+        void setAutoAckAll(const bool enable);
 
         /**
         *   Enable or disable auto-acknowledge packets on a per pipeline basis.
@@ -772,7 +521,7 @@ namespace NRF24L
         *   @param pipe Which pipeline to modify
         *   @param enable Whether to enable (true) or disable (false) auto-ACKs
         */
-        void setAutoAck(const uint8_t pipe, const bool enable);
+        void setAutoAck(const Pipe pipe, const bool enable);
 
         /**
         *   Set Power Amplifier (PA) level to one of four levels:
@@ -941,15 +690,6 @@ namespace NRF24L
         */
         uint8_t readPayload(uint8_t *const buffer, size_t len);
 
-        template <typename T, std::size_t S>
-            uint8_t readPayload(std::array<T, S> buffer)
-            {
-                auto array = reinterpret_cast<uint8_t *const>(buffer.data());
-                auto constexpr byteLen = buffer.size() * sizeof(T);
-
-                return readPayload(array, byteLen);
-            }
-
         /**
         *   Retrieve the current status of the chip
         *
@@ -958,6 +698,25 @@ namespace NRF24L
         uint8_t getStatus();
 
      protected:
+
+        /**
+        *   Non-blocking write to an open TX pipe
+        *
+        *   @note Optimization: This function now leaves the CE pin high, so the radio
+        *   will remain in TX or STANDBY-II Mode until a txStandBy() command is issued. Can be used as an alternative to startWrite()
+        *   if writing multiple payloads at once.
+        *
+        *   @warning It is important to never keep the nRF24L01 in TX mode with FIFO full for more than 4ms at a time. If the auto
+        *   retransmit/autoAck is enabled, the nRF24L01 is never in TX mode long enough to disobey this rule. Allow the FIFO
+        *   to clear by issuing txStandBy() or ensure appropriate time between transmissions.
+        *
+        *   @param[in] buffer       Array of data to be sent
+        *   @param[in] len          Number of bytes to be sent
+        *   @param[in] requestACK   Request the RX device to ACK the transmission for this packet
+        *   @param[in] startTX      Starts the transfer immediately if true
+        *   @return True if the payload was delivered successfully false if not
+        */
+        void startFastWrite(const uint8_t *const buffer, size_t len, const bool requestACK = false, const bool startTX = true);
 
         /** User defined function that will perform an SPI write/read. This must
         *   be overwritten otherwise the program will not compile.
@@ -1005,6 +764,9 @@ namespace NRF24L
         virtual void end_transaction();
 
     private:
+        static constexpr size_t SPI_BUFFER_LEN = 1 + MAX_PAYLOAD_WIDTH;    /* Accounts for max payload of 32 bytes + 1 byte for the command */
+
+
         uint8_t writeCMD(const uint8_t cmd);
 
         bool registerIsBitmaskSet(const uint8_t reg, const uint8_t bitmask);

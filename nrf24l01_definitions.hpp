@@ -2,8 +2,8 @@
 #ifndef NRF24L01_DEFINITIONS_HPP
 #define NRF24L01_DEFINITIONS_HPP
 
-/* C/C++ Includes */
-#include <stdint.h>
+/* C++ Includes */
+#include <cstdint>
 #include <cstdio>
 
 namespace NRF24L
@@ -11,9 +11,9 @@ namespace NRF24L
     /*----------------------------------------------
     General Definitions
     ----------------------------------------------*/
-    constexpr size_t MAX_ADDR_WID = 5;
-    constexpr size_t PAYLOAD_LEN = 32;
-    constexpr size_t SPI_BUFFER_LEN = 1 + PAYLOAD_LEN;    /* Accounts for max payload of 32 bytes + 1 byte for the command */
+    constexpr size_t MAX_ADDRESS_WIDTH = 5;
+    constexpr size_t MAX_PAYLOAD_WIDTH = 32;
+
 
     enum class Mode : uint8_t
     {
@@ -21,7 +21,23 @@ namespace NRF24L
         STANDBY_I,
         STANDBY_II,
         RX,
-        TX
+        TX,
+
+        MAX_MODES,
+        UNKNOWN_MODE
+    };
+
+    enum Pipe : uint8_t
+    {
+        PIPE_0 = 0,
+        PIPE_1,
+        PIPE_2,
+        PIPE_3,
+        PIPE_4,
+        PIPE_5,
+
+        MAX_NUM_PIPES,
+        UNKNOWN_PIPE
     };
 
     /*----------------------------------------------

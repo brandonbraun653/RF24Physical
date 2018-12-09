@@ -20,7 +20,7 @@ using namespace Chimera::GPIO;
 using namespace Chimera::SPI;
 
 static uint32_t delayTime = 500;
-const uint8_t address[5] = { 0xE7, 0xE7, 0xE7, 0xE7, 0xE7 };
+const std::array<uint8_t, MAX_ADDRESS_WIDTH> address = { 0x00, 0x00, 0x00, 0x00, 0x01 };
 std::array<char, 33> receiveText;
 
 void receiverThread(void * argument)
@@ -38,7 +38,7 @@ void receiverThread(void * argument)
 
     spi = std::make_shared<SPIClass>(3);
 
-    spiSetup.clockFrequency = 1000000;
+    spiSetup.clockFrequency = 8000000;
     spiSetup.bitOrder = BitOrder::MSB_FIRST;
     spiSetup.clockMode = ClockMode::MODE0;
     spiSetup.mode = Chimera::SPI::Mode::MASTER;
@@ -72,7 +72,7 @@ void receiverThread(void * argument)
         initialized = true;
         radio->setChannel(0);
         radio->setPALevel(PowerAmplitude::MAX);
-        radio->openReadPipe(0, address);
+        radio->openReadPipe(PIPE_0, address, true);
         radio->startListening();
     }
 
@@ -81,7 +81,7 @@ void receiverThread(void * argument)
     {
         if (initialized && radio->available())
         {
-            radio->read(receiveText);
+            radio->read(receiveText.begin(), MAX_PAYLOAD_WIDTH);
             led.toggle();
         }
         vTaskDelayUntil(&lastTimeWoken, pdMS_TO_TICKS(1000));
