@@ -14,7 +14,6 @@ namespace NRF24L
     constexpr size_t MAX_ADDRESS_WIDTH = 5;
     constexpr size_t MAX_PAYLOAD_WIDTH = 32;
 
-
     enum class Mode : uint8_t
     {
         POWER_DOWN,

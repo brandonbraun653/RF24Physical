@@ -9,10 +9,23 @@
 #define HW_TEST
 #endif
 
+//TODO: Replace this properly once further along in the project. Currently only here just to make things compile.
+#if !defined(USING_CHIMERA)
+static void delayMilliseconds(uint32_t mS)
+{
+    for(uint32_t i=0; i<mS; i++)
+    {
+        __asm__ __volatile__("nop");
+    }
+}
+#endif
+
 namespace NRF24L
 {
+    #if defined(USING_CHIMERA)
     using namespace Chimera;
     using namespace Chimera::GPIO;
+    #endif
 
     static const std::array<uint8_t, MAX_NUM_PIPES> pipeRXAddressReg =
     {
@@ -47,6 +60,7 @@ namespace NRF24L
     };
     static_assert(pipeRXPayloadWidthReg.size() == MAX_NUM_PIPES, "Too many/few items in the array!");
 
+    #if defined(USING_CHIMERA)
     NRF24L01::NRF24L01(Chimera::SPI::SPIClass_sPtr spiInstance, Chimera::GPIO::GPIOClass_sPtr chipEnable)
     {
         this->spi = spiInstance;
@@ -63,6 +77,7 @@ namespace NRF24L
         dynamic_payloads_enabled = false;
         pVariant = false;
     }
+    #endif
 
     bool NRF24L01::begin()
     {
@@ -71,12 +86,7 @@ namespace NRF24L
         /*-------------------------------------------------
         Setup the MCU hardware to the correct state
         -------------------------------------------------*/
-        spi->setChipSelectControlMode(SPI::ChipSelectMode::MANUAL);
-        chipEnable->mode(GPIO::Drive::OUTPUT_PUSH_PULL);
-        chipEnable->write(GPIO::State::LOW);
-
-        spi->setChipSelect(GPIO::State::LOW);
-        spi->setChipSelect(GPIO::State::HIGH);
+        spiInit();
 
         /*-------------------------------------------------
         Delay some time to allow the chip to initialize
@@ -126,7 +136,7 @@ namespace NRF24L
             return false;
         }
 
-        dynamic_payloads_enabled = false;
+        dynamicPayloadsEnabled = false;
 
         /*-------------------------------------------------
         Set the default channel to a value that likely won't congest the spectrum
@@ -142,7 +152,7 @@ namespace NRF24L
         /*-------------------------------------------------
         Power up the module and enable PTX. Stay in standby mode by not writing CE high
         -------------------------------------------------*/
-        chipEnable->write(State::LOW);
+        clearChipEnable();
         powerUp();
 
         return (setup != 0 && setup != 0xFF);
@@ -164,7 +174,7 @@ namespace NRF24L
         -------------------------------------------------*/
         setRegisterBits(Register::STATUS, STATUS::RX_DR | STATUS::TX_DS | STATUS::MAX_RT);
         setRegisterBits(Register::CONFIG, CONFIG::PRIM_RX);
-        chipEnable->write(State::HIGH);
+        setChipEnable();
         currentMode = Mode::RX;
     }
 
@@ -173,7 +183,7 @@ namespace NRF24L
         /*-------------------------------------------------
         Set the chip into standby mode I
         -------------------------------------------------*/
-        chipEnable->write(State::LOW);
+        clearChipEnable();
         currentMode = Mode::STANDBY_I;
         delayMilliseconds(1);
 
@@ -282,7 +292,7 @@ namespace NRF24L
                         delayMilliseconds(busyDelay_mS);
                     }
 
-                    chipEnable->write(State::LOW);
+                    clearChipEnable();
                     currentMode = Mode::STANDBY_I;
                 }
 
@@ -316,18 +326,18 @@ namespace NRF24L
         /*-------------------------------------------------
         Set the receive address for pipe 0, this one has a maximum of 5 byte width
         -------------------------------------------------*/
-        writeRegister(Register::RX_ADDR_P0, address.begin(), addr_width);
+        writeRegister(Register::RX_ADDR_P0, address.begin(), addressWidth);
 
         /*-------------------------------------------------
         Make sure we transmit back to the same address we expect receive from
         -------------------------------------------------*/
-        writeRegister(Register::TX_ADDR, address.begin(), addr_width);
+        writeRegister(Register::TX_ADDR, address.begin(), addressWidth);
 
         /*-------------------------------------------------
         Set a static payload length for all receptions on pipe 0. There must also be
         an equal number of bytes clocked into the TX_FIFO when data is transmitted out.
         -------------------------------------------------*/
-        writeRegister(Register::RX_PW_P0, payload_size);
+        writeRegister(Register::RX_PW_P0, payloadSize);
     }
 
     void NRF24L01::openReadPipe(const Pipe pipe, const std::array<uint8_t, MAX_ADDRESS_WIDTH> address, const bool autoAck)
@@ -342,14 +352,14 @@ namespace NRF24L
                 /*-------------------------------------------------
                 Write only as many bytes as were set in SETUP_AW
                 -------------------------------------------------*/
-                writeRegister(pipeRXAddressReg[pipe], address.begin(), addr_width);
+                writeRegister(pipeRXAddressReg[pipe], address.begin(), addressWidth);
 
                 /*-------------------------------------------------
                 Save pipe 0 address for future use
                 -------------------------------------------------*/
                 if(pipe == 0)
                 {
-                    memcpy(pipe0_reading_address.begin(), address.begin(), addr_width);
+                    memcpy(pipe0_reading_address.begin(), address.begin(), addressWidth);
                 }
             }
             else
@@ -365,7 +375,7 @@ namespace NRF24L
             /*-------------------------------------------------
             Let the pipe know how wide the payload will be, then turn it on
             -------------------------------------------------*/
-            writeRegister(pipeRXPayloadWidthReg[pipe], payload_size);
+            writeRegister(pipeRXPayloadWidthReg[pipe], payloadSize);
             setRegisterBits(Register::EN_RXADDR, pipeEnableRXAddressReg[pipe]);
         }
     }
@@ -412,7 +422,7 @@ namespace NRF24L
         /*-------------------------------------------------
         Force standby mode and power down the chip
         -------------------------------------------------*/
-        chipEnable->write(State::LOW);
+        clearChipEnable();
         clearRegisterBits(Register::CONFIG, CONFIG::PWR_UP);
         currentMode = Mode::POWER_DOWN;
     }
@@ -445,7 +455,7 @@ namespace NRF24L
 
         if (startTX)
         {
-            chipEnable->write(State::HIGH);
+            setChipEnable();
             currentMode = Mode::STANDBY_II;
         }
     }
@@ -464,13 +474,13 @@ namespace NRF24L
             if (registerIsBitmaskSet(Register::STATUS, STATUS::MAX_RT))
             {
                 setRegisterBits(Register::STATUS, STATUS::MAX_RT);
-                chipEnable->write(State::LOW);
+                clearChipEnable();
                 flushTX();
                 return false;
             }
         }
 
-        chipEnable->write(State::LOW);
+        clearChipEnable();
         return true;
     }
 
@@ -487,9 +497,9 @@ namespace NRF24L
         spi_txbuff[0] = Command::W_ACK_PAYLOAD | (pipe & 0x07);
         memcpy(&spi_txbuff[1], buffer, size);
 
-        begin_transaction();
-        spi->writeBytes(spi_txbuff.begin(), size);
-        end_transaction();
+        beginTransaction();
+        spiWrite(spi_txbuff.begin(), size);
+        endTransaction();
     }
 
     bool NRF24L01::isAckPayloadAvailable()
@@ -512,8 +522,8 @@ namespace NRF24L
     {
         writeRegister(Register::STATUS, STATUS::MAX_RT);
         writeCMD(Command::REUSE_TX_PL);
-        chipEnable->write(State::LOW);
-        chipEnable->write(State::HIGH);
+        clearChipEnable();
+        setChipEnable();
     }
 
     void NRF24L01::closeReadPipe(const uint8_t pipe)
@@ -531,22 +541,22 @@ namespace NRF24L
         {
         case 3:
             writeRegister(Register::SETUP_AW, static_cast<uint8_t>(0x01));
-            addr_width = address_width;
+            addressWidth = address_width;
             break;
 
         case 4:
             writeRegister(Register::SETUP_AW, static_cast<uint8_t>(0x02));
-            addr_width = address_width;
+            addressWidth = address_width;
             break;
 
         case 5:
             writeRegister(Register::SETUP_AW, static_cast<uint8_t>(0x03));
-            addr_width = address_width;
+            addressWidth = address_width;
             break;
 
         default:
             writeRegister(Register::SETUP_AW, static_cast<uint8_t>(0x00));
-            addr_width = 2u;
+            addressWidth = 2u;
             break;
         }
     }
@@ -562,7 +572,7 @@ namespace NRF24L
 
     void NRF24L01::setPayloadSize(const uint8_t size)
     {
-        payload_size = std::min(size, static_cast<uint8_t>(32));
+        payloadSize = std::min(size, static_cast<uint8_t>(32));
     }
 
     void NRF24L01::setChannel(const uint8_t channel)
@@ -577,7 +587,7 @@ namespace NRF24L
 
     uint8_t NRF24L01::getPayloadSize()
     {
-        return payload_size;
+        return payloadSize;
     }
 
     uint8_t NRF24L01::getDynamicPayloadSize()
@@ -587,9 +597,9 @@ namespace NRF24L
         spi_txbuff[0] = Command::R_RX_PL_WID;
         spi_rxbuff[1] = Command::NOP;
 
-        begin_transaction();
-        spi->readWriteBytes(spi_txbuff.begin(), spi_rxbuff.begin(), 2, false);
-        end_transaction();
+        beginTransaction();
+        spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), 2);
+        endTransaction();
 
         result = spi_rxbuff[1];
 
@@ -615,25 +625,25 @@ namespace NRF24L
 
     void NRF24L01::activateFeatures()
     {
-        if (!features_activated)
+        if (!featuresActivated)
         {
             spi_txbuff[0] = Command::ACTIVATE;
             spi_txbuff[1] = 0x73;
 
-            spi_write(spi_txbuff.begin(), 2);
-            features_activated = true;
+            spiWrite(spi_txbuff.begin(), 2);
+            featuresActivated = true;
         }
     }
 
     void NRF24L01::deactivateFeatures()
     {
-        if (features_activated)
+        if (featuresActivated)
         {
             /*-------------------------------------------------
             Sending the activation command sequence again also disables the features
             -------------------------------------------------*/
             activateFeatures();
-            features_activated = false;
+            featuresActivated = false;
         }
     }
 
@@ -643,17 +653,17 @@ namespace NRF24L
         setRegisterBits(Register::FEATURE, FEATURE::EN_ACK_PAY | FEATURE::EN_DPL);
         setRegisterBits(Register::DYNPD, DYNPD::DPL_P0 | DYNPD::DPL_P1);
 
-        dynamic_payloads_enabled = true;
+        dynamicPayloadsEnabled = true;
     }
 
     void NRF24L01::disableAckPayload()
     {
-        if (features_activated)
+        if (featuresActivated)
         {
             clearRegisterBits(Register::FEATURE, FEATURE::EN_ACK_PAY | FEATURE::EN_DPL);
             clearRegisterBits(Register::DYNPD, DYNPD::DPL_P0 | DYNPD::DPL_P1);
 
-            dynamic_payloads_enabled = false;
+            dynamicPayloadsEnabled = false;
         }
     }
 
@@ -676,7 +686,7 @@ namespace NRF24L
         setRegisterBits(Register::EN_AA, EN_AA::Mask);
         setRegisterBits(Register::DYNPD, DYNPD::Mask);
 
-        dynamic_payloads_enabled = true;
+        dynamicPayloadsEnabled = true;
     }
 
     void NRF24L01::disableDynamicPayloads()
@@ -684,7 +694,7 @@ namespace NRF24L
         /*-------------------------------------------------
         Disable for all pipes
         -------------------------------------------------*/
-        if (features_activated)
+        if (featuresActivated)
         {
             clearRegisterBits(Register::DYNPD, DYNPD::Mask);
             clearRegisterBits(Register::EN_AA, EN_AA::Mask);
@@ -700,7 +710,7 @@ namespace NRF24L
 
     void NRF24L01::disableDynamicAck()
     {
-        if (features_activated)
+        if (featuresActivated)
         {
             clearRegisterBits(Register::FEATURE, FEATURE::EN_DYN_ACK);
         }
@@ -870,9 +880,9 @@ namespace NRF24L
         spi_txbuff[0] = (Command::R_REGISTER | (Command::REGISTER_MASK & reg));
         memset(&spi_txbuff[1], Command::NOP, len);
 
-        begin_transaction();
-        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), len);
-        end_transaction();
+        beginTransaction();
+        spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), len);
+        endTransaction();
 
         #if defined(DEBUG)
         statusReg.convert(spi_rxbuff[0]);
@@ -888,9 +898,9 @@ namespace NRF24L
         spi_txbuff[0] = (Command::R_REGISTER | (Command::REGISTER_MASK & reg));
         spi_txbuff[1] = Command::NOP;
 
-        begin_transaction();
-        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), txLength);
-        end_transaction();
+        beginTransaction();
+        spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), txLength);
+        endTransaction();
 
         #if defined(DEBUG)
         statusReg.convert(spi_rxbuff[0]);
@@ -911,9 +921,9 @@ namespace NRF24L
         memcpy(&spi_txbuff[1], buf, len);
 
         len += 1;
-        begin_transaction();
-        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), len);
-        end_transaction();
+        beginTransaction();
+        spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), len);
+        endTransaction();
 
         #if defined(DEBUG)
         statusReg.convert(spi_rxbuff[0]);
@@ -929,9 +939,9 @@ namespace NRF24L
         spi_txbuff[0] = (Command::W_REGISTER | (Command::REGISTER_MASK & reg));
         spi_txbuff[1] = value;
 
-        begin_transaction();
-        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), txLength);
-        end_transaction();
+        beginTransaction();
+        spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), txLength);
+        endTransaction();
 
         #if defined(DEBUG)
         statusReg.convert(spi_rxbuff[0]);
@@ -943,11 +953,16 @@ namespace NRF24L
 
     uint8_t NRF24L01::writePayload(const uint8_t *const buf, size_t len, const uint8_t writeType)
     {
+        if ((writeType != Command::W_TX_PAYLOAD_NO_ACK) || (writeType != Command::W_TX_PAYLOAD))
+        {
+            return 0u;
+        }
+
         /*-------------------------------------------------
         Calculate the number of bytes that do nothing
         -------------------------------------------------*/
-        len = std::min(len, payload_size);
-        uint8_t blank_len = static_cast<uint8_t>(dynamic_payloads_enabled ? 0 : (payload_size - len));
+        len = std::min(len, payloadSize);
+        uint8_t blank_len = static_cast<uint8_t>(dynamicPayloadsEnabled ? 0 : (payloadSize - len));
         size_t size = len + blank_len + 1;
 
         /*-------------------------------------------------
@@ -957,9 +972,9 @@ namespace NRF24L
         memcpy(&spi_txbuff[1], buf, len);           /* Payload information */
         memset(&spi_txbuff[len], 0, blank_len);     /* Null out the remaining buffer space*/
 
-        begin_transaction();
-        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), size);
-        end_transaction();
+        beginTransaction();
+        spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), size);
+        endTransaction();
 
         #if defined(DEBUG)
         statusReg.convert(spi_rxbuff[0]);
@@ -979,7 +994,7 @@ namespace NRF24L
         Calculate the number of bytes that do nothing. This is important for
         fixed payload widths as the full width must be read out each time.
         -------------------------------------------------*/
-        uint8_t blank_len = static_cast<uint8_t>(dynamic_payloads_enabled ? 0 : (payload_size - len));
+        uint8_t blank_len = static_cast<uint8_t>(dynamicPayloadsEnabled ? 0 : (payloadSize - len));
         size_t size = len + blank_len;
 
         /*-------------------------------------------------
@@ -991,9 +1006,9 @@ namespace NRF24L
         /*-------------------------------------------------
         Read out the payload. The +1 is for the read command.
         -------------------------------------------------*/
-        begin_transaction();
-        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), size + 1);
-        end_transaction();
+        beginTransaction();
+        spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), size + 1);
+        endTransaction();
 
         #if defined(DEBUG)
         statusReg.convert(spi_rxbuff[0]);
@@ -1011,32 +1026,71 @@ namespace NRF24L
         return writeCMD(Command::NOP);
     }
 
-    size_t NRF24L01::spi_write(const uint8_t *const tx_buffer, size_t len)
+    size_t NRF24L01::spiWrite(const uint8_t *const tx_buffer, size_t len)
     {
-        spi->writeBytes(tx_buffer, len);
+        #if defined(USING_CHIMERA)
+        spi->writeBytes(tx_buffer, len, false);
+        #endif
+
         return len;
     }
 
-    size_t NRF24L01::spi_read(uint8_t *const rx_buffer, size_t len)
+    size_t NRF24L01::spiRead(uint8_t *const rx_buffer, size_t len)
     {
-        spi->readBytes(rx_buffer, len);
+        #if defined(USING_CHIMERA)
+        spi->readBytes(rx_buffer, len, false);
+        #endif
+
         return len;
     }
 
-    size_t NRF24L01::spi_write_read(const uint8_t *const tx_buffer, uint8_t *const rx_buffer, size_t len)
+    size_t NRF24L01::spiWriteRead(const uint8_t *const tx_buffer, uint8_t *const rx_buffer, size_t len)
     {
-        spi->readWriteBytes(tx_buffer, rx_buffer, len);
+        #if defined(USING_CHIMERA)
+        spi->readWriteBytes(tx_buffer, rx_buffer, len, false);
+        #endif
+
         return len;
     }
 
-    void NRF24L01::begin_transaction()
+    void NRF24L01::beginTransaction()
     {
+        #if defined(USING_CHIMERA)
         spi->setChipSelect(GPIO::State::LOW);
+        #endif
     }
 
-    void NRF24L01::end_transaction()
+    void NRF24L01::endTransaction()
     {
+        #if defined(USING_CHIMERA)
         spi->setChipSelect(GPIO::State::HIGH);
+        #endif
+    }
+
+    void NRF24L01::setChipEnable()
+    {
+        #if defined(USING_CHIMERA)
+        chipEnable->write(State::HIGH);
+        #endif
+    }
+
+    void NRF24L01::clearChipEnable()
+    {
+        #if defined(USING_CHIMERA)
+        chipEnable->write(State::LOW);
+        #endif
+    }
+
+    void NRF24L01::spiInit()
+    {
+        #if defined(USING_CHIMERA)
+        spi->setChipSelectControlMode(ChipSelectMode::MANUAL);
+        chipEnable->mode(Drive::OUTPUT_PUSH_PULL);
+        chipEnable->write(State::LOW);
+
+        spi->setChipSelect(State::LOW);
+        spi->setChipSelect(State::HIGH);
+        #endif
     }
 
     uint8_t NRF24L01::writeCMD(const uint8_t cmd)
@@ -1044,9 +1098,9 @@ namespace NRF24L
         size_t txLength = 1;
         spi_txbuff[0] = cmd;
 
-        begin_transaction();
-        spi_write_read(spi_txbuff.begin(), spi_rxbuff.begin(), txLength);
-        end_transaction();
+        beginTransaction();
+        spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), txLength);
+        endTransaction();
 
         return spi_rxbuff[0];
     }

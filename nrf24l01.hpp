@@ -6,13 +6,16 @@
 #include <cstdint>
 #include <cstdio>
 #include <array>
-
-/* Chimera Includes */
-#include <Chimera/gpio.hpp>
-#include <Chimera/spi.hpp>
+#include <memory>
 
 /* Module Includes */
 #include "nrf24l01_definitions.hpp"
+
+/* Chimera Includes */
+#if defined(USING_CHIMERA)
+#include <Chimera/gpio.hpp>
+#include <Chimera/spi.hpp>
+#endif
 
 namespace NRF24L
 {
@@ -51,7 +54,10 @@ namespace NRF24L
     class NRF24L01
     {
     public:
+        #if defined(USING_CHIMERA)
         NRF24L01(Chimera::SPI::SPIClass_sPtr spiInstance, Chimera::GPIO::GPIOClass_sPtr chipEnable);
+        #endif
+
         NRF24L01() = default;
         ~NRF24L01() = default;
 
@@ -440,142 +446,125 @@ namespace NRF24L
         void deactivateFeatures();
 
         /**
-        *   Enable custom payloads on the acknowledge packets
+        *   Enable custom payloads on the RX acknowledge packets
         *
         *   ACK payloads are a handy way to return data back to senders without
         *   manually changing the radio modes on both units.
         *
         *   @note ACK payloads are dynamic payloads. This only works on pipes 0&1 by default. Call
         *   enableDynamicPayloads() to enable on all pipes.
+        *
+        *   @return void
         */
         void enableAckPayload();
 
         /**
-        * TODO: ADD DOC
-        *
+        *   Disables custom payloads on the RX acknowledge packets (all pipes)
+        *   
+        *   @return void
         */
         void disableAckPayload();
 
         /**
-        *   Enable dynamically-sized payloads
+        *   Enable dynamically-sized payloads (all pipes)
         *
-        *   This way you don't always have to send large packets just to send them
-        *   once in a while.  This enables dynamic payloads on ALL pipes.
+        *   @return void
         */
         void enableDynamicPayloads();
 
         /**
         *   Disable dynamically-sized payloads
         *
-        *   This disables dynamic payloads on ALL pipes. Since ACK Payloads
-        *   requires Dynamic Payloads, ACK Payloads are also disabled.
-        *   If dynamic payloads are later re-enabled and ACK payloads are desired
-        *   then enableAckPayload() must be called again as well.
+        *   This disables dynamic payloads on ALL pipes. Since ACK Payloads requires Dynamic Payloads, ACK Payloads
+        *   are also disabled. If dynamic payloads are later re-enabled and ACK payloads are desired then enableAckPayload() 
+        *   must be called again as well.
+        *
+        *   @return void
         */
         void disableDynamicPayloads();
 
         /**
-        *   Enable dynamic ACKs (single write multicast or unicast) for chosen messages
+        *   Enable dynamic ACK functionality
         *
-        *   @note To enable full multicast or per-pipe multicast, use setAutoAck()
-        *
-        *   @warning This MUST be called prior to attempting single write NOACK calls
-        *   @code
-        *   radio.enableDynamicAck();
-        *   radio.write(&data,32,1);  // Sends a payload with no acknowledgement requested
-        *   radio.write(&data,32,0);  // Sends a payload using auto-retry/autoACK
-        *   @endcode
+        *   @return void
         */
         void enableDynamicAck();
 
         /**
-        * TODO: ADD DOC
+        *   Disable dynamic ACK functionality
         *
+        *   @return void
         */
         void disableDynamicAck();
 
         /**
         *   Determine whether the hardware is an nRF24L01+ or not.
         *
-        *   @return true if the hardware is nRF24L01+ (or compatible) and false
-        *   if its not.
+        *   @return true if the hardware is an NRF24L01+
         */
         bool isPVariant();
 
         /**
-        *   Enable or disable auto-acknowledge packets
+        *   Enable or disable auto-acknowledge packets on all pipes. Defaults to on.
         *
-        *   This is enabled by default, so it's only needed if you want to turn
-        *   it off for some reason.
-        *
-        *   @param enable Whether to enable (true) or disable (false) auto-ACKs
+        *   @param[in]  enable  Whether to enable (true) or disable (false) auto-ACKs
         */
         void setAutoAckAll(const bool enable);
 
         /**
         *   Enable or disable auto-acknowledge packets on a per pipeline basis.
         *
-        *   AA is enabled by default, so it's only needed if you want to turn
-        *   it off/on for some reason on a per pipeline basis.
+        *   AA is enabled by default, so it's only needed if you want to turn it on/off
         *
-        *   @param pipe Which pipeline to modify
-        *   @param enable Whether to enable (true) or disable (false) auto-ACKs
+        *   @param[in]  pipe    Which pipeline to modify
+        *   @param[in]  enable  Whether to enable (true) or disable (false) auto-ACKs
         */
         void setAutoAck(const Pipe pipe, const bool enable);
 
         /**
-        *   Set Power Amplifier (PA) level to one of four levels:
-        *   RF24_PA_MIN, RF24_PA_LOW, RF24_PA_HIGH and RF24_PA_MAX
+        *   Set the power amplifier level
         *
-        *   The power levels correspond to the following output levels respectively:
-        *   NRF24L01: -18dBm, -12dBm,-6dBM, and 0dBm
-        *
-        *   SI24R1: -6dBm, 0dBm, 3dBM, and 7dBm.
-        *
-        *   @param level Desired PA level.
+        *   @param[in]  level   Desired power amplifier level
+        *   @return void
         */
         void setPALevel(const PowerAmplitude level);
 
         /**
-        *   Fetches the current PA level.
+        *   Get the current power amplitude level
         *
-        *   NRF24L01: -18dBm, -12dBm, -6dBm and 0dBm
-        *   SI24R1:   -6dBm, 0dBm, 3dBm, 7dBm
-        *
-        *   @return Returns values 0 to 3 representing the PA Level.
+        *   @return Current power amplitude setting
         */
         PowerAmplitude getPALevel();
 
         /**
-        *   Set the transmission data rate
+        *   Set the TX/RX data rate
         *
         *   @warning setting RF24_250KBPS will fail for non-plus units
         *
-        *   @param speed RF24_250KBPS for 250kbs, RF24_1MBPS for 1Mbps, or RF24_2MBPS for 2Mbps
+        *   @param[in]  speed   Desired speed for the radio to TX/RX with
         *   @return true if the change was successful
         */
         bool setDataRate(const DataRate speed);
 
         /**
-        *   Fetches the transmission data rate
+        *   Get the transmission data rate
         *
-        *   @return Returns the hardware's currently configured data rate. The value
-        *   is one of 250kbs, RF24_1MBPS for 1Mbps, or RF24_2MBPS, as defined in the
-        *   nrf24_datarate enum.
+        *   @return The current data rate
         */
         DataRate getDataRate();
 
         /**
         *   Set the CRC length
-        *   <br>CRC checking cannot be disabled if auto-ACK is enabled
-        *   @param length RF24_CRC_8 for 8-bit or RF24_CRC_16 for 16-bit
+        *
+        *   @param[in]  length  The CRC length to be set
+        *   @return void
         */
         void setCRCLength(const CRCLength length);
 
         /**
-        *   Get the CRC length
-        *   <br>CRC checking cannot be disabled if auto-ACK is enabled
-        *   @return RF24_CRC_DISABLED if disabled or RF24_CRC_8 for 8-bit or RF24_CRC_16 for 16-bit
+        *   Get the current CRC length
+        *
+        *   @return CRC length
         */
         CRCLength getCRCLength();
 
@@ -583,78 +572,53 @@ namespace NRF24L
         *   Disable CRC validation
         *
         *   @warning CRC cannot be disabled if auto-ACK/ESB is enabled.
+        *   @return void
         */
         void disableCRC();
 
         /**
-        *   The radio will generate interrupt signals when a transmission is complete,
-        *   a transmission fails, or a payload is received. This allows users to mask
-        *   those interrupts to prevent them from generating a signal on the interrupt
-        *   pin. Interrupts are enabled on the radio chip by default.
+        *   Mask interrupt generation for various signals. (true==disabled, false==enabled)
         *
-        *   @code
-        *   	Mask all interrupts except the receive interrupt:
-        *
-        *   		radio.maskIRQ(1,1,0);
-        *   @endcode
-        *
-        *   @param tx_ok  Mask transmission complete interrupts
-        *   @param tx_fail  Mask transmit failure interrupts
-        *   @param rx_ready Mask payload received interrupts
+        *   @param[in]  tx_ok       Mask transmission complete interrupts
+        *   @param[in]  tx_fail     Mask transmit failure interrupts
+        *   @param[in]  rx_ready    Mask payload received interrupts
+        *   @return void
         */
         void maskIRQ(const bool tx_ok, const bool tx_fail, const bool rx_ready);
 
         /**
         *   Read a chunk of data in from a register
         *
-        *   @param reg Which register. Use constants from nRF24L01.h
-        *   @param buf Where to put the data
-        *   @param len How many bytes of data to transfer
+        *   @param[in]  reg     Which register to read. Use constants from NRF24::Register
+        *   @param[in]  buf     Where read data into
+        *   @param[in]  len     How many bytes of data to transfer
         *   @return Current value of status register
         */
         uint8_t readRegister(const uint8_t reg, uint8_t *const buffer, size_t len);
 
-        template <typename T, std::size_t S>
-            uint8_t readRegister(const uint8_t reg, std::array<T, S> buffer)
-            {
-                auto array = reinterpret_cast<uint8_t *const>(buffer.data());
-                auto constexpr byteLen = buffer.size() * sizeof(T);
-
-                return writeRegister(reg, array, byteLen);
-            }
-
         /**
         *   Read single byte from a register
         *
-        *   @param reg Which register. Use constants from nRF24L01.h
-        *   @return Current value of register @p reg
+        *   @param[in]  reg     Which register to read. Use constants from NRF24::Register
+        *   @return Current value of the requested register
         */
         uint8_t readRegister(const uint8_t reg);
 
         /**
         *   Write a chunk of data to a register
         *
-        *   @param reg Which register. Use constants from nRF24L01.h
-        *   @param buf Where to get the data
-        *   @param len How many bytes of data to transfer
+        *   @param[in]  reg     Which register to write. Use constants from NRF24::Register
+        *   @param[in]  buf     Data to be written
+        *   @param[in]  len     How many bytes to transfer
         *   @return Current value of status register
         */
         uint8_t writeRegister(const uint8_t reg, const uint8_t *const buffer, size_t len);
 
-        template <typename T, std::size_t S>
-            uint8_t writeRegister(const uint8_t reg, const std::array<T, S> buffer)
-            {
-                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
-                auto constexpr byteLen = buffer.size() * sizeof(T);
-
-                return writeRegister(reg, array, byteLen);
-            }
-
         /**
         *   Write a single byte to a register
         *
-        *   @param reg Which register. Use constants from nRF24L01.h
-        *   @param value The new value to write
+        *   @param[in]  reg     Which register to write. Use constants from NRF24::Register
+        *   @param[in]  value   The new value to write
         *   @return Current value of status register
         */
         uint8_t writeRegister(const uint8_t reg, const uint8_t value);
@@ -664,28 +628,20 @@ namespace NRF24L
         *
         *   The size of data written is the fixed payload size, see getPayloadSize()
         *
-        *   @param buf Where to get the data
-        *   @param len Number of bytes to be sent
+        *   @param[in]  buffer      Where to get the data
+        *   @param[in]  len         Number of bytes to be sent
+        *   @param[in]  writeType   Write using ACK (Command::W_TX_PAYLOAD) or NACK (Command::W_TX_PAYLOAD_NO_ACK)
         *   @return Current value of status register
         */
         uint8_t writePayload(const uint8_t *const buffer, size_t len, const uint8_t writeType);
-
-        template <typename T, std::size_t S>
-            uint8_t writePayload(const std::array<T, S> buffer, const uint8_t writeType)
-            {
-                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
-                auto constexpr byteLen = buffer.size() * sizeof(T);
-
-                return writePayload(array, byteLen, writeType);
-            }
 
         /**
         *   Read the receive payload
         *
         *   The size of data read is the fixed payload size, see getPayloadSize()
         *
-        *   @param buf Where to put the data
-        *   @param len Maximum number of bytes to read
+        *   @param[in]  buffer  Where to put the data
+        *   @param[in]  len     Maximum number of bytes to read
         *   @return Current value of status register
         */
         uint8_t readPayload(uint8_t *const buffer, size_t len);
@@ -702,14 +658,6 @@ namespace NRF24L
         /**
         *   Non-blocking write to an open TX pipe
         *
-        *   @note Optimization: This function now leaves the CE pin high, so the radio
-        *   will remain in TX or STANDBY-II Mode until a txStandBy() command is issued. Can be used as an alternative to startWrite()
-        *   if writing multiple payloads at once.
-        *
-        *   @warning It is important to never keep the nRF24L01 in TX mode with FIFO full for more than 4ms at a time. If the auto
-        *   retransmit/autoAck is enabled, the nRF24L01 is never in TX mode long enough to disobey this rule. Allow the FIFO
-        *   to clear by issuing txStandBy() or ensure appropriate time between transmissions.
-        *
         *   @param[in] buffer       Array of data to be sent
         *   @param[in] len          Number of bytes to be sent
         *   @param[in] requestACK   Request the RX device to ACK the transmission for this packet
@@ -717,6 +665,12 @@ namespace NRF24L
         *   @return True if the payload was delivered successfully false if not
         */
         void startFastWrite(const uint8_t *const buffer, size_t len, const bool requestACK = false, const bool startTX = true);
+
+        /** User defined function that will initialize the SPI hardware as needed.
+        *   
+        *   @return void
+        */
+        virtual void spiInit();
 
         /** User defined function that will perform an SPI write/read. This must
         *   be overwritten otherwise the program will not compile.
@@ -726,7 +680,7 @@ namespace NRF24L
         *
         *   @return The total number of bytes that were written
         */
-        virtual size_t spi_write(const uint8_t *const tx_buffer, size_t len);
+        virtual size_t spiWrite(const uint8_t *const tx_buffer, size_t len);
 
         /** User defined function that will perform an SPI read. This must
         *   be overwritten otherwise the program will not compile.
@@ -736,7 +690,7 @@ namespace NRF24L
         *
         *   @return The total number of bytes read.
         */
-        virtual size_t spi_read(uint8_t *const rx_buffer, size_t len);
+        virtual size_t spiRead(uint8_t *const rx_buffer, size_t len);
 
         /** User defined function that will perform an SPI write/read. This must
         *   be overwritten otherwise the program will not compile.
@@ -747,51 +701,67 @@ namespace NRF24L
         *
         *   @return The total number of bytes that were written/read
         */
-        virtual size_t spi_write_read(const uint8_t *const tx_buffer, uint8_t *const rx_buffer, size_t len);
+        virtual size_t spiWriteRead(const uint8_t *const tx_buffer, uint8_t *const rx_buffer, size_t len);
 
         /** User defined function that will start the SPI transaction correctly. This
         *   typically means asserting the chip select line either in software or hardware.
         *
         *   @return void
         */
-        virtual void begin_transaction();
+        virtual void beginTransaction();
 
         /** User defined function that will end the SPI transaction correctly. This
         *   typically means deasserting the chip select line either in software or hardware.
         *
         *   @return void
         */
-        virtual void end_transaction();
+        virtual void endTransaction();
+
+        /** User defined function to set the chip enable pin logically HIGH
+        *
+        *   @return void 
+        */
+        virtual void setChipEnable();
+
+        /** User defined function to set the chip enable pin logically LOW
+        *
+        *   @return void 
+        */
+        virtual void clearChipEnable();
 
     private:
-        static constexpr size_t SPI_BUFFER_LEN = 1 + MAX_PAYLOAD_WIDTH;    /* Accounts for max payload of 32 bytes + 1 byte for the command */
+        static constexpr size_t SPI_BUFFER_LEN = 1 + MAX_PAYLOAD_WIDTH; /**< Accounts for max payload of 32 bytes + 1 byte for the command */
 
+        bool pVariant = false;                                          /**< NRF24L01+ variant device? */
+        bool featuresActivated = false;                                 /**< Features register functionality enabled? */
+        bool dynamicPayloadsEnabled = false;                            /**< Are our payloads configured as variable width? */
+
+        size_t addressWidth = 0;                                        /**< Keep track of the user's address width preference */
+        size_t payloadSize = 0;                                         /**< Keep track of the user's payload width preference */
+
+        std::array<uint8_t, MAX_ADDRESS_WIDTH> pipe0_reading_address;   /**< Keep track of the TX pipe0 address */
+        std::array<uint8_t, SPI_BUFFER_LEN> spi_txbuff;                 /**< Internal transmit buffer */
+        std::array<uint8_t, SPI_BUFFER_LEN> spi_rxbuff;                 /**< Internal receive buffer */
+
+        NRF24L::Mode currentMode = Mode::POWER_DOWN;                    /**< Keep track of which HW mode of the radio is likely to be in */
+
+        #if defined(USING_CHIMERA)
+        Chimera::SPI::SPIClass_sPtr spi;                                /**< SPI Object Instance */
+        Chimera::GPIO::GPIOClass_sPtr chipEnable;                       /**< GPIO Object Instance */
+        #endif
+
+        /*-------------------------------------------------
+        Register bit fields useful for inspection in the debugger
+        -------------------------------------------------*/
+        #if defined(DEBUG)
+        STATUS::BitField statusReg;                                    
+        #endif
 
         uint8_t writeCMD(const uint8_t cmd);
-
         bool registerIsBitmaskSet(const uint8_t reg, const uint8_t bitmask);
         bool registerIsAnySet(const uint8_t reg, const uint8_t bitmask);
         void clearRegisterBits(const uint8_t reg, const uint8_t bitmask);
         void setRegisterBits(const uint8_t reg, const uint8_t bitmask);
-
-        bool pVariant = false;
-        bool features_activated = false;
-        bool dynamic_payloads_enabled = false;
-        size_t addr_width = 0;
-        size_t payload_size = 0;
-        std::array<uint8_t, 5> pipe0_reading_address;
-
-        NRF24L::Mode currentMode = Mode::POWER_DOWN;
-
-        Chimera::SPI::SPIClass_sPtr spi;
-        Chimera::GPIO::GPIOClass_sPtr chipEnable;
-
-        std::array<uint8_t, SPI_BUFFER_LEN> spi_txbuff;
-        std::array<uint8_t, SPI_BUFFER_LEN> spi_rxbuff;
-
-        #if defined(DEBUG)
-        STATUS::BitField statusReg;
-        #endif
     };
 
 }
