@@ -73,25 +73,17 @@ namespace NRF24L
         *
         *   To return to low power mode, call powerDown().
         *   @note This will take up to 5ms for maximum compatibility
+        *
+        *   @return void
         */
         void powerUp();
 
         /**
         *   Enter low-power mode
         *
-        *   To return to normal power mode, call powerUp().
+        *   To return to normal power mode, call powerUp()
         *
-        *   @note After calling startListening(), a basic radio will consume about 13.5mA
-        *   at max PA level.
-        *   During active transmission, the radio will consume about 11.5mA, but this will
-        *   be reduced to 26uA (.026mA) between sending.
-        *   In full powerDown mode, the radio will consume approximately 900nA (.0009mA)
-        *
-        *   @code
-        *   radio.powerDown();
-        *   avr_enter_sleep_mode(); // Custom function to sleep the device
-        *   radio.powerUp();
-        *   @endcode
+        *   @return void
         */
         void powerDown();
 
@@ -102,13 +94,7 @@ namespace NRF24L
         *   2. Do not call write() while in this mode, without first calling stopListening().
         *   3. Call available() to check for incoming traffic, and read() to get it.
         *
-        *   @code
-        *   Open reading pipe 1 using address CCCECCCECC and auto-acknowledge
-        *
-        *   std::array<uint8_t, 5> address = { 0xCC, 0xCE, 0xCC, 0xCE, 0xCC };
-        *   radio.openReadPipe(1, address, true);
-        *   radio.startListening();
-        *   @endcode
+        *   @return void
         */
         void startListening();
 
@@ -150,8 +136,6 @@ namespace NRF24L
         */
         void openReadPipe(const Pipe pipe, const std::array<uint8_t, MAX_ADDRESS_WIDTH> address, const bool autoAck = false);
 
-
-
         /**
         *   Check if data is available to be read on any pipe.
         *
@@ -162,7 +146,7 @@ namespace NRF24L
         /**
         *   Check if data is available to be read on any pipe. If so, returns which pipe is ready.
         *
-        *   @param[out]     pipeNum     Which pipe has the payload available
+        *   @param[out] pipeNum     Which pipe has the payload available
         *   @return True if there is a payload available, false if none is
         */
         bool available(uint8_t &pipeNum);
@@ -179,6 +163,11 @@ namespace NRF24L
         */
         void read(uint8_t *const buffer, size_t len);
 
+        /** 
+        *   Same function as read(), but for char buffers. This is more for user convenience than anything else.
+        *   
+        *   @return void
+        */
         void read(char *const buffer, size_t len);
 
         /**
@@ -208,116 +197,83 @@ namespace NRF24L
         */
         bool write(const uint8_t *const buffer, size_t len, const bool requestACK = false, const bool startTX = true, const bool autoStandby = true);
 
+        /** 
+        *   Same function as write(), but for char buffers. This is more for user convenience than anything else.
+        *   
+        *   @return True if the payload was delivered successfully false if not
+        */
         bool write(const char *const buffer, size_t len, const bool requestACK = false, const bool startTX = true, const bool autoStandby = true);
 
         /**
-        * TODO: ADD DOC
-        *
+        *   Checks if we can successfully talk with the radio over SPI
+        *   
+        *   @return true if connected, false if not
         */
         bool isConnected();
 
         /**
-        *   Check if the radio needs to be read. Can be used to prevent data loss
-        *   @return True if all three 32-byte radio buffers are full
+        *   Check if the RX FIFO is full
+        *
+        *   @return true if full, false if not
         */
         bool rxFifoFull();
 
+        /** 
+        *   Check if the TX FIFO is full
+        *
+        *   @return true if full, false if not 
+        */
         bool txFIFOFull();
 
+        /** 
+        *   Check if the TX FIFO is empty
+        *
+        *   @return true if empty, false if not 
+        */
         bool txFIFOEmpty();
 
         /**
-        *   This function should be called as soon as transmission is finished to
-        *   drop the radio back to STANDBY-I mode. If not issued, the radio will
-        *   remain in STANDBY-II mode which, per the data sheet, is not a recommended
-        *   operating mode.
+        *   Place the radio into Standby-I mode
         *
-        *   @note When transmitting data in rapid succession, it is still recommended by
-        *   the manufacturer to drop the radio out of TX or STANDBY-II mode if there is
-        *   time enough between sends for the FIFOs to empty. This is not required if auto-ACK
-        *   is enabled.
+        *   Waits for all TX transfers to complete (or for max retries interrupt)
+        *   before actually transitioning to the standby mode.
         *
-        *   Relies on built-in auto retry functionality.
-        *
-        *   @code
-        *   Example (Partial blocking):
-        *
-        *   			radio.writeFast(&buf,32);
-        *   			radio.writeFast(&buf,32);
-        *   			radio.writeFast(&buf,32);  //Fills the FIFO buffers up
-        *   			bool ok = txStandBy();     //Returns 0 if failed. 1 if success.
-        *   					  				   //Blocks only until MAX_RT timeout or success. Data flushed on fail.
-        *   @endcode
-        *   @see txStandBy(unsigned long timeout)
-        *   @return True if transmission is successful
+        *   @return True if waiting transfers were successful, false if not
         */
         bool txStandBy();
 
         /**
-        *   This function allows extended blocking and auto-retries per a user defined timeout
-        *   @code
-        *   	Fully Blocking Example:
-        *
-        *   			radio.writeFast(&buf,32);
-        *   			radio.writeFast(&buf,32);
-        *   			radio.writeFast(&buf,32);   //Fills the FIFO buffers up
-        *   			bool ok = txStandBy(1000);  //Returns 0 if failed after 1 second of retries. 1 if success.
-        *   					  				    //Blocks only until user defined timeout or success. Data flushed on fail.
-        *   @endcode
-        *   @note If used from within an interrupt, the interrupt should be disabled until completion, and sei(); called to enable millis().
-        *   @param timeout Number of milliseconds to retry failed payloads
-        *   @return True if transmission is successful
-        */
-        bool txStandBy(const uint32_t timeout, const bool startTx = false);
-
-        /**
         *   Write an ACK payload for the specified pipe
         *
-        *   The next time a message is received on @p pipe, the data in @p buf will
-        *   be sent back in the acknowledgment.
-        *   @see enableAckPayload()
-        *   @see enableDynamicPayloads()
-        *   @warning Only three of these can be pending at any time as there are only 3 FIFO buffers.<br> Dynamic payloads must be enabled.
-        *   @note ACK payloads are handled automatically by the radio chip when a payload is received. Users should generally
-        *   write an ACK payload as soon as startListening() is called, so one is available when a regular payload is received.
-        *   @note ACK payloads are dynamic payloads. This only works on pipes 0&1 by default. Call
+        *   The next time a message is received on the given pipe, the buffer data will be
+        *   be sent back in the ACK packet.
+        *
+        *   @warning Only three ACK payloads can be pending at any time as there are only 3 FIFO buffers.
+        *   @note ACK payloads are dynamic payloads, which only works on pipes 0 and 1 by default. Call
         *   enableDynamicPayloads() to enable on all pipes.
         *
-        *   @param pipe Which pipe# (typically 1-5) will get this response.
-        *   @param buf Pointer to data that is sent
-        *   @param len Length of the data to send, up to 32 bytes max.  Not affected
-        *   by the static payload set by setPayloadSize().
+        *   @param[in] pipe     Which pipe will get this response
+        *   @param[in] buffer   Data to be sent
+        *   @param[in] len      Length of the data to send, up to 32 bytes max.  Not affected by the static payload set by setPayloadSize().
         */
         void writeAckPayload(const uint8_t pipe, const uint8_t *const buffer, size_t len);
 
-        template <typename T, std::size_t S>
-            void writeAckPayload(const uint8_t pipe, const std::array<T, S> buffer)
-            {
-                auto array = reinterpret_cast<const uint8_t *const>(buffer.data());
-                auto constexpr byteLen = buffer.size() * sizeof(T);
-
-                writeAckPayload(pipe, array, byteLen);
-            }
-
         /**
         *   Determine if an ACK payload was received in the most recent call to
-        *   write(). The regular available() can also be used.
+        *   write(). The alternate function available() can also be used.
         *
-        *   Call read() to retrieve the ACK payload.
-        *
-        *   @return True if an ACK payload is available.
+        *   @return True if an ACK payload is available, false if not
         */
         bool isAckPayloadAvailable();
 
         /**
-        *   Call this when you get an interrupt to find out why
+        *   Informs the caller what interrupts are currently active
         *
-        *   Tells you what caused the interrupt, and clears the state of
-        *   interrupts.
+        *   Clears all interrupts before exiting.
         *
-        *   @param[out] tx_ok The send was successful (TX_DS)
-        *   @param[out] tx_fail The send failed, too many retries (MAX_RT)
-        *   @param[out] rx_ready There is a message waiting to be read (RX_DS)
+        *   @param[out] tx_ok       The send was successful (TX_DS)
+        *   @param[out] tx_fail     The send failed, too many retries (MAX_RT)
+        *   @param[out] rx_ready    There is a message waiting to be read (RX_DS)
         */
         void whatHappened(bool &tx_ok, bool &tx_fail, bool &rx_ready);
 
@@ -326,123 +282,105 @@ namespace NRF24L
         *   re-use functionality of the chip, but can be beneficial to users as well.
         *
         *   The function will instruct the radio to re-use the data in the FIFO buffers,
-        *   and instructs the radio to re-send once the timeout limit has been reached.
-        *   Used by writeFast and writeBlocking to initiate retries when a TX failure
-        *   occurs. Retries are automatically initiated except with the standard write().
-        *   This way, data is not flushed from the buffer until switching between modes.
-        *
-        *   @note This is to be used AFTER auto-retry fails if wanting to resend
-        *   using the built-in payload reuse features.
-        *   After issuing reUseTX(), it will keep reending the same payload forever or until
-        *   a payload is written to the FIFO, or a flush_tx command is given.
+        *   and re-send once the timeout limit has been reached. After issuing reUseTX(), it 
+        *   will keep resending the same payload forever until a payload is written to the 
+        *   FIFO, or a flush_tx command is given.
         */
         void reUseTX();
 
         /**
         *   Close a pipe after it has been previously opened.
         *   Can be safely called without having previously opened a pipe.
-        *   @param pipe Which pipe # to close, 0-5.
+        *   
+        *   @param[in]  pipe    Which pipe number to close, 0-5.
         */
         void closeReadPipe(const uint8_t pipe);
-
-
-        /* Optional reconfiguration */
 
         /**
         *   Set the address width from 3 to 5 bytes (24, 32 or 40 bit)
         *
-        *   @param a_width The address width to use: 3,4 or 5
+        *   @param[in]  address_width   The address width to use: 3, 4 or 5
         */
         void setAddressWidth(const uint8_t address_width);
 
         /**
         *   Set the number and delay of retries upon failed submit
         *
-        *   @param delay How long to wait between each retry, in multiples of 250us,
-        *   max is 15.  0 means 250us, 15 means 4000us.
-        *   @param count How many retries before giving up, max 15
+        *   @param[in]  delay       How long to wait between each retry, in multiples of 250us, max is 15.  (0==250us, 15==4000us)
+        *   @param[in]  count       How many retries before giving up, max 15
         */
         void setRetries(const uint8_t delay, const uint8_t count);
 
         /**
-        * Set RF communication channel
+        *   Set RF communication channel
         *
-        * @param channel Which RF channel to communicate on, 0-125
+        *   @param[in]  channel     Which RF channel to communicate on, 0-125
         */
         void setChannel(const uint8_t channel);
 
         /**
-        *   Set Static Payload Size
-        *
-        *   This implementation uses a pre-established fixed payload size for all
-        *   transmissions.  If this method is never called, the driver will always
-        *   transmit the maximum payload size (32 bytes), no matter how much
-        *   was sent to write().
-        *
-        *   @todo Implement variable-sized payloads feature
-        *
-        *   @param size The number of bytes in the payload
-        */
-        void setPayloadSize(const uint8_t size);
-
-        /**
-        *   Get RF communication channel
+        *   Get the current RF communication channel
         *
         *   @return The currently configured RF Channel
         */
         uint8_t getChannel();
 
         /**
-        *   Get Static Payload Size
+        *   Set static payload size
+        *
+        *   This implementation uses a pre-established fixed payload size for all transfers. If this method 
+        *   is never called, the driver will always transmit the maximum payload size (32 bytes), no matter how much
+        *   was sent to write().
+        *
+        *   @todo Implement variable-sized payloads feature
+        *
+        *   @param[in]  size    The number of bytes in the payload
+        *   @return void
+        */
+        void setStaticPayloadSize(const uint8_t size);
+
+        /**
+        *   Get the static payload size
         *
         *   @see setPayloadSize()
         *
-        *   @return The number of bytes in the payload
+        *   @return The number of bytes used in the payload
         */
-        uint8_t getPayloadSize();
+        uint8_t getStaticPayloadSize();
 
         /**
-        *   Get Dynamic Payload Size
+        *   Get the dynamic payload length of the last received transfer
         *
-        *   For dynamic payloads, this pulls the size of the payload off
-        *   the chip
-        *
-        *   @note Corrupt packets are now detected and flushed per the
-        *   manufacturer.
-        *   @code
-        *   if(radio.available()){
-        *     if(radio.getDynamicPayloadSize() < 1){
-        *       // Corrupt payload has been flushed
-        *       return;
-        *     }
-        *     radio.read(&data,sizeof(data));
-        *   }
-        *   @endcode
-        *
-        *   @return Payload length of last-received dynamic payload
+        *   @return payload lenght
         */
         uint8_t getDynamicPayloadSize();
 
         /**
-        *   Empty the transmit buffer. This is generally not required in standard operation.
-        *   May be required in specific cases after stopListening() , if operating at 250KBPS data rate.
+        *   Clears out the TX FIFO
         *
-        *   @return Current value of status register
+        *   @return Current value of Register::STATUS
         */
         uint8_t flushTX();
 
         /**
-        * TODO: ADD DOC
-        *
+        *   Clears out the RX FIFO
+        *   
+        *   @return Current value of Register::STATUS
         */
         uint8_t flushRX();
 
         /**
-        * TODO: ADD DOC
-        *
+        *   Activates the ability to use features defined in Register::FEATURES
+        *   
+        *   @return void
         */
         void activateFeatures();
 
+        /** 
+        *   Deactivates the features defined in Register::FEATURES
+        *   
+        *   @return void
+        */
         void deactivateFeatures();
 
         /**

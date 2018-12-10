@@ -484,11 +484,6 @@ namespace NRF24L
         return true;
     }
 
-    bool NRF24L01::txStandBy(const uint32_t timeout, const bool startTx)
-    {
-        return false;
-    }
-
     void NRF24L01::writeAckPayload(const uint8_t pipe, const uint8_t *const buffer, size_t len)
     {
         //TODO: Magic numbers abound in this function. Get rid of them.
@@ -570,7 +565,7 @@ namespace NRF24L
         writeRegister(Register::SETUP_RETR, setup_retr);
     }
 
-    void NRF24L01::setPayloadSize(const uint8_t size)
+    void NRF24L01::setStaticPayloadSize(const uint8_t size)
     {
         payloadSize = std::min(size, static_cast<uint8_t>(32));
     }
@@ -585,7 +580,7 @@ namespace NRF24L
         return readRegister(Register::RF_CH);
     }
 
-    uint8_t NRF24L01::getPayloadSize()
+    uint8_t NRF24L01::getStaticPayloadSize()
     {
         return payloadSize;
     }
