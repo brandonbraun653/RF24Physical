@@ -8,6 +8,17 @@
 
 namespace NRF24L
 {
+    #ifdef SERIAL_DEBUG
+	    #define IF_SERIAL_DEBUG(x) ({x;})
+    #else
+	    #define IF_SERIAL_DEBUG(x)
+	    #if defined(RF24_TINY)
+	        #define printf_P(...)
+        #endif
+    #endif
+
+    #define PSTR(x) (x)
+
     /*----------------------------------------------
     General Definitions
     ----------------------------------------------*/
@@ -44,19 +55,19 @@ namespace NRF24L
     ----------------------------------------------*/
     namespace Command
     {
-        constexpr uint8_t REGISTER_MASK = 0x1F;       /* Masks off the largest available register address */
-        constexpr uint8_t R_REGISTER = 0x00;          /* Read command and status registers  */
-        constexpr uint8_t W_REGISTER = 0x20;          /* Write command and status registers  */
-        constexpr uint8_t R_RX_PAYLOAD = 0x61;        /* Read RX Payload (1-32 bytes) */
-        constexpr uint8_t W_TX_PAYLOAD = 0xA0;        /* Write TX Payload (1-32 bytes) */
-        constexpr uint8_t FLUSH_TX = 0xE1;            /* Flush TX FIFO, used in TX Mode */
-        constexpr uint8_t FLUSH_RX = 0xE2;            /* Flush RX FIFO, used in RX Mode */
-        constexpr uint8_t REUSE_TX_PL = 0xE3;         /* Reuse last transmitted payload (PTX device only) */
-        constexpr uint8_t ACTIVATE = 0x50;            /* This command, followed by 0x73, activates R_RX_PL_WID, W_ACK_PAYLOAD, W_TX_PAYLOAD_NOACK */
-        constexpr uint8_t R_RX_PL_WID = 0x60;         /* Read RX payload width for the top payload in the RX FIFO */
-        constexpr uint8_t W_ACK_PAYLOAD = 0xA8;       /* Write Payload together with ACK packet */
-        constexpr uint8_t W_TX_PAYLOAD_NO_ACK = 0xB0; /* Disables AUTOACK on this specific packet */
-        constexpr uint8_t NOP = 0xFF;                 /* No operation */
+        constexpr uint8_t REGISTER_MASK = 0x1F;         /* Masks off the largest available register address */
+        constexpr uint8_t R_REGISTER = 0x00;            /* Read command and status registers  */
+        constexpr uint8_t W_REGISTER = 0x20;            /* Write command and status registers  */
+        constexpr uint8_t R_RX_PAYLOAD = 0x61;          /* Read RX Payload (1-32 bytes) */
+        constexpr uint8_t W_TX_PAYLOAD = 0xA0;          /* Write TX Payload (1-32 bytes) */
+        constexpr uint8_t FLUSH_TX = 0xE1;              /* Flush TX FIFO, used in TX Mode */
+        constexpr uint8_t FLUSH_RX = 0xE2;              /* Flush RX FIFO, used in RX Mode */
+        constexpr uint8_t REUSE_TX_PL = 0xE3;           /* Reuse last transmitted payload (PTX device only) */
+        constexpr uint8_t ACTIVATE = 0x50;              /* This command, followed by 0x73, activates R_RX_PL_WID, W_ACK_PAYLOAD, W_TX_PAYLOAD_NOACK */
+        constexpr uint8_t R_RX_PL_WID = 0x60;           /* Read RX payload width for the top payload in the RX FIFO */
+        constexpr uint8_t W_ACK_PAYLOAD = 0xA8;         /* Write Payload together with ACK packet */
+        constexpr uint8_t W_TX_PAYLOAD_NO_ACK = 0xB0;   /* Disables AUTOACK on this specific packet */
+        constexpr uint8_t NOP = 0xFF;                   /* No operation */
     }
 
     /*----------------------------------------------
@@ -64,32 +75,32 @@ namespace NRF24L
     ----------------------------------------------*/
     namespace Register
     {
-        constexpr uint8_t CONFIG = 0x00;      /* Configuration Register */
-        constexpr uint8_t EN_AA = 0x01;       /* Enable Auto Acknowledgment */
-        constexpr uint8_t EN_RXADDR = 0x02;   /* Enable RX Addresses */
-        constexpr uint8_t SETUP_AW = 0x03;    /* Setup of Address Width */
-        constexpr uint8_t SETUP_RETR = 0x04;  /* Setup of Automatic Retransmission */
-        constexpr uint8_t RF_CH = 0x05;       /* RF Channel Frequency Settings */
-        constexpr uint8_t RF_SETUP = 0x06;    /* RF Channel Settings Register */
-        constexpr uint8_t STATUS = 0x07;      /* Status Register */
-        constexpr uint8_t OBSERVE_TX = 0x08;  /* Transmit Observe */
-        constexpr uint8_t CD = 0x09;          /* Carrier Detect */
-        constexpr uint8_t RX_ADDR_P0 = 0x0A;  /* Receive Address Data Pipe 0 */
-        constexpr uint8_t RX_ADDR_P1 = 0x0B;  /* Receive Address Data Pipe 1 */
-        constexpr uint8_t RX_ADDR_P2 = 0x0C;  /* Receive Address Data Pipe 2 */
-        constexpr uint8_t RX_ADDR_P3 = 0x0D;  /* Receive Address Data Pipe 3 */
-        constexpr uint8_t RX_ADDR_P4 = 0x0E;  /* Receive Address Data Pipe 4 */
-        constexpr uint8_t RX_ADDR_P5 = 0x0F;  /* Receive Address Data Pipe 5 */
-        constexpr uint8_t TX_ADDR = 0x10;     /* Transmit Address */
-        constexpr uint8_t RX_PW_P0 = 0x11;    /* Number of bytes in RX Payload Data Pipe 0 */
-        constexpr uint8_t RX_PW_P1 = 0x12;    /* Number of bytes in RX Payload Data Pipe 1 */
-        constexpr uint8_t RX_PW_P2 = 0x13;    /* Number of bytes in RX Payload Data Pipe 2 */
-        constexpr uint8_t RX_PW_P3 = 0x14;    /* Number of bytes in RX Payload Data Pipe 3 */
-        constexpr uint8_t RX_PW_P4 = 0x15;    /* Number of bytes in RX Payload Data Pipe 4 */
-        constexpr uint8_t RX_PW_P5 = 0x16;    /* Number of bytes in RX Payload Data Pipe 5 */
-        constexpr uint8_t FIFO_STATUS = 0x17; /* FIFO Status Register */
-        constexpr uint8_t DYNPD = 0x1C;       /* Enable Dynamic Payload Length for Data Pipes */
-        constexpr uint8_t FEATURE = 0x1D;     /* Feature Register */
+        constexpr uint8_t CONFIG = 0x00;                /* Configuration Register */
+        constexpr uint8_t EN_AA = 0x01;                 /* Enable Auto Acknowledgment */
+        constexpr uint8_t EN_RXADDR = 0x02;             /* Enable RX Addresses */
+        constexpr uint8_t SETUP_AW = 0x03;              /* Setup of Address Width */
+        constexpr uint8_t SETUP_RETR = 0x04;            /* Setup of Automatic Retransmission */
+        constexpr uint8_t RF_CH = 0x05;                 /* RF Channel Frequency Settings */
+        constexpr uint8_t RF_SETUP = 0x06;              /* RF Channel Settings Register */
+        constexpr uint8_t STATUS = 0x07;                /* Status Register */
+        constexpr uint8_t OBSERVE_TX = 0x08;            /* Transmit Observe */
+        constexpr uint8_t CD = 0x09;                    /* Carrier Detect */
+        constexpr uint8_t RX_ADDR_P0 = 0x0A;            /* Receive Address Data Pipe 0 */
+        constexpr uint8_t RX_ADDR_P1 = 0x0B;            /* Receive Address Data Pipe 1 */
+        constexpr uint8_t RX_ADDR_P2 = 0x0C;            /* Receive Address Data Pipe 2 */
+        constexpr uint8_t RX_ADDR_P3 = 0x0D;            /* Receive Address Data Pipe 3 */
+        constexpr uint8_t RX_ADDR_P4 = 0x0E;            /* Receive Address Data Pipe 4 */
+        constexpr uint8_t RX_ADDR_P5 = 0x0F;            /* Receive Address Data Pipe 5 */
+        constexpr uint8_t TX_ADDR = 0x10;               /* Transmit Address */
+        constexpr uint8_t RX_PW_P0 = 0x11;              /* Number of bytes in RX Payload Data Pipe 0 */
+        constexpr uint8_t RX_PW_P1 = 0x12;              /* Number of bytes in RX Payload Data Pipe 1 */
+        constexpr uint8_t RX_PW_P2 = 0x13;              /* Number of bytes in RX Payload Data Pipe 2 */
+        constexpr uint8_t RX_PW_P3 = 0x14;              /* Number of bytes in RX Payload Data Pipe 3 */
+        constexpr uint8_t RX_PW_P4 = 0x15;              /* Number of bytes in RX Payload Data Pipe 4 */
+        constexpr uint8_t RX_PW_P5 = 0x16;              /* Number of bytes in RX Payload Data Pipe 5 */
+        constexpr uint8_t FIFO_STATUS = 0x17;           /* FIFO Status Register */
+        constexpr uint8_t DYNPD = 0x1C;                 /* Enable Dynamic Payload Length for Data Pipes */
+        constexpr uint8_t FEATURE = 0x1D;               /* Feature Register */
 	}
 
     /*----------------------------------------------

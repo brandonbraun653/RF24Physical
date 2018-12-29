@@ -9,17 +9,6 @@
 #define HW_TEST
 #endif
 
-//TODO: Replace this properly once further along in the project. Currently only here just to make things compile.
-#if !defined(USING_CHIMERA)
-static void delayMilliseconds(uint32_t mS)
-{
-    for(uint32_t i=0; i<mS; i++)
-    {
-        __asm__ __volatile__("nop");
-    }
-}
-#endif
-
 namespace NRF24L
 {
     #if defined(USING_CHIMERA)
@@ -72,9 +61,9 @@ namespace NRF24L
         /*-------------------------------------------------
         Initialize class variables
         -------------------------------------------------*/
-        addr_width = MAX_ADDRESS_WIDTH;
-        payload_size = MAX_PAYLOAD_WIDTH;
-        dynamic_payloads_enabled = false;
+        addressWidth = MAX_ADDRESS_WIDTH;
+        payloadSize = MAX_PAYLOAD_WIDTH;
+        dynamicPayloadsEnabled = false;
         pVariant = false;
     }
     #endif
@@ -321,17 +310,17 @@ namespace NRF24L
         return write(reinterpret_cast<const uint8_t *const>(buffer), len, requestACK, startTX, autoStandby);
     }
 
-    void NRF24L01::openWritePipe(const std::array<uint8_t, MAX_ADDRESS_WIDTH> address)
+    void NRF24L01::openWritePipe(const uint64_t address)
     {
         /*-------------------------------------------------
         Set the receive address for pipe 0, this one has a maximum of 5 byte width
         -------------------------------------------------*/
-        writeRegister(Register::RX_ADDR_P0, address.begin(), addressWidth);
+        writeRegister(Register::RX_ADDR_P0, reinterpret_cast<const uint8_t *>(&address), addressWidth);
 
         /*-------------------------------------------------
         Make sure we transmit back to the same address we expect receive from
         -------------------------------------------------*/
-        writeRegister(Register::TX_ADDR, address.begin(), addressWidth);
+        writeRegister(Register::TX_ADDR, reinterpret_cast<const uint8_t *>(&address), addressWidth);
 
         /*-------------------------------------------------
         Set a static payload length for all receptions on pipe 0. There must also be
@@ -340,7 +329,7 @@ namespace NRF24L
         writeRegister(Register::RX_PW_P0, payloadSize);
     }
 
-    void NRF24L01::openReadPipe(const Pipe pipe, const std::array<uint8_t, MAX_ADDRESS_WIDTH> address, const bool autoAck)
+    void NRF24L01::openReadPipe(const uint8_t pipe, const uint64_t address, const bool autoAck)
     {
         if(pipe < MAX_NUM_PIPES)
         {
@@ -352,19 +341,19 @@ namespace NRF24L
                 /*-------------------------------------------------
                 Write only as many bytes as were set in SETUP_AW
                 -------------------------------------------------*/
-                writeRegister(pipeRXAddressReg[pipe], address.begin(), addressWidth);
+                writeRegister(pipeRXAddressReg[pipe], reinterpret_cast<const uint8_t *>(&address), addressWidth);
 
                 /*-------------------------------------------------
                 Save pipe 0 address for future use
                 -------------------------------------------------*/
                 if(pipe == 0)
                 {
-                    memcpy(pipe0_reading_address.begin(), address.begin(), addressWidth);
+                    memcpy(pipe0_reading_address.begin(), &address, addressWidth);
                 }
             }
             else
             {
-                writeRegister(pipeRXAddressReg[pipe], address.begin(), 1);
+                writeRegister(pipeRXAddressReg[pipe], reinterpret_cast<const uint8_t *>(&address), 1);
             }
 
             /*-------------------------------------------------
@@ -477,6 +466,39 @@ namespace NRF24L
                 clearChipEnable();
                 flushTX();
                 return false;
+            }
+        }
+
+        clearChipEnable();
+        return true;
+    }
+
+    bool NRF24L01::txStandBy(uint32_t timeout, bool startTx)
+    {
+        if (startTx)
+        {
+            stopListening();
+            setChipEnable();
+        }
+
+        uint32_t start = millis();
+
+        while (!registerIsBitmaskSet(Register::FIFO_STATUS, FIFO_STATUS::TX_EMPTY))
+        {
+            if (registerIsBitmaskSet(Register::STATUS, STATUS::MAX_RT))
+            {
+                setRegisterBits(Register::STATUS, STATUS::MAX_RT);
+
+                //Retransmit
+                clearChipEnable();
+                setChipEnable();
+
+                if((millis() - start) > (timeout+95))
+                {
+                    clearChipEnable();
+                    flushTX();
+                    return false;
+                }
             }
         }
 
@@ -728,7 +750,7 @@ namespace NRF24L
         }
     }
 
-    void NRF24L01::setAutoAck(const Pipe pipe, const bool enable)
+    void NRF24L01::setAutoAck(const uint8_t pipe, const bool enable)
     {
         if (pipe < MAX_NUM_PIPES)
         {
@@ -1065,23 +1087,23 @@ namespace NRF24L
     void NRF24L01::setChipEnable()
     {
         #if defined(USING_CHIMERA)
-        chipEnable->write(State::HIGH);
+        chipEnable->setState(State::HIGH);
         #endif
     }
 
     void NRF24L01::clearChipEnable()
     {
         #if defined(USING_CHIMERA)
-        chipEnable->write(State::LOW);
+        chipEnable->setState(State::LOW);
         #endif
     }
 
     void NRF24L01::spiInit()
     {
         #if defined(USING_CHIMERA)
-        spi->setChipSelectControlMode(ChipSelectMode::MANUAL);
-        chipEnable->mode(Drive::OUTPUT_PUSH_PULL);
-        chipEnable->write(State::LOW);
+        spi->setChipSelectControlMode(Chimera::SPI::ChipSelectMode::MANUAL);
+        chipEnable->setMode(Drive::OUTPUT_PUSH_PULL, false);
+        chipEnable->setState(State::LOW);
 
         spi->setChipSelect(State::LOW);
         spi->setChipSelect(State::HIGH);

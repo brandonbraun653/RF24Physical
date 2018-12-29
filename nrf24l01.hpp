@@ -13,6 +13,7 @@
 
 /* Chimera Includes */
 #if defined(USING_CHIMERA)
+#include <Chimera/chimera.hpp>
 #include <Chimera/gpio.hpp>
 #include <Chimera/spi.hpp>
 #endif
@@ -111,7 +112,8 @@ namespace NRF24L
         *   @param[in]  address The address of the pipe to open
         *   @return void
         */
-        void openWritePipe(const std::array<uint8_t, MAX_ADDRESS_WIDTH> address);
+
+        void openWritePipe(const uint64_t address);
 
         /**
         *   Open a pipe for reading
@@ -134,7 +136,7 @@ namespace NRF24L
         *   @param[in]  number      Which pipe to open, 0-5.
         *   @param[in]  address     The 24, 32 or 40 bit address of the pipe to open.
         */
-        void openReadPipe(const Pipe pipe, const std::array<uint8_t, MAX_ADDRESS_WIDTH> address, const bool autoAck = false);
+        void openReadPipe(const uint8_t pipe, const uint64_t address, const bool autoAck = false);
 
         /**
         *   Check if data is available to be read on any pipe.
@@ -163,9 +165,9 @@ namespace NRF24L
         */
         void read(uint8_t *const buffer, size_t len);
 
-        /** 
+        /**
         *   Same function as read(), but for char buffers. This is more for user convenience than anything else.
-        *   
+        *
         *   @return void
         */
         void read(char *const buffer, size_t len);
@@ -197,19 +199,27 @@ namespace NRF24L
         */
         bool write(const uint8_t *const buffer, size_t len, const bool requestACK = false, const bool startTX = true, const bool autoStandby = true);
 
-        /** 
+        /**
         *   Same function as write(), but for char buffers. This is more for user convenience than anything else.
-        *   
+        *
         *   @return True if the payload was delivered successfully false if not
         */
         bool write(const char *const buffer, size_t len, const bool requestACK = false, const bool startTX = true, const bool autoStandby = true);
 
         /**
         *   Checks if we can successfully talk with the radio over SPI
-        *   
+        *
         *   @return true if connected, false if not
         */
         bool isConnected();
+
+        /**
+        *   Originally a shim function that was used to detect if the radio was a virtual model (not valid) or
+        *   it was an actual device (is valid). The virtual model was used for testing purposes and was a bit limited.
+        *
+        *   @return true
+        */
+        constexpr bool isValid() { return true; };
 
         /**
         *   Check if the RX FIFO is full
@@ -218,17 +228,17 @@ namespace NRF24L
         */
         bool rxFifoFull();
 
-        /** 
+        /**
         *   Check if the TX FIFO is full
         *
-        *   @return true if full, false if not 
+        *   @return true if full, false if not
         */
         bool txFIFOFull();
 
-        /** 
+        /**
         *   Check if the TX FIFO is empty
         *
-        *   @return true if empty, false if not 
+        *   @return true if empty, false if not
         */
         bool txFIFOEmpty();
 
@@ -241,6 +251,13 @@ namespace NRF24L
         *   @return True if waiting transfers were successful, false if not
         */
         bool txStandBy();
+
+        /**
+        * This function allows extended blocking and auto-retries per a user defined timeout
+        *
+        * @return True if transmission is successful
+        */
+        bool txStandBy(uint32_t timeout, bool startTx = 0);
 
         /**
         *   Write an ACK payload for the specified pipe
@@ -282,8 +299,8 @@ namespace NRF24L
         *   re-use functionality of the chip, but can be beneficial to users as well.
         *
         *   The function will instruct the radio to re-use the data in the FIFO buffers,
-        *   and re-send once the timeout limit has been reached. After issuing reUseTX(), it 
-        *   will keep resending the same payload forever until a payload is written to the 
+        *   and re-send once the timeout limit has been reached. After issuing reUseTX(), it
+        *   will keep resending the same payload forever until a payload is written to the
         *   FIFO, or a flush_tx command is given.
         */
         void reUseTX();
@@ -291,7 +308,7 @@ namespace NRF24L
         /**
         *   Close a pipe after it has been previously opened.
         *   Can be safely called without having previously opened a pipe.
-        *   
+        *
         *   @param[in]  pipe    Which pipe number to close, 0-5.
         */
         void closeReadPipe(const uint8_t pipe);
@@ -328,7 +345,7 @@ namespace NRF24L
         /**
         *   Set static payload size
         *
-        *   This implementation uses a pre-established fixed payload size for all transfers. If this method 
+        *   This implementation uses a pre-established fixed payload size for all transfers. If this method
         *   is never called, the driver will always transmit the maximum payload size (32 bytes), no matter how much
         *   was sent to write().
         *
@@ -364,21 +381,21 @@ namespace NRF24L
 
         /**
         *   Clears out the RX FIFO
-        *   
+        *
         *   @return Current value of Register::STATUS
         */
         uint8_t flushRX();
 
         /**
         *   Activates the ability to use features defined in Register::FEATURES
-        *   
+        *
         *   @return void
         */
         void activateFeatures();
 
-        /** 
+        /**
         *   Deactivates the features defined in Register::FEATURES
-        *   
+        *
         *   @return void
         */
         void deactivateFeatures();
@@ -398,7 +415,7 @@ namespace NRF24L
 
         /**
         *   Disables custom payloads on the RX acknowledge packets (all pipes)
-        *   
+        *
         *   @return void
         */
         void disableAckPayload();
@@ -414,7 +431,7 @@ namespace NRF24L
         *   Disable dynamically-sized payloads
         *
         *   This disables dynamic payloads on ALL pipes. Since ACK Payloads requires Dynamic Payloads, ACK Payloads
-        *   are also disabled. If dynamic payloads are later re-enabled and ACK payloads are desired then enableAckPayload() 
+        *   are also disabled. If dynamic payloads are later re-enabled and ACK payloads are desired then enableAckPayload()
         *   must be called again as well.
         *
         *   @return void
@@ -457,7 +474,7 @@ namespace NRF24L
         *   @param[in]  pipe    Which pipeline to modify
         *   @param[in]  enable  Whether to enable (true) or disable (false) auto-ACKs
         */
-        void setAutoAck(const Pipe pipe, const bool enable);
+        void setAutoAck(const uint8_t pipe, const bool enable);
 
         /**
         *   Set the power amplifier level
@@ -605,7 +622,7 @@ namespace NRF24L
         void startFastWrite(const uint8_t *const buffer, size_t len, const bool requestACK = false, const bool startTX = true);
 
         /** User defined function that will initialize the SPI hardware as needed.
-        *   
+        *
         *   @return void
         */
         virtual void spiInit();
@@ -657,13 +674,13 @@ namespace NRF24L
 
         /** User defined function to set the chip enable pin logically HIGH
         *
-        *   @return void 
+        *   @return void
         */
         virtual void setChipEnable();
 
         /** User defined function to set the chip enable pin logically LOW
         *
-        *   @return void 
+        *   @return void
         */
         virtual void clearChipEnable();
 
@@ -692,7 +709,7 @@ namespace NRF24L
         Register bit fields useful for inspection in the debugger
         -------------------------------------------------*/
         #if defined(DEBUG)
-        STATUS::BitField statusReg;                                    
+        STATUS::BitField statusReg;
         #endif
 
         uint8_t writeCMD(const uint8_t cmd);
