@@ -74,6 +74,8 @@ void helloWorldThread(void *arguments)
 
     radio = NRF24L01(spi, chip_enable);
     radio.begin();
+    radio.setPALevel(PowerAmplitude::LOW);
+
     network.begin(90, this_node);
 
     uint32_t now = millis();

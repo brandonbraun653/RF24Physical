@@ -136,7 +136,7 @@ namespace NRF24L
         *   @param[in]  number      Which pipe to open, 0-5.
         *   @param[in]  address     The 24, 32 or 40 bit address of the pipe to open.
         */
-        void openReadPipe(const uint8_t pipe, const uint64_t address, const bool autoAck = false);
+        void openReadPipe(const uint8_t pipe, const uint64_t address);
 
         /**
         *   Check if data is available to be read on any pipe.
@@ -206,6 +206,8 @@ namespace NRF24L
         */
         bool write(const char *const buffer, size_t len, const bool multicast = false, const bool startTX = true, const bool autoStandby = false);
 
+        bool writeFast(const uint8_t *const buffer, uint8_t len, const bool multicast = false);
+
         /**
         *   Checks if we can successfully talk with the radio over SPI
         *
@@ -257,7 +259,7 @@ namespace NRF24L
         *
         * @return True if transmission is successful
         */
-        bool txStandBy(uint32_t timeout, bool startTx = 0);
+        bool txStandBy(uint32_t timeout, bool startTx = false);
 
         /**
         *   Write an ACK payload for the specified pipe
@@ -607,6 +609,8 @@ namespace NRF24L
         *   @return Current value of status register
         */
         uint8_t getStatus();
+
+        void takeSnapshot();
 
      protected:
 

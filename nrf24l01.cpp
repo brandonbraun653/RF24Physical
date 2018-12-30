@@ -231,7 +231,7 @@ namespace NRF24L
     bool NRF24L01::write(const uint8_t *const buffer, size_t len, const bool multicast, const bool startTX, const bool autoStandby)
     {
         constexpr uint32_t busyDelay_mS = 1;
-        constexpr uint32_t autoTimeout_mS = 4000;
+        constexpr uint32_t autoTimeout_mS = 100;
         bool writeResult = true;
 
         /*-------------------------------------------------
@@ -257,13 +257,12 @@ namespace NRF24L
         ------------------------------------------------*/
         if (writeResult)
         {
-            State state = State::HIGH;
-            chipEnable->getState(state);
-
             /*-------------------------------------------------
             Dump data into the TX FIFO and start the transfer
             -------------------------------------------------*/
             startFastWrite(buffer, len, multicast, startTX);
+
+            //takeSnapshot();
 
             /*-------------------------------------------------
             Handle ACK/NACK should we be starting the transfer
@@ -323,10 +322,42 @@ namespace NRF24L
         return write(reinterpret_cast<const uint8_t *const>(buffer), len, multicast, startTX, autoStandby);
     }
 
+    bool NRF24L01::writeFast(const uint8_t *const buffer, uint8_t len, const bool multicast)
+    {
+        //Block until the FIFO is NOT full.
+        //Keep track of the MAX retries and set auto-retry if seeing failures
+        //Return 0 so the user can control the retrys and set a timer or failure counter if required
+        //The radio will auto-clear everything in the FIFO as long as CE remains high
+
+        /*-------------------------------------------------
+        Wait for the FIFO to have room for another packet
+        -------------------------------------------------*/
+        while(txFIFOFull())
+        {
+            delayMilliseconds(1);
+
+            /*-------------------------------------------------
+            If max retries hit, we failed and should exit here
+            -------------------------------------------------*/
+            if (registerIsBitmaskSet(Register::STATUS, STATUS::MAX_RT))
+            {
+                setRegisterBits(Register::STATUS, STATUS::MAX_RT);
+                return false;
+            }
+        }
+	
+        /*------------------------------------------------
+        Load the data into the FIFO
+        ------------------------------------------------*/
+        startFastWrite(buffer, len, multicast);
+        return true;
+    }
+
     void NRF24L01::openWritePipe(const uint64_t address)
     {
         /*-------------------------------------------------
-        Set the receive address for pipe 0, this one has a maximum of 5 byte width
+        Set the receive address for pipe 0 to be equal to the transmit address. This is to allow
+        reception of an ACK packet should it be sent from the receiver.
         -------------------------------------------------*/
         writeRegister(Register::RX_ADDR_P0, reinterpret_cast<const uint8_t *>(&address), addressWidth);
 
@@ -342,7 +373,7 @@ namespace NRF24L
         writeRegister(Register::RX_PW_P0, payloadSize);
     }
 
-    void NRF24L01::openReadPipe(const uint8_t pipe, const uint64_t address, const bool autoAck)
+    void NRF24L01::openReadPipe(const uint8_t pipe, const uint64_t address)
     {
         if(pipe < MAX_NUM_PIPES)
         {
@@ -368,11 +399,6 @@ namespace NRF24L
             {
                 writeRegister(pipeRXAddressReg[pipe], reinterpret_cast<const uint8_t *>(&address), 1);
             }
-
-            /*-------------------------------------------------
-            Turn on/off the auto acknowledge feature
-            -------------------------------------------------*/
-            setAutoAck(pipe, autoAck);
 
             /*-------------------------------------------------
             Let the pipe know how wide the payload will be, then turn it on
@@ -495,6 +521,7 @@ namespace NRF24L
         }
 
         uint32_t start = millis();
+        timeout += 95;
 
         while (!txFIFOEmpty())
         {
@@ -506,13 +533,14 @@ namespace NRF24L
                 Re-transmit the data
                 ------------------------------------------------*/
                 clearChipEnable();
+                delayMilliseconds(1);
                 setChipEnable();
             }
 
-            auto delay = millis() - start;
-            auto timeOut = timeout + 95;
-
-            if(delay > timeOut)
+            /*------------------------------------------------
+            Automatic timeout failure
+            ------------------------------------------------*/
+            if ((millis() - start) > timeout)
             {
                 clearChipEnable();
                 flushTX();
@@ -925,6 +953,8 @@ namespace NRF24L
         statusReg.convert(spi_rxbuff[0]);
         #endif
 
+        memcpy(buf, &spi_rxbuff[1], len);
+
         /* Return only the status code of the chip. The register values will be in the rx buff */
         return spi_rxbuff[0];
     }
@@ -1166,4 +1196,22 @@ namespace NRF24L
         writeRegister(reg, regVal);
     }
 
+}
+
+
+void NRF24L::NRF24L01::takeSnapshot()
+{
+    uint64_t txAddr = 0;
+    readRegister(Register::TX_ADDR, reinterpret_cast<uint8_t*>(&txAddr), addressWidth);
+
+    uint64_t rxAddr = 0;
+    readRegister(Register::RX_ADDR_P0, reinterpret_cast<uint8_t*>(&rxAddr), addressWidth);
+
+    volatile uint8_t cfg = readRegister(Register::CONFIG);
+    volatile uint8_t aa = readRegister(Register::EN_AA);
+    volatile uint8_t enrxaddr = readRegister(Register::EN_RXADDR);
+    volatile uint8_t setup_aw = readRegister(Register::SETUP_AW);
+    volatile uint8_t retr = readRegister(Register::SETUP_RETR);
+
+    retr = 0;
 }
