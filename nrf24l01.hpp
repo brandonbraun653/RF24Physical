@@ -192,19 +192,19 @@ namespace NRF24L
         *
         *   @param[in]  buffer          Array of data to be sent
         *   @param[in]  len             Number of bytes to be sent
-        *   @param[in]  requestACK      Request the RX device to ACK the transmission for this packet
+        *   @param[in]  multicast       If true, allows a NOACK on the transmission for this packet
         *   @param[in]  startTX         Decide whether or not to begin transmitting the FIFO data
         *   @param[in]  autoStandby     Signals the end of a set of transfers and places the radio into STANDBY_I mode
         *   @return True if the payload was delivered successfully false if not
         */
-        bool write(const uint8_t *const buffer, size_t len, const bool requestACK = false, const bool startTX = true, const bool autoStandby = true);
+        bool write(const uint8_t *const buffer, size_t len, const bool multicast = false, const bool startTX = true, const bool autoStandby = false);
 
         /**
         *   Same function as write(), but for char buffers. This is more for user convenience than anything else.
         *
         *   @return True if the payload was delivered successfully false if not
         */
-        bool write(const char *const buffer, size_t len, const bool requestACK = false, const bool startTX = true, const bool autoStandby = true);
+        bool write(const char *const buffer, size_t len, const bool multicast = false, const bool startTX = true, const bool autoStandby = false);
 
         /**
         *   Checks if we can successfully talk with the radio over SPI
@@ -615,11 +615,11 @@ namespace NRF24L
         *
         *   @param[in] buffer       Array of data to be sent
         *   @param[in] len          Number of bytes to be sent
-        *   @param[in] requestACK   Request the RX device to ACK the transmission for this packet
+        *   @param[in] multicast    If false, requests the RX device to ACK the transmission for this packet
         *   @param[in] startTX      Starts the transfer immediately if true
         *   @return True if the payload was delivered successfully false if not
         */
-        void startFastWrite(const uint8_t *const buffer, size_t len, const bool requestACK = false, const bool startTX = true);
+        void startFastWrite(const uint8_t *const buffer, size_t len, const bool multicast, const bool startTX = true);
 
         /** User defined function that will initialize the SPI hardware as needed.
         *

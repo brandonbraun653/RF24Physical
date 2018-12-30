@@ -187,9 +187,10 @@
     <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\threads.cpp" />
     <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\uart.cpp" />
     <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\usart.cpp" />
-    <ClCompile Include="$(EFP_BASE)\Profiler\ProfilerDriver_STM32_HAL.cpp" />
+    <ClCompile Include="helloworld_tx.cpp" />
     <ClCompile Include="serverThread.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClInclude Include="helloworld_tx.hpp" />
     <ClInclude Include="serverThread.hpp" />
     <None Include="stm32.props" />
     <ClCompile Include="$(EFP_BASE)\Profiler\FastSemihosting.cpp" />

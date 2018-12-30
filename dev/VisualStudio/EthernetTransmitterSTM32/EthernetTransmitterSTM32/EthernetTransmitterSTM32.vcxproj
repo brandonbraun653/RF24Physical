@@ -65,6 +65,7 @@
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
   <ItemGroup>
+    <ClInclude Include="helloworld_rx.hpp" />
     <None Include="stm32.props" />
     <ClCompile Include="$(EFP_BASE)\Profiler\FastSemihosting.cpp" />
     <ClCompile Include="$(EFP_BASE)\Profiler\SamplingProfiler.cpp" />
@@ -77,7 +78,7 @@
     <ClInclude Include="$(EFP_BASE)\Profiler\CustomRealTimeWatches.h" />
     <ClInclude Include="$(EFP_BASE)\Profiler\DebuggerChecker.h" />
     <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\IPAddress.cpp" />
-    <ClCompile Include="$(EFP_BASE)\Profiler\ProfilerDriver_STM32_HAL.cpp" />
+    <ClCompile Include="helloworld_rx.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="clientThread.cpp" />
     <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\Client.h" />

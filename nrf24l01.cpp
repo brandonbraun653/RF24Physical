@@ -228,10 +228,10 @@ namespace NRF24L
         read(reinterpret_cast<uint8_t *const>(buffer), len);
     }
 
-    bool NRF24L01::write(const uint8_t *const buffer, size_t len, const bool requestACK, const bool startTX, const bool autoStandby)
+    bool NRF24L01::write(const uint8_t *const buffer, size_t len, const bool multicast, const bool startTX, const bool autoStandby)
     {
         constexpr uint32_t busyDelay_mS = 1;
-        constexpr uint32_t autoTimeout_mS = 100;
+        constexpr uint32_t autoTimeout_mS = 4000;
         bool writeResult = true;
 
         /*-------------------------------------------------
@@ -252,12 +252,18 @@ namespace NRF24L
             }
         }
 
+        /*------------------------------------------------
+        The FIFO has some room now, so fill it with data.
+        ------------------------------------------------*/
         if (writeResult)
         {
+            State state = State::HIGH;
+            chipEnable->getState(state);
+
             /*-------------------------------------------------
             Dump data into the TX FIFO and start the transfer
             -------------------------------------------------*/
-            startFastWrite(buffer, len, requestACK, startTX);
+            startFastWrite(buffer, len, multicast, startTX);
 
             /*-------------------------------------------------
             Handle ACK/NACK should we be starting the transfer
@@ -312,9 +318,9 @@ namespace NRF24L
         return writeResult;
     }
 
-    bool NRF24L01::write(const char *const buffer, size_t len, const bool requestACK, const bool startTX, const bool autoStandby)
+    bool NRF24L01::write(const char *const buffer, size_t len, const bool multicast, const bool startTX, const bool autoStandby)
     {
-        return write(reinterpret_cast<const uint8_t *const>(buffer), len, requestACK, startTX, autoStandby);
+        return write(reinterpret_cast<const uint8_t *const>(buffer), len, multicast, startTX, autoStandby);
     }
 
     void NRF24L01::openWritePipe(const uint64_t address)
@@ -423,34 +429,29 @@ namespace NRF24L
         currentMode = Mode::POWER_DOWN;
     }
 
-    void NRF24L01::startFastWrite(const uint8_t *const buffer, size_t len, const bool requestACK, const bool startTX)
+    void NRF24L01::startFastWrite(const uint8_t *const buffer, size_t len, const bool multicast, const bool startTX)
     {
         uint8_t payloadType = 0u;
 
-        if (requestACK)
-        {
-            /*-------------------------------------------------
-            Force waiting for the RX device to send an ACK packet
-            -------------------------------------------------*/
-            disableDynamicAck();
-            payloadType = Command::W_TX_PAYLOAD;
-        }
-        else
+        if (multicast)
         {
             /*-------------------------------------------------
             Transmit one packet without waiting for an ACK packet from the RX device
             -------------------------------------------------*/
-            enableDynamicAck();
             payloadType = Command::W_TX_PAYLOAD_NO_ACK;
+        }
+        else
+        {
+            /*-------------------------------------------------
+            Force waiting for the RX device to send an ACK packet
+            -------------------------------------------------*/
+            payloadType = Command::W_TX_PAYLOAD;
         }
 
         /*-------------------------------------------------
         Write the payload to the TX FIFO and optionally start the transfer
         -------------------------------------------------*/
         writePayload(buffer, len, payloadType);
-
-        Chimera::GPIO::State chipstate = Chimera::GPIO::State::HIGH;
-        chipEnable->getState(chipstate);
 
         if (startTX)
         {
@@ -464,7 +465,7 @@ namespace NRF24L
         /*-------------------------------------------------
         Wait for the TX FIFO to signal it's empty
         -------------------------------------------------*/
-        while (!registerIsBitmaskSet(Register::FIFO_STATUS, FIFO_STATUS::TX_EMPTY))
+        while (!txFIFOEmpty())
         {
             /*-------------------------------------------------
             If we hit the Max Retries, we have a problem and the whole TX FIFO is screwed.
@@ -475,6 +476,8 @@ namespace NRF24L
                 setRegisterBits(Register::STATUS, STATUS::MAX_RT);
                 clearChipEnable();
                 flushTX();
+
+                currentMode = Mode::STANDBY_I;
                 return false;
             }
         }
@@ -493,22 +496,27 @@ namespace NRF24L
 
         uint32_t start = millis();
 
-        while (!registerIsBitmaskSet(Register::FIFO_STATUS, FIFO_STATUS::TX_EMPTY))
+        while (!txFIFOEmpty())
         {
             if (registerIsBitmaskSet(Register::STATUS, STATUS::MAX_RT))
             {
                 setRegisterBits(Register::STATUS, STATUS::MAX_RT);
 
-                //Retransmit
+                /*------------------------------------------------
+                Re-transmit the data
+                ------------------------------------------------*/
                 clearChipEnable();
                 setChipEnable();
+            }
 
-                if((millis() - start) > (timeout+95))
-                {
-                    clearChipEnable();
-                    flushTX();
-                    return false;
-                }
+            auto delay = millis() - start;
+            auto timeOut = timeout + 95;
+
+            if(delay > timeOut)
+            {
+                clearChipEnable();
+                flushTX();
+                return false;
             }
         }
 
@@ -726,6 +734,8 @@ namespace NRF24L
             clearRegisterBits(Register::DYNPD, DYNPD::Mask);
             clearRegisterBits(Register::EN_AA, EN_AA::Mask);
             clearRegisterBits(Register::FEATURE, FEATURE::EN_DPL);
+
+            dynamicPayloadsEnabled = false;
         }
     }
 

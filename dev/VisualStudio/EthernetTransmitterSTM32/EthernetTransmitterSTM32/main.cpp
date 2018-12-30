@@ -8,9 +8,11 @@
 #include <Chimera/utilities.hpp>
 
 #include "clientThread.hpp"
+#include "helloworld_rx.hpp"
 
 using namespace Chimera::Threading;
 
+TaskHandle_t helloTask;
 TaskHandle_t senderTask;
 TaskHandle_t ledTask;
 
@@ -20,12 +22,13 @@ int main(void)
     ChimeraInit();
 
     #ifdef DEBUG
-    InitializeSamplingProfiler();
+    //InitializeSamplingProfiler();
     InitializeInstrumentingProfiler();
     #endif
 
     addThread(ledThread, "led", 200, NULL, 2, &ledTask);
-    addThread(clientThread, "sender", 1500, NULL, 2, &senderTask);
+    //addThread(clientThread, "sender", 1500, NULL, 2, &senderTask);
+    addThread(helloWorldRXThread, "sender", 1500, NULL, 2, &helloTask);
     startScheduler();
 
     /* Should never reach here as scheduler should be running */

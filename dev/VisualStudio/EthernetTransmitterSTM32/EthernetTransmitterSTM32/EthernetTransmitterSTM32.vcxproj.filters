@@ -1121,9 +1121,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="$(EFP_BASE)\Profiler\ProfilerDriver_STM32_HAL.cpp">
-      <Filter>Source files\Device-specific files\Semihosting/Profiler</Filter>
-    </ClCompile>
     <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\IPAddress.cpp">
       <Filter>RF24Ethernet</Filter>
     </ClCompile>
@@ -1160,6 +1157,9 @@
     <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uip-split.cpp">
       <Filter>RF24Ethernet\utility</Filter>
     </ClCompile>
+    <ClCompile Include="helloworld_rx.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\IPAddress.h">
@@ -1172,6 +1172,9 @@
       <Filter>RF24Ethernet</Filter>
     </ClInclude>
     <ClInclude Include="clientThread.hpp">
+      <Filter>Source files</Filter>
+    </ClInclude>
+    <ClInclude Include="helloworld_rx.hpp">
       <Filter>Source files</Filter>
     </ClInclude>
   </ItemGroup>
