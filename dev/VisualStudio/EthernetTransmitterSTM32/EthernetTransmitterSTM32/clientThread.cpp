@@ -76,7 +76,7 @@ void clientThread(void * argument)
 
     EthernetClient client;
     Ethernet.begin(myIP);
-    mesh.begin();
+    auto connectResult = mesh.begin();
 
     size_t size = 0;
     volatile bool connected = false;

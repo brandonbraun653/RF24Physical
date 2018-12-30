@@ -1,4 +1,3 @@
-
 /* C++ Includes */
 #include <array>
 
@@ -29,7 +28,7 @@ const char * helloWorld = "hello world";
 
 constexpr std::array<char, sizeof("hello world")> testText = {"hello world"};
 
-IPAddress myIP(10, 10, 2, 4);
+IPAddress myIP(10, 10, 2, 2);
 IPAddress serverIP(10, 10, 2, 2);
 uint32_t serverPort = 1000;
 
@@ -37,6 +36,9 @@ NRF24L01 radio;
 RF24Network network(radio);
 RF24Mesh mesh(radio, network);
 RF24EthernetClass RF24Ethernet(radio, network, mesh);
+
+// Set up the server to listen on port 1000
+EthernetServer server = EthernetServer(1000);
 
 void serverThread(void * argument)
 {

@@ -231,6 +231,7 @@ namespace NRF24L
     bool NRF24L01::write(const uint8_t *const buffer, size_t len, const bool requestACK, const bool startTX, const bool autoStandby)
     {
         constexpr uint32_t busyDelay_mS = 1;
+        constexpr uint32_t autoTimeout_mS = 100;
         bool writeResult = true;
 
         /*-------------------------------------------------
@@ -266,8 +267,14 @@ namespace NRF24L
                 /*-------------------------------------------------
                 Wait for the Data Sent or Max Retry interrupt to occur
                 -------------------------------------------------*/
+                auto startTime = millis();
                 while (!registerIsAnySet(Register::STATUS, (STATUS::TX_DS | STATUS::MAX_RT)))
                 {
+                    if ((millis() - startTime) > autoTimeout_mS)
+                    {
+                        writeResult = false;
+                        break;
+                    }
                     delayMilliseconds(busyDelay_mS);
                 }
 
@@ -442,10 +449,13 @@ namespace NRF24L
         -------------------------------------------------*/
         writePayload(buffer, len, payloadType);
 
+        Chimera::GPIO::State chipstate = Chimera::GPIO::State::HIGH;
+        chipEnable->getState(chipstate);
+
         if (startTX)
         {
             setChipEnable();
-            currentMode = Mode::STANDBY_II;
+            currentMode = Mode::TX;
         }
     }
 
@@ -970,7 +980,7 @@ namespace NRF24L
 
     uint8_t NRF24L01::writePayload(const uint8_t *const buf, size_t len, const uint8_t writeType)
     {
-        if ((writeType != Command::W_TX_PAYLOAD_NO_ACK) || (writeType != Command::W_TX_PAYLOAD))
+        if ((writeType != Command::W_TX_PAYLOAD_NO_ACK) && (writeType != Command::W_TX_PAYLOAD))
         {
             return 0u;
         }
