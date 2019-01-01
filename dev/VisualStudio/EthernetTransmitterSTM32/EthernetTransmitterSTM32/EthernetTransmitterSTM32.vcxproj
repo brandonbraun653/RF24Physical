@@ -378,10 +378,8 @@
     <None Include="EthernetTransmitterSTM32-Release.vgdbsettings" />
     <None Include="stm32.xml" />
     <ClCompile Include="$(GITHUB_ROOT)\RF24Network\RF24Network.cpp" />
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Network\Sync.cpp" />
     <ClInclude Include="$(GITHUB_ROOT)\RF24Network\RF24Network.h" />
     <ClInclude Include="$(GITHUB_ROOT)\RF24Network\RF24Network_config.h" />
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Network\Sync.h" />
     <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\clock-arch.cpp" />
     <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\Dns.cpp" />
     <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\RF24Client.cpp" />

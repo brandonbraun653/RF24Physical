@@ -19,19 +19,17 @@ using namespace Chimera::Threading;
 using namespace Chimera::GPIO;
 using namespace Chimera::SPI;
 
-NRF24L01 radio;
-RF24Network network(radio);
+static NRF24L01 radio;
+static RF24Network network(radio);
 
-const uint16_t this_node = 00;    // Address of our node in Octal format ( 04,031, etc)
-const uint16_t other_node = 01;   // Address of the other node in Octal format
+static const uint16_t this_node = 00;     // Address of our node in Octal format ( 04,031, etc)
+static const uint16_t other_node = 01;    // Address of the other node in Octal format
 
 struct payload_t
 {
     uint32_t ms;
     uint32_t counter;
 };
-
-
 
 void helloWorldRXThread(void *arguments)
 {
@@ -41,7 +39,7 @@ void helloWorldRXThread(void *arguments)
 
     spi = std::make_shared<SPIClass>(3);
 
-    spiSetup.clockFrequency = 8000000;
+    spiSetup.clockFrequency = 12000000;
     spiSetup.bitOrder = BitOrder::MSB_FIRST;
     spiSetup.clockMode = ClockMode::MODE0;
     spiSetup.mode = Chimera::SPI::Mode::MASTER;
@@ -61,8 +59,6 @@ void helloWorldRXThread(void *arguments)
     chip_enable->init(Port::PORTC, 1);
     chip_enable->setMode(Drive::OUTPUT_PUSH_PULL, false);
     chip_enable->setState(State::HIGH);
-
-    char data[50];
 
     signalThreadSetupComplete();
     TickType_t lastTimeWoken = xTaskGetTickCount();
@@ -87,11 +83,7 @@ void helloWorldRXThread(void *arguments)
                 printf("Received packet # %d at %d.\r\n", (int)payload.counter, (int)payload.ms);
             }
         }
-        else
-        {
-            printf("No packet received.\r\n");
-        }
 
-        vTaskDelayUntil(&lastTimeWoken, pdMS_TO_TICKS(1000));
+        vTaskDelayUntil(&lastTimeWoken, pdMS_TO_TICKS(10));
     }
 }

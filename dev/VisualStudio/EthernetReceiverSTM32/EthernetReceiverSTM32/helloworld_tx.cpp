@@ -22,16 +22,16 @@ using namespace Chimera::Threading;
 using namespace Chimera::GPIO;
 using namespace Chimera::SPI;
 
-NRF24L01 radio;
-RF24Network network(radio);
+static NRF24L01 radio;
+static RF24Network network(radio);
 
-const uint16_t this_node = 01;        // Address of our node in Octal format
-const uint16_t other_node = 00;       // Address of the other node in Octal format
+static const uint16_t this_node = 01;         // Address of our node in Octal format
+static const uint16_t other_node = 00;        // Address of the other node in Octal format
 
-const uint32_t interval = 2000; //ms  // How often to send 'hello world to the other unit
+static const uint32_t interval = 2000;  //ms  // How often to send 'hello world to the other unit
 
-uint32_t last_sent;             // When did we last send?
-uint32_t packets_sent;          // How many have we sent already
+static uint32_t last_sent;              // When did we last send?
+static uint32_t packets_sent;          // How many have we sent already
 
 struct payload_t
 {
@@ -47,7 +47,7 @@ void helloWorldThread(void *arguments)
 
     spi = std::make_shared<SPIClass>(3);
 
-    spiSetup.clockFrequency = 4000000;
+    spiSetup.clockFrequency = 12000000;
     spiSetup.bitOrder = BitOrder::MSB_FIRST;
     spiSetup.clockMode = ClockMode::MODE0;
     spiSetup.mode = Chimera::SPI::Mode::MASTER;

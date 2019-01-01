@@ -999,16 +999,10 @@
     <ClCompile Include="$(GITHUB_ROOT)\RF24Network\RF24Network.cpp">
       <Filter>RF24Network</Filter>
     </ClCompile>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Network\Sync.cpp">
-      <Filter>RF24Network</Filter>
-    </ClCompile>
     <ClInclude Include="$(GITHUB_ROOT)\RF24Network\RF24Network.h">
       <Filter>RF24Network</Filter>
     </ClInclude>
     <ClInclude Include="$(GITHUB_ROOT)\RF24Network\RF24Network_config.h">
-      <Filter>RF24Network</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Network\Sync.h">
       <Filter>RF24Network</Filter>
     </ClInclude>
     <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\Dns.cpp">
