@@ -22,7 +22,7 @@ namespace NRF24L
     /*------------------------------------------------
     Configuration Constants
     ------------------------------------------------*/
-    #define TRACK_REGISTER_STATES                       /* Keep track of the register states as they are set/read (Debugging Feature, lots of overhead) */
+    //#define TRACK_REGISTER_STATES                       /* Keep track of the register states as they are set/read (Debugging Feature, lots of overhead) */
 
     /*----------------------------------------------
     General Definitions

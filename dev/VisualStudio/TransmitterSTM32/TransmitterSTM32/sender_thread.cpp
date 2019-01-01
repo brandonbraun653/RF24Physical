@@ -24,7 +24,7 @@ const uint64_t address = 0xCCCCCCCC3C;
 
 constexpr std::array<char, sizeof("hello world")> testText = {"hello world"};
 
-char helloWorld[] = "hello world\r\n";
+char helloWorld[] = "I pity the fool.\r\n";
 
 void senderThread(void * argument)
 {
@@ -38,7 +38,7 @@ void senderThread(void * argument)
 
     spi = std::make_shared<SPIClass>(3);
 
-    spiSetup.clockFrequency = 1000000;
+    spiSetup.clockFrequency = 12000000;
     spiSetup.bitOrder = BitOrder::MSB_FIRST;
     spiSetup.clockMode = ClockMode::MODE0;
     spiSetup.mode = Chimera::SPI::Mode::MASTER;

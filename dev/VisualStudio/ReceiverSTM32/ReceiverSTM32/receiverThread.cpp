@@ -22,6 +22,8 @@ using namespace Chimera::SPI;
 static uint32_t delayTime = 500;
 const uint64_t address = 0xCCCCCCCC3C;
 uint8_t rxBuffer[40];
+char translateBuffer[40];
+char fmtBuffer[40];
 
 void receiverThread(void * argument)
 {
@@ -39,7 +41,7 @@ void receiverThread(void * argument)
 
     spi = std::make_shared<SPIClass>(3);
 
-    spiSetup.clockFrequency = 1000000;
+    spiSetup.clockFrequency = 12000000;
     spiSetup.bitOrder = BitOrder::MSB_FIRST;
     spiSetup.clockMode = ClockMode::MODE0;
     spiSetup.mode = Chimera::SPI::Mode::MASTER;
@@ -81,6 +83,7 @@ void receiverThread(void * argument)
 
     uint8_t pipeNum = 0xFF;
     uint8_t numBytes = 0;
+    int pktCounter = 0;
 
     TickType_t lastTimeWoken = xTaskGetTickCount();
     for(;;)
@@ -90,10 +93,13 @@ void receiverThread(void * argument)
             numBytes = radio->readRegister(Register::RX_PW_P0);
 
             radio->read(rxBuffer, numBytes);
-            printf("%s\r\n", rxBuffer);
+
+            printf("Printing Packet %d:\r\n", pktCounter++);
+            printf("%s", reinterpret_cast<char *>(rxBuffer));
 
             led.toggle();
         }
+
         vTaskDelayUntil(&lastTimeWoken, pdMS_TO_TICKS(100));
     }
 

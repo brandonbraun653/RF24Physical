@@ -179,6 +179,10 @@ namespace NRF24L
         */
         void startListening();
 
+        void pauseListening();
+
+        void resumeListening();
+
         /**
         *   Stop listening for RX messages and switch to transmit mode.
         *
@@ -310,6 +314,13 @@ namespace NRF24L
         *   @return true if full, false if not
         */
         bool rxFifoFull();
+
+        /**
+        *   Check if the RX FIFO is empty
+        *
+        *   @return true if empty, false if data is available
+        */
+        bool rxFifoEmpty();
 
         /**
         *   Check if the TX FIFO is full
@@ -702,11 +713,13 @@ namespace NRF24L
         */
         FailureCode getFailureCode();
 
-    protected:
-
         #if defined(TRACK_REGISTER_STATES)
         NRF24L01Registers registers;
         #endif
+
+    protected:
+
+
 
         bool chipEnableState = false;
 
@@ -796,6 +809,12 @@ namespace NRF24L
         */
         virtual void clearChipEnable();
 
+        /** User defined function to get the current logical state of the chip enable pin
+        *
+        *   @return void
+        */
+        virtual bool getChipEnableState();
+
     private:
         static constexpr size_t SPI_BUFFER_LEN = 1 + MAX_PAYLOAD_WIDTH; /**< Accounts for max payload of 32 bytes + 1 byte for the command */
 
@@ -806,6 +825,7 @@ namespace NRF24L
         bool dynamicPayloadsEnabled = false;                            /**< Are our payloads configured as variable width? */
 
         bool listening = false;                                         /**< Track if the radio is listening or not */
+        bool listeningPaused = false;
 
         size_t addressWidth = 0;                                        /**< Keep track of the user's address width preference */
         size_t payloadSize = 0;                                         /**< Keep track of the user's payload width preference */

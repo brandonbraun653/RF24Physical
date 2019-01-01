@@ -150,9 +150,21 @@ namespace NRF24L
         }
     }
 
+    void NRF24L01::pauseListening()
+    {
+        clearChipEnable();
+        listeningPaused = true;
+    }
+
+    void NRF24L01::resumeListening()
+    {
+        setChipEnable();
+        listeningPaused = false;
+    }
+
     void NRF24L01::stopListening()
     {
-        if (listening)
+        if (listening || listeningPaused)
         {
             /*-------------------------------------------------
             Set the chip into standby mode I
@@ -186,7 +198,7 @@ namespace NRF24L
 
     bool NRF24L01::available()
     {
-        return !registerIsBitmaskSet(Register::STATUS, STATUS::RX_DR);
+        return !rxFifoEmpty();
     }
 
     bool NRF24L01::available(uint8_t &pipe_num)
@@ -430,6 +442,17 @@ namespace NRF24L
         #endif
 
         return reg & FIFO_STATUS::RX_FULL;
+    }
+
+    bool NRF24L01::rxFifoEmpty()
+    {
+        uint8_t reg = readRegister(Register::FIFO_STATUS);
+
+        #if defined(TRACK_REGISTER_STATES)
+        registers.fifo_status = reg;
+        #endif
+
+        return reg & FIFO_STATUS::RX_EMPTY;
     }
 
     bool NRF24L01::txFIFOFull()
@@ -1182,6 +1205,8 @@ namespace NRF24L
         /*-------------------------------------------------
         Format the write command and fill the rest with zeros
         -------------------------------------------------*/
+        memset(spi_txbuff.begin(), 0xff, spi_txbuff.size());
+
         spi_txbuff[0] = writeType;                  /* Write command type*/
         memcpy(&spi_txbuff[1], buf, len);           /* Payload information */
         memset(&spi_txbuff[len], 0, blank_len);     /* Null out the remaining buffer space*/
@@ -1195,6 +1220,13 @@ namespace NRF24L
 
     uint8_t NRF24L01::readPayload(uint8_t *const buffer, size_t len)
     {
+        uint8_t status = 0u;
+
+        /*-------------------------------------------------
+        The chip enable pin must be low to read out data
+        -------------------------------------------------*/
+        pauseListening();
+
         /*-------------------------------------------------
         Cap the data length
         -------------------------------------------------*/
@@ -1212,6 +1244,7 @@ namespace NRF24L
         -------------------------------------------------*/
         spi_txbuff[0] = Command::R_RX_PAYLOAD;
         memset(&spi_txbuff[1], Command::NOP, size);
+        memset(spi_rxbuff.begin(), 0, spi_rxbuff.size());
 
         /*-------------------------------------------------
         Read out the payload. The +1 is for the read command.
@@ -1220,11 +1253,20 @@ namespace NRF24L
         spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), size + 1);
         endTransaction();
 
+        status = spi_rxbuff[0];
+        memcpy(buffer, &spi_rxbuff[1], len);
+
+        /*------------------------------------------------
+        Clear (by setting) the RX_DR flag to signal we've read data
+        ------------------------------------------------*/
+        setRegisterBits(Register::STATUS, STATUS::RX_DR);
+
         /*-------------------------------------------------
-        The status byte is first, RX payload is all remaining bytes
+        Reset the chip enable back to the initial RX state
         -------------------------------------------------*/
-        memcpy(buffer, &spi_rxbuff[1], size);
-        return spi_rxbuff[0];
+        resumeListening();
+
+        return status;
     }
 
     uint8_t NRF24L01::getStatus()
@@ -1296,6 +1338,17 @@ namespace NRF24L
         #endif
 
         chipEnableState = false;
+    }
+
+    bool NRF24L01::getChipEnableState()
+    {
+        #if defined(USING_CHIMERA)
+        Chimera::GPIO::State state;
+        chipEnable->getState(state);
+        return static_cast<bool>(state);
+        #endif
+
+        return chipEnableState;
     }
 
     void NRF24L01::spiInit()
