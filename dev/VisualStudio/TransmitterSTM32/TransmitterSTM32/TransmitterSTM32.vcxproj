@@ -44,7 +44,7 @@
       <CPPLanguageStandard>CPP14</CPPLanguageStandard>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\..\;$(BOOST_ROOT)\boost_1_68_0;$(CHIMERA_ROOT);$(THOR_ROOT)\Thor\lib\FreeRTOS\config\stm32;$(THOR_ROOT)\Thor\lib\FreeRTOS\portable\GCC\ARM_CM4F;$(THOR_ROOT)\Thor\lib\FreeRTOS\include;$(THOR_ROOT)\Thor\lib\stm32hal_f4\STM32F4xx_HAL_Driver\Inc;$(THOR_ROOT)\Thor\lib\stm32hal_f4\Device\include;$(THOR_ROOT)\Thor\lib\stm32hal_f4\Device\conf;$(THOR_ROOT)\Thor\lib\cmsis\CMSIS\Core\Include;$(THOR_ROOT)\Thor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CLanguageStandard>C99</CLanguageStandard>
-      <PreprocessorDefinitions>%(ClCompile.PreprocessorDefinitions);DEBUG=1;STM32F446xx;USE_FULL_LL_DRIVER;BOOST_NO_EXCEPTIONS;;USE_FREERTOS;USING_FREERTOS;</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(ClCompile.PreprocessorDefinitions);DEBUG=1;STM32F446xx;USE_FULL_LL_DRIVER;BOOST_NO_EXCEPTIONS;;USE_FREERTOS;USING_FREERTOS;;USING_CHIMERA</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|VisualGDB'">
@@ -53,7 +53,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\..\;$(BOOST_ROOT)\boost_1_68_0;$(CHIMERA_ROOT);$(THOR_ROOT)\Thor\lib\FreeRTOS\config\stm32;$(THOR_ROOT)\Thor\lib\FreeRTOS\portable\GCC\ARM_CM4F;$(THOR_ROOT)\Thor\lib\FreeRTOS\include;$(THOR_ROOT)\Thor\lib\stm32hal_f4\STM32F4xx_HAL_Driver\Inc;$(THOR_ROOT)\Thor\lib\stm32hal_f4\Device\include;$(THOR_ROOT)\Thor\lib\stm32hal_f4\Device\conf;$(THOR_ROOT)\Thor\lib\cmsis\CMSIS\Core\Include;$(THOR_ROOT)\Thor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CLanguageStandard>C99</CLanguageStandard>
       <LinkTimeOptimization>false</LinkTimeOptimization>
-      <PreprocessorDefinitions>%(ClCompile.PreprocessorDefinitions);NDEBUG=1;RELEASE=1;STM32F446xx;USE_FULL_LL_DRIVER;BOOST_NO_EXCEPTIONS;;USE_FREERTOS;USING_FREERTOS;</PreprocessorDefinitions>
+      <PreprocessorDefinitions>%(ClCompile.PreprocessorDefinitions);NDEBUG=1;RELEASE=1;STM32F446xx;USE_FULL_LL_DRIVER;BOOST_NO_EXCEPTIONS;;USE_FREERTOS;USING_FREERTOS;;USING_CHIMERA</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -69,6 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\nrf24l01.cpp" />
+    <ClCompile Include="..\..\..\..\nrf24l01_definitions.cpp" />
     <ClCompile Include="main.cpp" />
     <ClInclude Include="..\..\..\..\nrf24l01.hpp" />
     <ClInclude Include="..\..\..\..\nrf24l01_definitions.hpp" />
@@ -128,7 +129,7 @@
     <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\spi.cpp" />
     <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\thor.cpp" />
     <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\threads.cpp" />
-    <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\timer.cpp" />
+    <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\thor_timer.cpp" />
     <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\uart.cpp" />
     <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\usart.cpp" />
     <ClCompile Include="$(CHIMERA_ROOT)\Chimera\chimera.cpp" />
@@ -370,6 +371,5 @@
     <ClInclude Include="$(EFP_BASE)\Profiler\ProfilerFreeRTOSHooks.h" />
     <ClInclude Include="$(EFP_BASE)\Profiler\CustomRealTimeWatches.h" />
     <ClInclude Include="$(EFP_BASE)\Profiler\DebuggerChecker.h" />
-    <ClCompile Include="$(EFP_BASE)\Profiler\ProfilerDriver_STM32_HAL.cpp" />
   </ItemGroup>
 </Project>

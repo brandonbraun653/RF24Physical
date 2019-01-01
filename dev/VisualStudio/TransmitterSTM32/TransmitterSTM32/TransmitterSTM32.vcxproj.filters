@@ -452,7 +452,7 @@
     <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\threads.cpp">
       <Filter>Thor\Source</Filter>
     </ClCompile>
-    <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\timer.cpp">
+    <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\thor_timer.cpp">
       <Filter>Thor\Source</Filter>
     </ClCompile>
     <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\uart.cpp">
@@ -503,8 +503,8 @@
     <ClCompile Include="..\..\..\..\nrf24l01.cpp">
       <Filter>nRF24L01</Filter>
     </ClCompile>
-    <ClCompile Include="$(EFP_BASE)\Profiler\ProfilerDriver_STM32_HAL.cpp">
-      <Filter>Source files\Device-specific files\Semihosting/Profiler</Filter>
+    <ClCompile Include="..\..\..\..\nrf24l01_definitions.cpp">
+      <Filter>nRF24L01</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

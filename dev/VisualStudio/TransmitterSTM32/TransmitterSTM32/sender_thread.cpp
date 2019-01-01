@@ -20,10 +20,11 @@ using namespace Chimera::GPIO;
 using namespace Chimera::SPI;
 
 static uint32_t delayTime = 500;
-const std::array<uint8_t, MAX_ADDRESS_WIDTH> address = { 0x00, 0x00, 0x00, 0x00, 0x01 };
-const std::array<uint8_t, 5> testArray = { 1, 2, 3, 4, 5 };
+const uint64_t address = 0xCCCCCCCC3C;
 
 constexpr std::array<char, sizeof("hello world")> testText = {"hello world"};
+
+char helloWorld[] = "hello world\r\n";
 
 void senderThread(void * argument)
 {
@@ -37,14 +38,14 @@ void senderThread(void * argument)
 
     spi = std::make_shared<SPIClass>(3);
 
-    spiSetup.clockFrequency = 8000000;
+    spiSetup.clockFrequency = 1000000;
     spiSetup.bitOrder = BitOrder::MSB_FIRST;
     spiSetup.clockMode = ClockMode::MODE0;
     spiSetup.mode = Chimera::SPI::Mode::MASTER;
 
     spiSetup.CS.pin = 15;
     spiSetup.CS.port = Port::PORTA;
-    spiSetup.CS.alternate = Thor::Peripheral::GPIO::NOALTERNATE;
+    spiSetup.CS.alternate = Thor::Definitions::GPIO::NOALTERNATE;
     spiSetup.CS.mode = Drive::OUTPUT_PUSH_PULL;
     spiSetup.CS.state = State::HIGH;
 
@@ -53,9 +54,10 @@ void senderThread(void * argument)
     spi->init(spiSetup);
     spi->setPeripheralMode(SubPeripheral::TXRX, SubPeripheralMode::BLOCKING);
 
-    chip_enable = std::make_shared<GPIOClass>(Port::PORTC, 1);
-    chip_enable->mode(Drive::OUTPUT_PUSH_PULL);
-    chip_enable->write(State::HIGH);
+    chip_enable = std::make_shared<GPIOClass>();
+    chip_enable->init(Port::PORTC, 1);
+    chip_enable->setMode(Drive::OUTPUT_PUSH_PULL, false);
+    chip_enable->setState(State::HIGH);
 
     radio = std::make_shared<NRF24L01>(spi, chip_enable);
 
@@ -69,9 +71,10 @@ void senderThread(void * argument)
     else
     {
         initialized = true;
-        radio->setChannel(0);
+        radio->setChannel(90);
         radio->openWritePipe(address);
-        radio->setPALevel(PowerAmplitude::MAX);
+        radio->setPALevel(PowerAmplitude::LOW);
+        radio->setAutoAck(0, true);
         radio->stopListening();
     }
 
@@ -80,13 +83,15 @@ void senderThread(void * argument)
     {
         if (initialized)
         {
-            if (!radio->write(testText.begin(), testText.size(), true))
+            radio->writeFast(reinterpret_cast<uint8_t*>(helloWorld), sizeof(helloWorld), false);
+
+            if (radio->txStandBy(100))
             {
-                printf("Write failed\r\n");
+                printf("Write succeeded\r\n");
             }
             else
             {
-                printf("Write succeeded\r\n");
+                printf("Write failed with error code: %d\r\n", (int)radio->getFailureCode());
             }
         }
         vTaskDelayUntil(&lastTimeWoken, pdMS_TO_TICKS(1000));
@@ -97,18 +102,19 @@ void senderThread(void * argument)
 
 void ledThread(void* argument)
 {
-    GPIOClass led = GPIOClass(Port::PORTA, 5);
-    led.mode(Drive::OUTPUT_PUSH_PULL);
-    led.write(State::LOW);
+    GPIOClass led;
+    led.init(Port::PORTA, 5);
+    led.setMode(Drive::OUTPUT_PUSH_PULL, false);
+    led.setState(State::LOW);
 
     signalThreadSetupComplete();
 
     TickType_t lastTimeWoken = xTaskGetTickCount();
     for(;;)
     {
-        led.write(State::LOW);
+        led.setState(State::LOW);
         vTaskDelayUntil(&lastTimeWoken, pdMS_TO_TICKS(delayTime));
-        led.write(State::HIGH);
+        led.setState(State::HIGH);
         vTaskDelayUntil(&lastTimeWoken, pdMS_TO_TICKS(delayTime));
     }
 }

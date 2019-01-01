@@ -42,7 +42,7 @@
     <Enabled>True</Enabled>
     <ExtraSettings>
       <HideErrorsInSystemHeaders>true</HideErrorsInSystemHeaders>
-      <SupportLightweightReferenceAnalysis>true</SupportLightweightReferenceAnalysis>
+      <SupportLightweightReferenceAnalysis>false</SupportLightweightReferenceAnalysis>
       <DiscoverySettings>
         <Mode>Disabled</Mode>
         <SearchInProjectDir>true</SearchInProjectDir>

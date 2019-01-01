@@ -20,8 +20,8 @@ using namespace Chimera::GPIO;
 using namespace Chimera::SPI;
 
 static uint32_t delayTime = 500;
-const std::array<uint8_t, MAX_ADDRESS_WIDTH> address = { 0x00, 0x00, 0x00, 0x00, 0x01 };
-std::array<char, 33> receiveText;
+const uint64_t address = 0xCCCCCCCC3C;
+uint8_t rxBuffer[40];
 
 void receiverThread(void * argument)
 {
@@ -32,20 +32,21 @@ void receiverThread(void * argument)
     Setup spiSetup;
     SPIClass_sPtr spi;
     GPIOClass_sPtr chip_enable;
-    GPIOClass led = GPIOClass(Port::PORTB, 0);
-    led.mode(Drive::OUTPUT_PUSH_PULL);
-    led.write(State::LOW);
+    GPIOClass led;
+    led.init(Port::PORTB, 0);
+    led.setMode(Drive::OUTPUT_PUSH_PULL, false);
+    led.setState(State::LOW);
 
     spi = std::make_shared<SPIClass>(3);
 
-    spiSetup.clockFrequency = 8000000;
+    spiSetup.clockFrequency = 1000000;
     spiSetup.bitOrder = BitOrder::MSB_FIRST;
     spiSetup.clockMode = ClockMode::MODE0;
     spiSetup.mode = Chimera::SPI::Mode::MASTER;
 
     spiSetup.CS.pin = 7;
     spiSetup.CS.port = Port::PORTF;
-    spiSetup.CS.alternate = Thor::Peripheral::GPIO::NOALTERNATE;
+    spiSetup.CS.alternate = Thor::Definitions::GPIO::NOALTERNATE;
     spiSetup.CS.mode = Drive::OUTPUT_PUSH_PULL;
     spiSetup.CS.state = State::HIGH;
 
@@ -54,9 +55,10 @@ void receiverThread(void * argument)
     spi->init(spiSetup);
     spi->setPeripheralMode(SubPeripheral::TXRX, SubPeripheralMode::BLOCKING);
 
-    chip_enable = std::make_shared<GPIOClass>(Port::PORTF, 6);
-    chip_enable->mode(Drive::OUTPUT_PUSH_PULL);
-    chip_enable->write(State::HIGH);
+    chip_enable = std::make_shared<GPIOClass>();
+    chip_enable->init(Port::PORTF, 6);
+    chip_enable->setMode(Drive::OUTPUT_PUSH_PULL, false);
+    chip_enable->setState(State::HIGH);
 
     radio = std::make_shared<NRF24L01>(spi, chip_enable);
 
@@ -70,21 +72,29 @@ void receiverThread(void * argument)
     else
     {
         initialized = true;
-        radio->setChannel(0);
-        radio->setPALevel(PowerAmplitude::MAX);
-        radio->openReadPipe(PIPE_0, address, true);
+        radio->setChannel(90);
+        radio->setPALevel(PowerAmplitude::LOW);
+        radio->setAutoAck(0, true);
+        radio->openReadPipe(0, address);
         radio->startListening();
     }
+
+    uint8_t pipeNum = 0xFF;
+    uint8_t numBytes = 0;
 
     TickType_t lastTimeWoken = xTaskGetTickCount();
     for(;;)
     {
-        if (initialized && radio->available())
+        if (radio->available(pipeNum))
         {
-            radio->read(receiveText.begin(), MAX_PAYLOAD_WIDTH);
+            numBytes = radio->readRegister(Register::RX_PW_P0);
+
+            radio->read(rxBuffer, numBytes);
+            printf("%s\r\n", rxBuffer);
+
             led.toggle();
         }
-        vTaskDelayUntil(&lastTimeWoken, pdMS_TO_TICKS(1000));
+        vTaskDelayUntil(&lastTimeWoken, pdMS_TO_TICKS(100));
     }
 
 }
@@ -92,18 +102,19 @@ void receiverThread(void * argument)
 
 void ledThread(void* argument)
 {
-    GPIOClass led = GPIOClass(Port::PORTB, 7);
-    led.mode(Drive::OUTPUT_PUSH_PULL);
-    led.write(State::LOW);
+    GPIOClass led;
+    led.init(Port::PORTB, 7);
+    led.setMode(Drive::OUTPUT_PUSH_PULL, false);
+    led.setState(State::LOW);
 
     signalThreadSetupComplete();
 
     TickType_t lastTimeWoken = xTaskGetTickCount();
     for(;;)
     {
-        led.write(State::LOW);
+        led.setState(State::LOW);
         vTaskDelayUntil(&lastTimeWoken, pdMS_TO_TICKS(delayTime));
-        led.write(State::HIGH);
+        led.setState(State::HIGH);
         vTaskDelayUntil(&lastTimeWoken, pdMS_TO_TICKS(delayTime));
     }
 }

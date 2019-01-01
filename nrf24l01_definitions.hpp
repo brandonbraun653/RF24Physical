@@ -19,15 +19,24 @@ namespace NRF24L
 
     #define PSTR(x) (x)
 
+    /*------------------------------------------------
+    Configuration Constants
+    ------------------------------------------------*/
+    #define TRACK_REGISTER_STATES                       /* Keep track of the register states as they are set/read (Debugging Feature, lots of overhead) */
+
     /*----------------------------------------------
     General Definitions
     ----------------------------------------------*/
-    constexpr size_t MAX_ADDRESS_WIDTH = 5;
-    constexpr size_t MAX_PAYLOAD_WIDTH = 32;
+    class NRF24L01;                                     /* Forward declare the class so register Bitfields can auto-update */
+
+    constexpr size_t MAX_ADDRESS_WIDTH = 5;             /**< Hardware limit for how many bytes can represent a device's address */
+    constexpr size_t MAX_PAYLOAD_WIDTH = 32;            /**< Hardware limit for RF payload */
+    constexpr uint32_t MIN_TIMEOUT_MS = 1;              /**< The absolute lowest resolution timeout we want to achieve */
+    constexpr uint32_t DFLT_TIMEOUT_MS = 100;           /**< Default timeout for general operations */
 
     enum class Mode : uint8_t
     {
-        POWER_DOWN,
+        POWER_DOWN = 0,
         STANDBY_I,
         STANDBY_II,
         RX,
@@ -137,6 +146,32 @@ namespace NRF24L
         constexpr uint8_t PRIM_RX_Pos = 0u;
         constexpr uint8_t PRIM_RX_Msk = 1u << PRIM_RX_Pos;
         constexpr uint8_t PRIM_RX = PRIM_RX_Msk;
+
+        class BitField
+        {
+        public:
+            bool bMASK_RX_DR = false;
+            bool bMASK_TX_DS = false;
+            bool bMASK_MAX_RT = false;
+            bool bEN_CRC = false;
+            bool bCRCO = false;
+            bool bPWR_UP = false;
+            bool bPRIM_RX = false;
+
+            void operator=(const uint8_t reg)
+            {
+                bMASK_RX_DR = reg & MASK_RX_DR;
+                bMASK_TX_DS = reg & MASK_TX_DS;
+                bMASK_MAX_RT= reg & MASK_MAX_RT;
+                bEN_CRC     = reg & EN_CRC;
+                bCRCO       = reg & CRCO;
+                bPWR_UP     = reg & PWR_UP;
+                bPRIM_RX    = reg & PRIM_RX;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace EN_AA
@@ -166,6 +201,30 @@ namespace NRF24L
         constexpr uint8_t P0_Pos = 0u;
         constexpr uint8_t P0_Msk = 1u << P0_Pos;
         constexpr uint8_t P0 = P0_Msk;
+
+        class BitField
+        {
+        public:
+            bool bP5 = false;
+            bool bP4 = false;
+            bool bP3 = false;
+            bool bP2 = false;
+            bool bP1 = false;
+            bool bP0 = false;
+
+            void operator=(const uint8_t reg)
+            {
+                bP5 = reg & P5;
+                bP4 = reg & P4;
+                bP3 = reg & P3;
+                bP2 = reg & P2;
+                bP1 = reg & P1;
+                bP0 = reg & P0;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace EN_RXADDR
@@ -195,6 +254,30 @@ namespace NRF24L
         constexpr uint8_t P0_Pos = 0u;
         constexpr uint8_t P0_Msk = 1u << P0_Pos;
         constexpr uint8_t P0 = P0_Msk;
+
+        class BitField
+        {
+        public:
+            bool bP5 = false;
+            bool bP4 = false;
+            bool bP3 = false;
+            bool bP2 = false;
+            bool bP1 = false;
+            bool bP0 = false;
+
+            void operator=(const uint8_t reg)
+            {
+                bP5 = reg & P5;
+                bP4 = reg & P4;
+                bP3 = reg & P3;
+                bP2 = reg & P2;
+                bP1 = reg & P1;
+                bP0 = reg & P0;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace SETUP_AW
@@ -205,6 +288,20 @@ namespace NRF24L
         constexpr uint8_t AW_Wid = 0x03;
         constexpr uint8_t AW_Msk = AW_Wid << AW_Pos;
         constexpr uint8_t AW = AW_Msk;
+
+        class BitField
+        {
+        public:
+            uint8_t fAW = 0u;
+
+            void operator=(const uint8_t reg)
+            {
+                fAW = reg & AW;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace SETUP_RETR
@@ -218,11 +315,41 @@ namespace NRF24L
         constexpr uint8_t ARC_Pos = 0u;
         constexpr uint8_t ARC_Msk = 0x0F << ARC_Pos;
         constexpr uint8_t ARC = ARC_Msk;
+
+        class BitField
+        {
+        public:
+            uint8_t fARD = 0u;
+            uint8_t fARC = 0u;
+
+            void operator=(const uint8_t reg)
+            {
+                fARD = reg & ARD;
+                fARC = reg & ARC;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace RF_CH
 	{
         constexpr uint8_t Mask = 0x7F;
+
+        class BitField
+        {
+        public:
+            uint8_t fRF_CH = 0u;
+
+            void operator=(const uint8_t reg)
+            {
+                fRF_CH = reg & Mask;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace RF_SETUP
@@ -253,6 +380,29 @@ namespace NRF24L
         constexpr uint8_t LNA_HCURR_Pos = 0u;
         constexpr uint8_t LNA_HCURR_Msk = 1u << LNA_HCURR_Pos;
         constexpr uint8_t LNA_HCURR = LNA_HCURR_Msk;
+
+        class BitField
+        {
+        public:
+            bool bRF_DR_LOW = false;
+            bool bPLL_LOCK = false;
+            bool bRF_DR_HIGH = false;
+            bool bRF_DR = false;
+            bool bLNA_HCURR = false;
+            uint8_t fRF_PWR = 0u;
+
+            void operator=(const uint8_t reg)
+            {
+                bRF_DR_LOW = reg & RF_DR_LOW;
+                bPLL_LOCK = reg & PLL_LOCK;
+                bRF_DR_HIGH = reg & RF_DR_HIGH;
+                bRF_DR = reg & RF_DR;
+                bLNA_HCURR = reg & LNA_HCURR;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace STATUS
@@ -280,25 +430,27 @@ namespace NRF24L
         constexpr uint8_t TX_FULL_Msk   = 1u << TX_FULL_Pos;
         constexpr uint8_t TX_FULL       = TX_FULL_Msk;
 
-        #if defined(DEBUG)
-        typedef struct
+        class BitField
         {
-            bool Bit_RX_DR = false;
-            bool Bit_TX_DS = false;
-            bool Bit_MAX_RT = false;
-            bool Bit_TX_FULL = false;
-            uint8_t Field_RX_P_NO = 0u;
+        public:
+            bool bRX_DR = false;
+            bool bTX_DS = false;
+            bool bMAX_RT = false;
+            bool bTX_FULL = false;
+            uint8_t fRX_P_NO = 0u;
 
-            void convert(const uint8_t reg)
+            void operator=(const uint8_t reg)
             {
-                Bit_RX_DR = reg & RX_DR;
-                Bit_TX_DS = reg & TX_DS;
-                Bit_MAX_RT = reg & MAX_RT;
-                Bit_TX_FULL = reg & TX_FULL;
-                Field_RX_P_NO = reg & RX_P_NO;
+                bRX_DR = reg & RX_DR;
+                bTX_DS = reg & TX_DS;
+                bMAX_RT = reg & MAX_RT;
+                bTX_FULL = reg & TX_FULL;
+                fRX_P_NO = reg & RX_P_NO;
             }
-        } BitField;
-        #endif
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
 	}
 
     namespace OBSERVE_TX
@@ -314,6 +466,22 @@ namespace NRF24L
         constexpr uint8_t ARC_CNT_Wid = 0x0F;
         constexpr uint8_t ARC_CNT_Msk = ARC_CNT_Wid << ARC_CNT_Pos;
         constexpr uint8_t ARC_CNT = ARC_CNT_Msk;
+
+        class BitField
+        {
+        public:
+            uint8_t fPLOS_CNT = 0u;
+            uint8_t fARC_CNT = 0u;
+
+            void operator=(const uint8_t reg)
+            {
+                fPLOS_CNT = reg & PLOS_CNT;
+                fARC_CNT = reg & ARC_CNT;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace CD
@@ -324,48 +492,277 @@ namespace NRF24L
         constexpr uint8_t CD_Pos    = 0u;
         constexpr uint8_t CD_Msk    = 1u << CD_Pos;
         constexpr uint8_t CD        = CD_Msk;
+
+        class BitField
+        {
+        public:
+            bool bCD = false;
+
+            void operator=(const uint8_t reg)
+            {
+                bCD = reg & CD;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace RX_ADDR_P0
     {
+        constexpr uint8_t byteWidth = 5u;
         constexpr uint64_t Mask     = 0xFFFFFFFFFF;
         constexpr uint64_t Reset    = 0xE7E7E7E7E7;
+
+        class BitField
+        {
+        public:
+            uint64_t rxAddressP0 = 0u;
+
+            void operator=(const uint64_t reg)
+            {
+                rxAddressP0 = reg & Mask;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace RX_ADDR_P1
     {
+        constexpr uint8_t byteWidth = 5u;
         constexpr uint64_t Mask     = 0xFFFFFFFFFF;
         constexpr uint64_t Reset    = 0xC2C2C2C2C2;
+
+        class BitField
+        {
+        public:
+            uint64_t rxAddressP1 = 0u;
+
+            void operator=(const uint64_t reg)
+            {
+                rxAddressP1 = reg & Mask;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace RX_ADDR_P2
     {
         constexpr uint8_t Mask  = 0xFF;
         constexpr uint8_t Reset = 0xC3;
+
+        class BitField
+        {
+        public:
+            uint8_t rxAddressP2 = 0u;
+
+            void operator=(const uint8_t reg)
+            {
+                rxAddressP2 = reg & Mask;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace RX_ADDR_P3
     {
         constexpr uint8_t Mask  = 0xFF;
         constexpr uint8_t Reset = 0xC4;
+
+        class BitField
+        {
+        public:
+            uint8_t rxAddressP3 = 0u;
+
+            void operator=(const uint8_t reg)
+            {
+                rxAddressP3 = reg & Mask;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace RX_ADDR_P4
     {
         constexpr uint8_t Mask  = 0xFF;
         constexpr uint8_t Reset = 0xC5;
+
+        class BitField
+        {
+        public:
+            uint8_t rxAddressP4 = 0u;
+
+            void operator=(const uint8_t reg)
+            {
+                rxAddressP4 = reg & Mask;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace RX_ADDR_P5
     {
         constexpr uint8_t Mask  = 0xFF;
         constexpr uint8_t Reset = 0xC6;
+
+        class BitField
+        {
+        public:
+            uint8_t rxAddressP5 = 0u;
+
+            void operator=(const uint8_t reg)
+            {
+                rxAddressP5 = reg & Mask;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace TX_ADDR
     {
+        constexpr uint8_t byteWidth = 5u;
         constexpr uint64_t Mask     = 0xFFFFFFFFFF;
         constexpr uint64_t Reset    = 0xE7E7E7E7E7;
+
+        class BitField
+        {
+        public:
+            uint64_t txAddress = 0u;
+
+            void operator=(const uint64_t reg)
+            {
+                txAddress = reg & Mask;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
+    }
+
+    namespace RX_PW_P0
+    {
+        constexpr uint64_t Mask = 0x3F;
+
+        class BitField
+        {
+        public:
+            uint64_t rxPayloadWidthP0 = 0u;
+
+            void operator=(const uint64_t reg)
+            {
+                rxPayloadWidthP0 = reg & Mask;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
+    }
+
+    namespace RX_PW_P1
+    {
+        constexpr uint64_t Mask  = 0x3F;
+
+        class BitField
+        {
+        public:
+            uint64_t rxPayloadWidthP1 = 0u;
+
+            void operator=(const uint64_t reg)
+            {
+                rxPayloadWidthP1 = reg & Mask;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
+    }
+
+    namespace RX_PW_P2
+    {
+        constexpr uint8_t Mask  = 0x3F;
+
+        class BitField
+        {
+        public:
+            uint8_t rxPayloadWidthP2 = 0u;
+
+            void operator=(const uint8_t reg)
+            {
+                rxPayloadWidthP2 = reg & Mask;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
+    }
+
+    namespace RX_PW_P3
+    {
+        constexpr uint8_t Mask  = 0x3F;
+
+        class BitField
+        {
+        public:
+            uint8_t rxPayloadWidthP3 = 0u;
+
+            void operator=(const uint8_t reg)
+            {
+                rxPayloadWidthP3 = reg & Mask;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
+    }
+
+    namespace RX_PW_P4
+    {
+        constexpr uint8_t Mask  = 0x3F;
+
+        class BitField
+        {
+        public:
+            uint8_t rxPayloadWidthP4 = 0u;
+
+            void operator=(const uint8_t reg)
+            {
+                rxPayloadWidthP4 = reg & Mask;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
+    }
+
+    namespace RX_PW_P5
+    {
+        constexpr uint8_t Mask  = 0x3F;
+
+        class BitField
+        {
+        public:
+            uint8_t rxPayloadWidthP5 = 0u;
+
+            void operator=(const uint8_t reg)
+            {
+                rxPayloadWidthP5 = reg & Mask;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace RX_PW
@@ -397,6 +794,28 @@ namespace NRF24L
         constexpr uint8_t RX_EMPTY_Pos = 0u;
         constexpr uint8_t RX_EMPTY_Msk = 1u << RX_EMPTY_Pos;
         constexpr uint8_t RX_EMPTY = RX_EMPTY_Msk;
+
+        class BitField
+        {
+        public:
+            bool bTX_REUSE = false;
+            bool bTX_FULL = false;
+            bool bTX_EMPTY = false;
+            bool bRX_FULL = false;
+            bool bRX_EMPTY = false;
+
+            void operator=(const uint8_t reg)
+            {
+                bTX_REUSE = reg & TX_REUSE;
+                bTX_FULL = reg & TX_FULL;
+                bTX_EMPTY = reg & TX_EMPTY;
+                bRX_FULL = reg & RX_FULL;
+                bRX_EMPTY = reg & RX_EMPTY;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace DYNPD
@@ -426,6 +845,30 @@ namespace NRF24L
         constexpr uint8_t DPL_P0_Pos = 0u;
         constexpr uint8_t DPL_P0_Msk = 1u << DPL_P0_Pos;
         constexpr uint8_t DPL_P0 = DPL_P0_Msk;
+
+        class BitField
+        {
+        public:
+            bool bDPL_P5 = false;
+            bool bDPL_P4 = false;
+            bool bDPL_P3 = false;
+            bool bDPL_P2 = false;
+            bool bDPL_P1 = false;
+            bool bDPL_P0 = false;
+
+            void operator=(const uint8_t reg)
+            {
+                bDPL_P5 = reg & bDPL_P5;
+                bDPL_P4 = reg & bDPL_P4;
+                bDPL_P3 = reg & bDPL_P3;
+                bDPL_P2 = reg & bDPL_P2;
+                bDPL_P1 = reg & bDPL_P1;
+                bDPL_P0 = reg & bDPL_P0;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
     namespace FEATURE
@@ -443,6 +886,24 @@ namespace NRF24L
         constexpr uint8_t EN_DYN_ACK_Pos = 0u;
         constexpr uint8_t EN_DYN_ACK_Msk = 1u << EN_DYN_ACK_Pos;
         constexpr uint8_t EN_DYN_ACK = EN_DYN_ACK_Msk;
+
+        class BitField
+        {
+        public:
+            bool bEN_DPL = false;
+            bool bEN_ACK_PAY = false;
+            bool bEN_DYN_ACK = false;
+
+            void operator=(const uint8_t reg)
+            {
+                bEN_DPL = reg & EN_DPL;
+                bEN_ACK_PAY = reg & EN_ACK_PAY;
+                bEN_DYN_ACK = reg & EN_DYN_ACK;
+            }
+
+            void update(NRF24L01 *const radio);
+            void update(std::shared_ptr<NRF24L01> &radio);
+        };
     }
 
 }

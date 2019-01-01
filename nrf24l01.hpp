@@ -47,6 +47,86 @@ namespace NRF24L
         CRC_16          /**< 16 Bit CRC */
     };
 
+    enum class AddressWidth : uint8_t
+    {
+        AW_3Byte = 0x01,
+        AW_4Byte = 0x02,
+        AW_5Byte = 0x03
+    };
+
+    enum class AutoRetransmitDelay : uint8_t
+    {
+        w250uS = 0,
+        w500uS = 1,
+        w750uS = 2,
+        w1000uS = 3,
+        w1250uS = 4,
+        w1500uS = 5,
+        w1750uS = 6,
+        w2000uS = 7,
+        w2250uS = 8,
+        w2500uS = 9,
+        w2750uS = 10,
+        w3000uS = 11,
+        w3250uS = 12,
+        w3500uS = 13,
+        w3750uS = 14,
+        w4000uS = 15,
+
+        MIN = w250uS,
+        MED = w2250uS,
+        MAX = w4000uS
+    };
+
+    enum class FailureCode : uint8_t
+    {
+        NO_FAILURE = 0,
+        CLEARED = NO_FAILURE,
+        MAX_RETRY_TIMEOUT,
+        TX_FIFO_FULL_TIMEOUT,
+        TX_FIFO_EMPTY_TIMEOUT,
+        RADIO_IN_TX_MODE,
+        RADIO_IN_RX_MODE,
+        INVALID_PIPE,
+    };
+
+    /**
+    *   Keeps track of the hardware registers so that config information and settings
+    *   can be checked here rather than via the slow SPI bus. Also very useful as a
+    *   debugging tool.
+    */
+    class NRF24L01Registers
+    {
+    public:
+
+        CONFIG::BitField config;
+        EN_AA::BitField en_aa;
+        EN_RXADDR::BitField en_rxaddr;
+        SETUP_AW::BitField setup_aw;
+        SETUP_RETR::BitField setup_retr;
+        RF_CH::BitField rf_ch;
+        RF_SETUP::BitField rf_setup;
+        STATUS::BitField status;
+        OBSERVE_TX::BitField observe_tx;
+        CD::BitField cd;
+        RX_ADDR_P0::BitField rx_addr_p0;
+        RX_ADDR_P1::BitField rx_addr_p1;
+        RX_ADDR_P2::BitField rx_addr_p2;
+        RX_ADDR_P3::BitField rx_addr_p3;
+        RX_ADDR_P4::BitField rx_addr_p4;
+        RX_ADDR_P5::BitField rx_addr_p5;
+        TX_ADDR::BitField tx_addr;
+        RX_PW_P0::BitField rx_pw_p0;
+        RX_PW_P1::BitField rx_pw_p1;
+        RX_PW_P2::BitField rx_pw_p2;
+        RX_PW_P3::BitField rx_pw_p3;
+        RX_PW_P4::BitField rx_pw_p4;
+        RX_PW_P5::BitField rx_pw_p5;
+        FIFO_STATUS::BitField fifo_status;
+        DYNPD::BitField dynpd;
+        FEATURE::BitField feature;
+    };
+
     /**
     *   Base class for interacting with an NRF24L01 wireless module.
     *   Most of this was taken from https://github.com/nRF24/RF24 and modified to
@@ -107,12 +187,11 @@ namespace NRF24L
         void stopListening();
 
         /**
-        *   Open pipe to an address
+        *   Open pipe 0 to write to an address. This is the only pipe that can do this.
         *
-        *   @param[in]  address The address of the pipe to open
+        *   @param[in]  address     The address for pipe 0 to write to
         *   @return void
         */
-
         void openWritePipe(const uint64_t address);
 
         /**
@@ -134,9 +213,10 @@ namespace NRF24L
         *   writing pipe.  Ergo, do an openWritingPipe() again before write().
         *
         *   @param[in]  number      Which pipe to open, 0-5.
-        *   @param[in]  address     The 24, 32 or 40 bit address of the pipe to open.
+        *   @param[in]  address     The address you want the pipe to listen to
+        *   @return True if the pipe was opened properly
         */
-        void openReadPipe(const uint8_t pipe, const uint64_t address);
+        bool openReadPipe(const uint8_t pipe, const uint64_t address);
 
         /**
         *   Check if data is available to be read on any pipe.
@@ -146,7 +226,8 @@ namespace NRF24L
         bool available();
 
         /**
-        *   Check if data is available to be read on any pipe. If so, returns which pipe is ready.
+        *   Check if data is available to be read on any pipe. If so, returns which pipe is ready. The payload
+        *   returned from a consecutive call to read() then belongs to the pipe assigned in this function.
         *
         *   @param[out] pipeNum     Which pipe has the payload available
         *   @return True if there is a payload available, false if none is
@@ -158,19 +239,12 @@ namespace NRF24L
         *
         *   The size of data read is the fixed payload size, see getPayloadSize()
         *
-        *   @param[out] buffer  Pointer to a buffer where the data should be written
-        *   @param[in]  len     Maximum number of bytes to read into the buffer
+        *   @param[out] buffer      Pointer to a buffer where the data should be written
+        *   @param[in]  len         Maximum number of bytes to read into the buffer
         *
         *   @return void
         */
         void read(uint8_t *const buffer, size_t len);
-
-        /**
-        *   Same function as read(), but for char buffers. This is more for user convenience than anything else.
-        *
-        *   @return void
-        */
-        void read(char *const buffer, size_t len);
 
         /**
         *   Writes data onto a previously configured RF channel.
@@ -200,12 +274,19 @@ namespace NRF24L
         bool write(const uint8_t *const buffer, size_t len, const bool multicast = false, const bool startTX = true, const bool autoStandby = false);
 
         /**
-        *   Same function as write(), but for char buffers. This is more for user convenience than anything else.
+        *   Writes data onto a previously configured RF channel.
         *
+        *
+        *   Prerequisite Calls:
+        *       1. openWritePipe()
+        *       2. setChannel()
+        *       3. stopListening()
+        *
+        *   @param[in]  buffer          Array of data to be sent
+        *   @param[in]  len             Number of bytes to be sent
+        *   @param[in]  multicast       If true, disables Auto-Acknowledgment feature for just this packet
         *   @return True if the payload was delivered successfully false if not
         */
-        bool write(const char *const buffer, size_t len, const bool multicast = false, const bool startTX = true, const bool autoStandby = false);
-
         bool writeFast(const uint8_t *const buffer, uint8_t len, const bool multicast = false);
 
         /**
@@ -316,19 +397,26 @@ namespace NRF24L
         void closeReadPipe(const uint8_t pipe);
 
         /**
-        *   Set the address width from 3 to 5 bytes (24, 32 or 40 bit)
+        *   Set the device's address width from 3 to 5 bytes (24, 32 or 40 bit)
         *
-        *   @param[in]  address_width   The address width to use: 3, 4 or 5
+        *   @param[in]  address_width   The address width to use
         */
-        void setAddressWidth(const uint8_t address_width);
+        void setAddressWidth(const AddressWidth address_width);
 
         /**
-        *   Set the number and delay of retries upon failed submit
+        *   Get the device's address width
         *
-        *   @param[in]  delay       How long to wait between each retry, in multiples of 250us, max is 15.  (0==250us, 15==4000us)
+        *   @return The current address width
+        */
+        AddressWidth getAddressWidth();
+
+        /**
+        *   Set the number and delay of retries upon failed transfer
+        *
+        *   @param[in]  delay       How long to wait between each retry
         *   @param[in]  count       How many retries before giving up, max 15
         */
-        void setRetries(const uint8_t delay, const uint8_t count);
+        void setRetries(const AutoRetransmitDelay delay, const uint8_t count);
 
         /**
         *   Set RF communication channel
@@ -441,14 +529,17 @@ namespace NRF24L
         void disableDynamicPayloads();
 
         /**
-        *   Enable dynamic ACK functionality
+        *   Enable the W_TX_PAYLOAD_NOACK command, which allows a packet to be transmitted
+        *   without getting an ACK packet from the receiver. Only works when multicast==true in
+        *   the class's write functions.
         *
         *   @return void
         */
         void enableDynamicAck();
 
         /**
-        *   Disable dynamic ACK functionality
+        *   Disable the W_TX_PAYLOAD_NOACK command, effectively forcing all packets to obtain
+        *   an ACK from the receiver.
         *
         *   @return void
         */
@@ -471,7 +562,13 @@ namespace NRF24L
         /**
         *   Enable or disable auto-acknowledge packets on a per pipeline basis.
         *
-        *   AA is enabled by default, so it's only needed if you want to turn it on/off
+        *   If enabled, the pipe will immediately go into RX mode after transmitting its payload
+        *   so that it can listen for the receiver's ACK packet. If no ACK is received and the auto
+        *   retransmit feature is enabled, it will retry until it either succeeds or it hits a retry
+        *   limit (defined in SETUP_RETR::ARC).
+        *
+        *   @note The auto-acknowledge behavior can be temporarily disabled for one packet by enabling
+        *           the feature register and using the W_TX_PAYLOAD_NO_ACK command. (ie multicast = true)
         *
         *   @param[in]  pipe    Which pipeline to modify
         *   @param[in]  enable  Whether to enable (true) or disable (false) auto-ACKs
@@ -581,18 +678,6 @@ namespace NRF24L
         uint8_t writeRegister(const uint8_t reg, const uint8_t value);
 
         /**
-        *   Write the transmit payload
-        *
-        *   The size of data written is the fixed payload size, see getPayloadSize()
-        *
-        *   @param[in]  buffer      Where to get the data
-        *   @param[in]  len         Number of bytes to be sent
-        *   @param[in]  writeType   Write using ACK (Command::W_TX_PAYLOAD) or NACK (Command::W_TX_PAYLOAD_NO_ACK)
-        *   @return Current value of status register
-        */
-        uint8_t writePayload(const uint8_t *const buffer, size_t len, const uint8_t writeType);
-
-        /**
         *   Read the receive payload
         *
         *   The size of data read is the fixed payload size, see getPayloadSize()
@@ -610,12 +695,24 @@ namespace NRF24L
         */
         uint8_t getStatus();
 
-        void takeSnapshot();
+        /**
+        *   Retrieve the latest failure code, automatically resetting the internal state.
+        *
+        *   @return Failure code
+        */
+        FailureCode getFailureCode();
 
-     protected:
+    protected:
+
+        #if defined(TRACK_REGISTER_STATES)
+        NRF24L01Registers registers;
+        #endif
+
+        bool chipEnableState = false;
 
         /**
-        *   Non-blocking write to an open TX pipe
+        *   Non-blocking write to an open TX pipe. If the TX FIFO is full when called, the data will simply be lost.
+        *   By default, the transfer will immediately start.
         *
         *   @param[in] buffer       Array of data to be sent
         *   @param[in] len          Number of bytes to be sent
@@ -624,6 +721,17 @@ namespace NRF24L
         *   @return True if the payload was delivered successfully false if not
         */
         void startFastWrite(const uint8_t *const buffer, size_t len, const bool multicast, const bool startTX = true);
+
+        /**
+        *   Write the transmit payload. If the TX FIFO is full when this is called, the data will simply be lost.
+        *   The size of data written is capped at the max payload size.
+        *
+        *   @param[in]  buffer      Where to get the data
+        *   @param[in]  len         Number of bytes to be sent
+        *   @param[in]  writeType   Write using ACK (Command::W_TX_PAYLOAD) or NACK (Command::W_TX_PAYLOAD_NO_ACK)
+        *   @return Current value of status register
+        */
+        uint8_t writePayload(const uint8_t *const buffer, size_t len, const uint8_t writeType);
 
         /** User defined function that will initialize the SPI hardware as needed.
         *
@@ -691,9 +799,13 @@ namespace NRF24L
     private:
         static constexpr size_t SPI_BUFFER_LEN = 1 + MAX_PAYLOAD_WIDTH; /**< Accounts for max payload of 32 bytes + 1 byte for the command */
 
+        FailureCode oopsies;                                              /**< Latest reason why something failed. */
+
         bool pVariant = false;                                          /**< NRF24L01+ variant device? */
         bool featuresActivated = false;                                 /**< Features register functionality enabled? */
         bool dynamicPayloadsEnabled = false;                            /**< Are our payloads configured as variable width? */
+
+        bool listening = false;                                         /**< Track if the radio is listening or not */
 
         size_t addressWidth = 0;                                        /**< Keep track of the user's address width preference */
         size_t payloadSize = 0;                                         /**< Keep track of the user's payload width preference */
@@ -722,6 +834,9 @@ namespace NRF24L
         void clearRegisterBits(const uint8_t reg, const uint8_t bitmask);
         void setRegisterBits(const uint8_t reg, const uint8_t bitmask);
     };
+
+
+
 
 }
 

@@ -20,7 +20,7 @@ int main(void)
     ChimeraInit();
 
     #ifdef DEBUG
-    InitializeSamplingProfiler();
+    //InitializeSamplingProfiler();
     InitializeInstrumentingProfiler();
     #endif
 
