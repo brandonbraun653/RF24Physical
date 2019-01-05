@@ -768,22 +768,25 @@ namespace NRF24L
 
     uint8_t NRF24L01::getDynamicPayloadSize()
     {
-        uint8_t result = 0u;
+        uint8_t result = MAX_PAYLOAD_WIDTH;
 
-        spi_txbuff[0] = Command::R_RX_PL_WID;
-        spi_rxbuff[1] = Command::NOP;
-
-        beginTransaction();
-        spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), 2);
-        endTransaction();
-
-        result = spi_rxbuff[1];
-
-        if (result > 32)
+        if (dynamicPayloadsEnabled)
         {
-            flushRX();
-            delayMilliseconds(2);
-            return 0;
+            spi_txbuff[0] = Command::R_RX_PL_WID;
+            spi_rxbuff[1] = Command::NOP;
+
+            beginTransaction();
+            spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), 2);
+            endTransaction();
+
+            result = spi_rxbuff[1];
+
+            if (result > 32)
+            {
+                flushRX();
+                delayMilliseconds(2);
+                return 0;
+            }
         }
 
         return result;

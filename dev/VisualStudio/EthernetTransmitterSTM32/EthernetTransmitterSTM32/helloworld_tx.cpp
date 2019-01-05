@@ -14,16 +14,17 @@
 
 /* Project Includes */
 #include "nrf24l01.hpp"
-#include "RF24Network.h"
+#include "RF24Network.hpp"
 
 using namespace NRF24L;
+using namespace RF24Network;
 using namespace Chimera;
 using namespace Chimera::Threading;
 using namespace Chimera::GPIO;
 using namespace Chimera::SPI;
 
 static NRF24L01 radio;
-static RF24Network network(radio);
+static Network network(radio);
 
 static const uint16_t this_node = 01;         // Address of our node in Octal format
 static const uint16_t other_node = 00;        // Address of the other node in Octal format
@@ -39,7 +40,7 @@ struct payload_t
     uint32_t counter;
 };
 
-void helloWorldThread(void *arguments)
+void helloWorldTXThread(void *arguments)
 {
     Setup spiSetup;
     SPIClass_sPtr spi;
@@ -90,7 +91,7 @@ void helloWorldThread(void *arguments)
             last_sent = now;
             printf("Sending...\r\n");
             payload_t payload = {millis(), packets_sent++};
-            RF24NetworkHeader header(other_node);
+            Header header(other_node);
 
             bool ok = network.write(header, &payload, sizeof(payload));
 

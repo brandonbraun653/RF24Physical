@@ -5,20 +5,10 @@
 /* C++ Includes */
 #include <cstdint>
 #include <cstdio>
+#include <memory>
 
 namespace NRF24L
 {
-    #ifdef SERIAL_DEBUG
-	    #define IF_SERIAL_DEBUG(x) ({x;})
-    #else
-	    #define IF_SERIAL_DEBUG(x)
-	    #if defined(RF24_TINY)
-	        #define printf_P(...)
-        #endif
-    #endif
-
-    #define PSTR(x) (x)
-
     /*------------------------------------------------
     Configuration Constants
     ------------------------------------------------*/
@@ -27,12 +17,13 @@ namespace NRF24L
     /*----------------------------------------------
     General Definitions
     ----------------------------------------------*/
-    class NRF24L01;                                     /* Forward declare the class so register Bitfields can auto-update */
+    class NRF24L01; /* Forward declare the class so register Bitfields can auto-update */
 
-    constexpr size_t MAX_ADDRESS_WIDTH = 5;             /**< Hardware limit for how many bytes can represent a device's address */
-    constexpr size_t MAX_PAYLOAD_WIDTH = 32;            /**< Hardware limit for RF payload */
-    constexpr uint32_t MIN_TIMEOUT_MS = 1;              /**< The absolute lowest resolution timeout we want to achieve */
-    constexpr uint32_t DFLT_TIMEOUT_MS = 100;           /**< Default timeout for general operations */
+    constexpr uint8_t MAX_NUM_PIPES = 6;        /**< Hardware limit for number of pipes we can use */
+    constexpr size_t MAX_ADDRESS_WIDTH = 5;     /**< Hardware limit for how many bytes can represent a device's address */
+    constexpr size_t MAX_PAYLOAD_WIDTH = 32;    /**< Hardware limit for RF payload */
+    constexpr uint32_t MIN_TIMEOUT_MS = 1;      /**< The absolute lowest resolution timeout we want to achieve */
+    constexpr uint32_t DFLT_TIMEOUT_MS = 100;   /**< Default timeout for general operations */
 
     enum class Mode : uint8_t
     {
@@ -46,37 +37,24 @@ namespace NRF24L
         UNKNOWN_MODE
     };
 
-    enum Pipe : uint8_t
-    {
-        PIPE_0 = 0,
-        PIPE_1,
-        PIPE_2,
-        PIPE_3,
-        PIPE_4,
-        PIPE_5,
-
-        MAX_NUM_PIPES,
-        UNKNOWN_PIPE
-    };
-
     /*----------------------------------------------
     Command Instructions
     ----------------------------------------------*/
     namespace Command
     {
-        constexpr uint8_t REGISTER_MASK = 0x1F;         /* Masks off the largest available register address */
-        constexpr uint8_t R_REGISTER = 0x00;            /* Read command and status registers  */
-        constexpr uint8_t W_REGISTER = 0x20;            /* Write command and status registers  */
-        constexpr uint8_t R_RX_PAYLOAD = 0x61;          /* Read RX Payload (1-32 bytes) */
-        constexpr uint8_t W_TX_PAYLOAD = 0xA0;          /* Write TX Payload (1-32 bytes) */
-        constexpr uint8_t FLUSH_TX = 0xE1;              /* Flush TX FIFO, used in TX Mode */
-        constexpr uint8_t FLUSH_RX = 0xE2;              /* Flush RX FIFO, used in RX Mode */
-        constexpr uint8_t REUSE_TX_PL = 0xE3;           /* Reuse last transmitted payload (PTX device only) */
-        constexpr uint8_t ACTIVATE = 0x50;              /* This command, followed by 0x73, activates R_RX_PL_WID, W_ACK_PAYLOAD, W_TX_PAYLOAD_NOACK */
-        constexpr uint8_t R_RX_PL_WID = 0x60;           /* Read RX payload width for the top payload in the RX FIFO */
-        constexpr uint8_t W_ACK_PAYLOAD = 0xA8;         /* Write Payload together with ACK packet */
-        constexpr uint8_t W_TX_PAYLOAD_NO_ACK = 0xB0;   /* Disables AUTOACK on this specific packet */
-        constexpr uint8_t NOP = 0xFF;                   /* No operation */
+        constexpr uint8_t REGISTER_MASK = 0x1F;       /* Masks off the largest available register address */
+        constexpr uint8_t R_REGISTER = 0x00;          /* Read command and status registers  */
+        constexpr uint8_t W_REGISTER = 0x20;          /* Write command and status registers  */
+        constexpr uint8_t R_RX_PAYLOAD = 0x61;        /* Read RX Payload (1-32 bytes) */
+        constexpr uint8_t W_TX_PAYLOAD = 0xA0;        /* Write TX Payload (1-32 bytes) */
+        constexpr uint8_t FLUSH_TX = 0xE1;            /* Flush TX FIFO, used in TX Mode */
+        constexpr uint8_t FLUSH_RX = 0xE2;            /* Flush RX FIFO, used in RX Mode */
+        constexpr uint8_t REUSE_TX_PL = 0xE3;         /* Reuse last transmitted payload (PTX device only) */
+        constexpr uint8_t ACTIVATE = 0x50;            /* This command, followed by 0x73, activates R_RX_PL_WID, W_ACK_PAYLOAD, W_TX_PAYLOAD_NOACK */
+        constexpr uint8_t R_RX_PL_WID = 0x60;         /* Read RX payload width for the top payload in the RX FIFO */
+        constexpr uint8_t W_ACK_PAYLOAD = 0xA8;       /* Write Payload together with ACK packet */
+        constexpr uint8_t W_TX_PAYLOAD_NO_ACK = 0xB0; /* Disables AUTOACK on this specific packet */
+        constexpr uint8_t NOP = 0xFF;                 /* No operation */
     }
 
     /*----------------------------------------------
@@ -84,33 +62,33 @@ namespace NRF24L
     ----------------------------------------------*/
     namespace Register
     {
-        constexpr uint8_t CONFIG = 0x00;                /* Configuration Register */
-        constexpr uint8_t EN_AA = 0x01;                 /* Enable Auto Acknowledgment */
-        constexpr uint8_t EN_RXADDR = 0x02;             /* Enable RX Addresses */
-        constexpr uint8_t SETUP_AW = 0x03;              /* Setup of Address Width */
-        constexpr uint8_t SETUP_RETR = 0x04;            /* Setup of Automatic Retransmission */
-        constexpr uint8_t RF_CH = 0x05;                 /* RF Channel Frequency Settings */
-        constexpr uint8_t RF_SETUP = 0x06;              /* RF Channel Settings Register */
-        constexpr uint8_t STATUS = 0x07;                /* Status Register */
-        constexpr uint8_t OBSERVE_TX = 0x08;            /* Transmit Observe */
-        constexpr uint8_t CD = 0x09;                    /* Carrier Detect */
-        constexpr uint8_t RX_ADDR_P0 = 0x0A;            /* Receive Address Data Pipe 0 */
-        constexpr uint8_t RX_ADDR_P1 = 0x0B;            /* Receive Address Data Pipe 1 */
-        constexpr uint8_t RX_ADDR_P2 = 0x0C;            /* Receive Address Data Pipe 2 */
-        constexpr uint8_t RX_ADDR_P3 = 0x0D;            /* Receive Address Data Pipe 3 */
-        constexpr uint8_t RX_ADDR_P4 = 0x0E;            /* Receive Address Data Pipe 4 */
-        constexpr uint8_t RX_ADDR_P5 = 0x0F;            /* Receive Address Data Pipe 5 */
-        constexpr uint8_t TX_ADDR = 0x10;               /* Transmit Address */
-        constexpr uint8_t RX_PW_P0 = 0x11;              /* Number of bytes in RX Payload Data Pipe 0 */
-        constexpr uint8_t RX_PW_P1 = 0x12;              /* Number of bytes in RX Payload Data Pipe 1 */
-        constexpr uint8_t RX_PW_P2 = 0x13;              /* Number of bytes in RX Payload Data Pipe 2 */
-        constexpr uint8_t RX_PW_P3 = 0x14;              /* Number of bytes in RX Payload Data Pipe 3 */
-        constexpr uint8_t RX_PW_P4 = 0x15;              /* Number of bytes in RX Payload Data Pipe 4 */
-        constexpr uint8_t RX_PW_P5 = 0x16;              /* Number of bytes in RX Payload Data Pipe 5 */
-        constexpr uint8_t FIFO_STATUS = 0x17;           /* FIFO Status Register */
-        constexpr uint8_t DYNPD = 0x1C;                 /* Enable Dynamic Payload Length for Data Pipes */
-        constexpr uint8_t FEATURE = 0x1D;               /* Feature Register */
-	}
+        constexpr uint8_t CONFIG = 0x00;      /* Configuration Register */
+        constexpr uint8_t EN_AA = 0x01;       /* Enable Auto Acknowledgment */
+        constexpr uint8_t EN_RXADDR = 0x02;   /* Enable RX Addresses */
+        constexpr uint8_t SETUP_AW = 0x03;    /* Setup of Address Width */
+        constexpr uint8_t SETUP_RETR = 0x04;  /* Setup of Automatic Retransmission */
+        constexpr uint8_t RF_CH = 0x05;       /* RF Channel Frequency Settings */
+        constexpr uint8_t RF_SETUP = 0x06;    /* RF Channel Settings Register */
+        constexpr uint8_t STATUS = 0x07;      /* Status Register */
+        constexpr uint8_t OBSERVE_TX = 0x08;  /* Transmit Observe */
+        constexpr uint8_t CD = 0x09;          /* Carrier Detect */
+        constexpr uint8_t RX_ADDR_P0 = 0x0A;  /* Receive Address Data Pipe 0 */
+        constexpr uint8_t RX_ADDR_P1 = 0x0B;  /* Receive Address Data Pipe 1 */
+        constexpr uint8_t RX_ADDR_P2 = 0x0C;  /* Receive Address Data Pipe 2 */
+        constexpr uint8_t RX_ADDR_P3 = 0x0D;  /* Receive Address Data Pipe 3 */
+        constexpr uint8_t RX_ADDR_P4 = 0x0E;  /* Receive Address Data Pipe 4 */
+        constexpr uint8_t RX_ADDR_P5 = 0x0F;  /* Receive Address Data Pipe 5 */
+        constexpr uint8_t TX_ADDR = 0x10;     /* Transmit Address */
+        constexpr uint8_t RX_PW_P0 = 0x11;    /* Number of bytes in RX Payload Data Pipe 0 */
+        constexpr uint8_t RX_PW_P1 = 0x12;    /* Number of bytes in RX Payload Data Pipe 1 */
+        constexpr uint8_t RX_PW_P2 = 0x13;    /* Number of bytes in RX Payload Data Pipe 2 */
+        constexpr uint8_t RX_PW_P3 = 0x14;    /* Number of bytes in RX Payload Data Pipe 3 */
+        constexpr uint8_t RX_PW_P4 = 0x15;    /* Number of bytes in RX Payload Data Pipe 4 */
+        constexpr uint8_t RX_PW_P5 = 0x16;    /* Number of bytes in RX Payload Data Pipe 5 */
+        constexpr uint8_t FIFO_STATUS = 0x17; /* FIFO Status Register */
+        constexpr uint8_t DYNPD = 0x1C;       /* Enable Dynamic Payload Length for Data Pipes */
+        constexpr uint8_t FEATURE = 0x1D;     /* Feature Register */
+    }
 
     /*----------------------------------------------
     Register Bit Fields and Masks
@@ -162,11 +140,11 @@ namespace NRF24L
             {
                 bMASK_RX_DR = reg & MASK_RX_DR;
                 bMASK_TX_DS = reg & MASK_TX_DS;
-                bMASK_MAX_RT= reg & MASK_MAX_RT;
-                bEN_CRC     = reg & EN_CRC;
-                bCRCO       = reg & CRCO;
-                bPWR_UP     = reg & PWR_UP;
-                bPRIM_RX    = reg & PRIM_RX;
+                bMASK_MAX_RT = reg & MASK_MAX_RT;
+                bEN_CRC = reg & EN_CRC;
+                bCRCO = reg & CRCO;
+                bPWR_UP = reg & PWR_UP;
+                bPRIM_RX = reg & PRIM_RX;
             }
 
             void update(NRF24L01 *const radio);
@@ -175,7 +153,7 @@ namespace NRF24L
     }
 
     namespace EN_AA
-	{
+    {
         constexpr uint8_t Mask = 0x3F;
 
         constexpr uint8_t P5_Pos = 5u;
@@ -228,7 +206,7 @@ namespace NRF24L
     }
 
     namespace EN_RXADDR
-	{
+    {
         constexpr uint8_t Mask = 0x3F;
 
         constexpr uint8_t P5_Pos = 5u;
@@ -305,7 +283,7 @@ namespace NRF24L
     }
 
     namespace SETUP_RETR
-	{
+    {
         constexpr uint8_t Mask = 0xFF;
 
         constexpr uint8_t ARD_Pos = 4u;
@@ -334,7 +312,7 @@ namespace NRF24L
     }
 
     namespace RF_CH
-	{
+    {
         constexpr uint8_t Mask = 0x7F;
 
         class BitField
@@ -353,7 +331,7 @@ namespace NRF24L
     }
 
     namespace RF_SETUP
-	{
+    {
         constexpr uint8_t Mask = 0x1F;
 
         constexpr uint8_t RF_DR_LOW_Pos = 5u;
@@ -407,28 +385,28 @@ namespace NRF24L
 
     namespace STATUS
     {
-        constexpr uint8_t Mask          = 0x7F;
+        constexpr uint8_t Mask = 0x7F;
 
-        constexpr uint8_t RX_DR_Pos     = 6u;
-        constexpr uint8_t RX_DR_Msk     = 1u << RX_DR_Pos;
-        constexpr uint8_t RX_DR         = RX_DR_Msk;
+        constexpr uint8_t RX_DR_Pos = 6u;
+        constexpr uint8_t RX_DR_Msk = 1u << RX_DR_Pos;
+        constexpr uint8_t RX_DR = RX_DR_Msk;
 
-        constexpr uint8_t TX_DS_Pos     = 5u;
-        constexpr uint8_t TX_DS_Msk     = 1u << TX_DS_Pos;
-        constexpr uint8_t TX_DS         = TX_DS_Msk;
+        constexpr uint8_t TX_DS_Pos = 5u;
+        constexpr uint8_t TX_DS_Msk = 1u << TX_DS_Pos;
+        constexpr uint8_t TX_DS = TX_DS_Msk;
 
-        constexpr uint8_t MAX_RT_Pos    = 4u;
-        constexpr uint8_t MAX_RT_Msk    = 1u << MAX_RT_Pos;
-        constexpr uint8_t MAX_RT        = MAX_RT_Msk;
+        constexpr uint8_t MAX_RT_Pos = 4u;
+        constexpr uint8_t MAX_RT_Msk = 1u << MAX_RT_Pos;
+        constexpr uint8_t MAX_RT = MAX_RT_Msk;
 
-        constexpr uint8_t RX_P_NO_Pos   = 1u;
-        constexpr uint8_t RX_P_NO_Wid   = 0x07;
-        constexpr uint8_t RX_P_NO_Msk   = RX_P_NO_Wid << RX_P_NO_Pos;
-        constexpr uint8_t RX_P_NO       = RX_P_NO_Msk;
+        constexpr uint8_t RX_P_NO_Pos = 1u;
+        constexpr uint8_t RX_P_NO_Wid = 0x07;
+        constexpr uint8_t RX_P_NO_Msk = RX_P_NO_Wid << RX_P_NO_Pos;
+        constexpr uint8_t RX_P_NO = RX_P_NO_Msk;
 
-        constexpr uint8_t TX_FULL_Pos   = 0u;
-        constexpr uint8_t TX_FULL_Msk   = 1u << TX_FULL_Pos;
-        constexpr uint8_t TX_FULL       = TX_FULL_Msk;
+        constexpr uint8_t TX_FULL_Pos = 0u;
+        constexpr uint8_t TX_FULL_Msk = 1u << TX_FULL_Pos;
+        constexpr uint8_t TX_FULL = TX_FULL_Msk;
 
         class BitField
         {
@@ -451,7 +429,7 @@ namespace NRF24L
             void update(NRF24L01 *const radio);
             void update(std::shared_ptr<NRF24L01> &radio);
         };
-	}
+    }
 
     namespace OBSERVE_TX
     {
@@ -486,12 +464,12 @@ namespace NRF24L
 
     namespace CD
     {
-        constexpr uint8_t Mask      = 0x01;
-        constexpr uint8_t Reset     = 0x00;
+        constexpr uint8_t Mask = 0x01;
+        constexpr uint8_t Reset = 0x00;
 
-        constexpr uint8_t CD_Pos    = 0u;
-        constexpr uint8_t CD_Msk    = 1u << CD_Pos;
-        constexpr uint8_t CD        = CD_Msk;
+        constexpr uint8_t CD_Pos = 0u;
+        constexpr uint8_t CD_Msk = 1u << CD_Pos;
+        constexpr uint8_t CD = CD_Msk;
 
         class BitField
         {
@@ -511,8 +489,8 @@ namespace NRF24L
     namespace RX_ADDR_P0
     {
         constexpr uint8_t byteWidth = 5u;
-        constexpr uint64_t Mask     = 0xFFFFFFFFFF;
-        constexpr uint64_t Reset    = 0xE7E7E7E7E7;
+        constexpr uint64_t Mask = 0xFFFFFFFFFF;
+        constexpr uint64_t Reset = 0xE7E7E7E7E7;
 
         class BitField
         {
@@ -532,8 +510,8 @@ namespace NRF24L
     namespace RX_ADDR_P1
     {
         constexpr uint8_t byteWidth = 5u;
-        constexpr uint64_t Mask     = 0xFFFFFFFFFF;
-        constexpr uint64_t Reset    = 0xC2C2C2C2C2;
+        constexpr uint64_t Mask = 0xFFFFFFFFFF;
+        constexpr uint64_t Reset = 0xC2C2C2C2C2;
 
         class BitField
         {
@@ -552,7 +530,7 @@ namespace NRF24L
 
     namespace RX_ADDR_P2
     {
-        constexpr uint8_t Mask  = 0xFF;
+        constexpr uint8_t Mask = 0xFF;
         constexpr uint8_t Reset = 0xC3;
 
         class BitField
@@ -572,7 +550,7 @@ namespace NRF24L
 
     namespace RX_ADDR_P3
     {
-        constexpr uint8_t Mask  = 0xFF;
+        constexpr uint8_t Mask = 0xFF;
         constexpr uint8_t Reset = 0xC4;
 
         class BitField
@@ -592,7 +570,7 @@ namespace NRF24L
 
     namespace RX_ADDR_P4
     {
-        constexpr uint8_t Mask  = 0xFF;
+        constexpr uint8_t Mask = 0xFF;
         constexpr uint8_t Reset = 0xC5;
 
         class BitField
@@ -612,7 +590,7 @@ namespace NRF24L
 
     namespace RX_ADDR_P5
     {
-        constexpr uint8_t Mask  = 0xFF;
+        constexpr uint8_t Mask = 0xFF;
         constexpr uint8_t Reset = 0xC6;
 
         class BitField
@@ -633,8 +611,8 @@ namespace NRF24L
     namespace TX_ADDR
     {
         constexpr uint8_t byteWidth = 5u;
-        constexpr uint64_t Mask     = 0xFFFFFFFFFF;
-        constexpr uint64_t Reset    = 0xE7E7E7E7E7;
+        constexpr uint64_t Mask = 0xFFFFFFFFFF;
+        constexpr uint64_t Reset = 0xE7E7E7E7E7;
 
         class BitField
         {
@@ -672,7 +650,7 @@ namespace NRF24L
 
     namespace RX_PW_P1
     {
-        constexpr uint64_t Mask  = 0x3F;
+        constexpr uint64_t Mask = 0x3F;
 
         class BitField
         {
@@ -691,7 +669,7 @@ namespace NRF24L
 
     namespace RX_PW_P2
     {
-        constexpr uint8_t Mask  = 0x3F;
+        constexpr uint8_t Mask = 0x3F;
 
         class BitField
         {
@@ -710,7 +688,7 @@ namespace NRF24L
 
     namespace RX_PW_P3
     {
-        constexpr uint8_t Mask  = 0x3F;
+        constexpr uint8_t Mask = 0x3F;
 
         class BitField
         {
@@ -729,7 +707,7 @@ namespace NRF24L
 
     namespace RX_PW_P4
     {
-        constexpr uint8_t Mask  = 0x3F;
+        constexpr uint8_t Mask = 0x3F;
 
         class BitField
         {
@@ -748,7 +726,7 @@ namespace NRF24L
 
     namespace RX_PW_P5
     {
-        constexpr uint8_t Mask  = 0x3F;
+        constexpr uint8_t Mask = 0x3F;
 
         class BitField
         {
@@ -767,7 +745,7 @@ namespace NRF24L
 
     namespace RX_PW
     {
-        constexpr uint8_t Mask  = 0x3F;
+        constexpr uint8_t Mask = 0x3F;
         constexpr uint8_t Reset = 0x00;
     }
 
@@ -819,7 +797,7 @@ namespace NRF24L
     }
 
     namespace DYNPD
-	{
+    {
         constexpr uint8_t Mask = 0x3F;
 
         constexpr uint8_t DPL_P5_Pos = 5u;
@@ -872,7 +850,7 @@ namespace NRF24L
     }
 
     namespace FEATURE
-	{
+    {
         constexpr uint8_t MSK = 0x07;
 
         constexpr uint8_t EN_DPL_Pos = 2u;
@@ -905,8 +883,6 @@ namespace NRF24L
             void update(std::shared_ptr<NRF24L01> &radio);
         };
     }
-
 }
-
 
 #endif /* NRF24L01_DEFINITIONS_HPP */

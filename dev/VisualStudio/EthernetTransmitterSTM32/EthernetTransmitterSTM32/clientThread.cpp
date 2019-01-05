@@ -13,9 +13,9 @@
 
 /* Project Includes */
 #include "nrf24l01.hpp"
-#include "RF24Mesh.h"
-#include "RF24Network.h"
-#include "RF24Ethernet.h"
+#include "RF24Mesh.hpp"
+#include "RF24Network.hpp"
+//#include "RF24Ethernet.h"
 
 using namespace NRF24L;
 using namespace Chimera::Threading;
@@ -29,14 +29,14 @@ static const char * helloWorld = "hello world";
 
 static constexpr std::array<char, sizeof("hello world")> testText = { "hello world" };
 
-static IPAddress myIP(10, 10, 2, 2);
-static IPAddress serverIP(10, 10, 2, 1);
+//static IPAddress myIP(10, 10, 2, 2);
+//static IPAddress serverIP(10, 10, 2, 1);
 static uint32_t serverPort = 1000;
 
 static NRF24L01 radio;
-static RF24Network network(radio);
-
-RF24EthernetClass RF24Ethernet(radio, network);
+//static RF24Network network(radio);
+//
+//RF24EthernetClass RF24Ethernet(radio, network);
 
 void clientThread(void * argument)
 {
@@ -72,35 +72,35 @@ void clientThread(void * argument)
 
 
     radio = NRF24L01(spi, chip_enable);
-    
-    Ethernet.setMac(01);
-    Ethernet.set_gateway(serverIP);
-    Ethernet.begin(myIP);
 
-    EthernetClient client;
+//    Ethernet.setMac(01);
+//    Ethernet.set_gateway(serverIP);
+//    Ethernet.begin(myIP);
+//
+//    EthernetClient client;
 
     bool connected = false;
 
     for(;;)
     {
-        if (!client.connected())
-        {
-            client.stop();
-            connected = client.connect(serverIP, serverPort);
-
-            if (connected)
-            {
-                printf("Connected to server\r\n");
-            }
-            else
-            {
-                printf("Unable to connect to the server\r\n");
-            }
-        }
-        else
-        {
-            client.write(reinterpret_cast<const uint8_t*>(helloWorld), sizeof(helloWorld)); 
-        }
+//        if (!client.connected())
+//        {
+//            client.stop();
+//            connected = client.connect(serverIP, serverPort);
+//
+//            if (connected)
+//            {
+//                printf("Connected to server\r\n");
+//            }
+//            else
+//            {
+//                printf("Unable to connect to the server\r\n");
+//            }
+//        }
+//        else
+//        {
+//            client.write(reinterpret_cast<const uint8_t*>(helloWorld), sizeof(helloWorld));
+//        }
 
         vTaskDelayUntil(&lastTimeWoken, pdMS_TO_TICKS(1000));
     }

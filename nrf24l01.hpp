@@ -9,7 +9,7 @@
 #include <memory>
 
 /* Module Includes */
-#include "nrf24l01_definitions.hpp"
+#include "nrf24l01Definitions.hpp"
 
 /* Chimera Includes */
 #if defined(USING_CHIMERA)

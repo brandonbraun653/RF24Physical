@@ -12,15 +12,16 @@
 
 /* Project Includes */
 #include "nrf24l01.hpp"
-#include "RF24Network.h"
+#include "RF24Network.hpp"
 
 using namespace NRF24L;
+using namespace RF24Network;
 using namespace Chimera::Threading;
 using namespace Chimera::GPIO;
 using namespace Chimera::SPI;
 
 static NRF24L01 radio;
-static RF24Network network(radio);
+static Network network(radio);
 
 static const uint16_t this_node = 00;     // Address of our node in Octal format ( 04,031, etc)
 static const uint16_t other_node = 01;    // Address of the other node in Octal format
@@ -76,7 +77,7 @@ void helloWorldRXThread(void *arguments)
         {
             while (network.available())
             {
-                RF24NetworkHeader header;
+                Header header;
                 payload_t payload;
 
                 network.read(header, &payload, sizeof(payload));

@@ -8,7 +8,7 @@
 #include <Chimera/utilities.hpp>
 
 #include "serverThread.hpp"
-#include "helloworld_tx.hpp"
+#include "helloworld_rx.hpp"
 
 using namespace Chimera::Threading;
 
@@ -27,8 +27,7 @@ int main(void)
     #endif
 
     addThread(ledThread, "led", 200, NULL, 2, &ledTask);
-    addThread(serverThread, "sender", 1500, NULL, 2, &senderTask);
-    //addThread(helloWorldThread, "hw", 1500, NULL, 2, &helloTask);
+    addThread(helloWorldRXThread, "hw", 1500, NULL, 2, &helloTask);
     startScheduler();
 
     /* Should never reach here as scheduler should be running */

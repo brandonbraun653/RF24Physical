@@ -70,12 +70,6 @@
     <Filter Include="VisualGDB settings">
       <UniqueIdentifier>{c27e8b88-d938-43e7-8c86-2dd47af87e3a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="RF24Ethernet">
-      <UniqueIdentifier>{fcdc067c-62a1-4d63-a117-5058ef8bb79d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="RF24Ethernet\utility">
-      <UniqueIdentifier>{9f3edd48-c49f-4f27-b2c5-afe6a01b7474}</UniqueIdentifier>
-    </Filter>
     <Filter Include="RF24Mesh">
       <UniqueIdentifier>{28588072-8da6-4193-808e-c49c1f354eae}</UniqueIdentifier>
     </Filter>
@@ -129,9 +123,6 @@
     <ClInclude Include="..\..\..\..\nrf24l01.hpp">
       <Filter>nRF24L01</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\nrf24l01_definitions.hpp">
-      <Filter>nRF24L01</Filter>
-    </ClInclude>
     <None Include="EthernetReceiverSTM32-Debug.vgdbsettings">
       <Filter>VisualGDB settings</Filter>
     </None>
@@ -141,153 +132,9 @@
     <None Include="stm32.xml">
       <Filter>VisualGDB settings</Filter>
     </None>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\clock-arch.cpp">
-      <Filter>RF24Ethernet</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\Dns.cpp">
-      <Filter>RF24Ethernet</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\IPAddress.cpp">
-      <Filter>RF24Ethernet</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\RF24Client.cpp">
-      <Filter>RF24Ethernet</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\RF24Ethernet.cpp">
-      <Filter>RF24Ethernet</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\RF24Server.cpp">
-      <Filter>RF24Ethernet</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\RF24Udp.cpp">
-      <Filter>RF24Ethernet</Filter>
-    </ClCompile>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\Client.h">
-      <Filter>RF24Ethernet</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\clock-arch.h">
-      <Filter>RF24Ethernet</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\Dns.h">
-      <Filter>RF24Ethernet</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\ethernet_comp.h">
-      <Filter>RF24Ethernet</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\IPAddress.h">
-      <Filter>RF24Ethernet</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\RF24Client.h">
-      <Filter>RF24Ethernet</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\RF24Ethernet.h">
-      <Filter>RF24Ethernet</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\RF24Ethernet_config.h">
-      <Filter>RF24Ethernet</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\RF24Server.h">
-      <Filter>RF24Ethernet</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\RF24Udp.h">
-      <Filter>RF24Ethernet</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\Server.h">
-      <Filter>RF24Ethernet</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\uip-conf.h">
-      <Filter>RF24Ethernet</Filter>
-    </ClInclude>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\utility\psock.cpp">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\utility\timer.cpp">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uip-fw.cpp">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uip-neighbor.cpp">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uip-split.cpp">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uip.cpp">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uiplib.cpp">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uip_arp.cpp">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClCompile>
-    <ClCompile Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uip_debug.cpp">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClCompile>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\clock.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\lc-addrlabels.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\lc-switch.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\lc.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\psock.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\pt.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\timer.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uip-fw.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uip-neighbor.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uip-split.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uip.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uiplib.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uipopt.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uip_arch.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uip_arp.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uip_clock.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\uip_debug.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Ethernet\utility\util.h">
-      <Filter>RF24Ethernet\utility</Filter>
-    </ClInclude>
     <ClCompile Include="$(GITHUB_ROOT)\RF24Mesh\RF24Mesh.cpp">
       <Filter>RF24Mesh</Filter>
     </ClCompile>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Mesh\RF24Mesh.h">
-      <Filter>RF24Mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Mesh\RF24Mesh_config.h">
-      <Filter>RF24Mesh</Filter>
-    </ClInclude>
     <ClCompile Include="$(GITHUB_ROOT)\RF24Network\RF24Network.cpp">
       <Filter>RF24Network</Filter>
     </ClCompile>
@@ -782,7 +629,7 @@
     <ClInclude Include="serverThread.hpp">
       <Filter>Source files</Filter>
     </ClInclude>
-    <ClInclude Include="helloworld_tx.hpp">
+    <ClInclude Include="helloworld_rx.hpp">
       <Filter>Source files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\..\GitHub\RF24Network\RF24Network.hpp">
@@ -790,6 +637,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\..\..\GitHub\RF24Network\RF24NetworkDefinitions.hpp">
       <Filter>RF24Network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\nrf24l01Definitions.hpp">
+      <Filter>nRF24L01</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\GitHub\RF24Mesh\RF24MeshDefinitions.hpp">
+      <Filter>RF24Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\GitHub\RF24Mesh\RF24Mesh.hpp">
+      <Filter>RF24Mesh</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1171,7 +1027,7 @@
     <ClCompile Include="serverThread.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
-    <ClCompile Include="helloworld_tx.cpp">
+    <ClCompile Include="helloworld_rx.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
   </ItemGroup>

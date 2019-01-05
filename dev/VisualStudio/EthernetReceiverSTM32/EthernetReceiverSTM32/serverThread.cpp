@@ -12,11 +12,12 @@
 
 /* Project Includes */
 #include "nrf24l01.hpp"
-#include "RF24Mesh.h"
-#include "RF24Network.h"
-#include "RF24Ethernet.h"
+#include "RF24Mesh.hpp"
+#include "RF24Network.hpp"
+//#include "RF24Ethernet.h"
 
 using namespace NRF24L;
+using namespace RF24Network;
 using namespace Chimera;
 using namespace Chimera::Threading;
 using namespace Chimera::GPIO;
@@ -29,18 +30,18 @@ static const char * helloWorld = "hello world";
 
 static constexpr std::array<char, sizeof("hello world")> testText = { "hello world" };
 
-static IPAddress myIP(10, 10, 2, 1);
-static IPAddress serverIP(10, 10, 2, 1);
+//static IPAddress myIP(10, 10, 2, 1);
+//static IPAddress serverIP(10, 10, 2, 1);
 static uint32_t serverPort = 1000;
 
 static NRF24L01 radio;
-static RF24Network network(radio);
+static Network network(radio);
 //static RF24Mesh mesh(radio, network);
 //RF24EthernetClass RF24Ethernet(radio, network, mesh);
-RF24EthernetClass RF24Ethernet(radio, network);
+//RF24EthernetClass RF24Ethernet(radio, network);
 
 // Set up the server to listen on port 1000
-EthernetServer server = EthernetServer(1000);
+//EthernetServer server = EthernetServer(1000);
 
 void serverThread(void * argument)
 {
@@ -75,22 +76,22 @@ void serverThread(void * argument)
     TickType_t lastTimeWoken = xTaskGetTickCount();
 
     radio = NRF24L01(spi, chip_enable);
-    
-    Ethernet.setMac(00);
-    Ethernet.begin(myIP);
-    Ethernet.listen(1000);
 
-    server.begin(1000);
+//    Ethernet.setMac(00);
+//    Ethernet.begin(myIP);
+//    Ethernet.listen(1000);
+//
+//    server.begin(1000);
 
     for(;;)
     {
-        if (EthernetClient client = server.available())
-        {
-            while (client.waitAvailable() > 0)
-            {
-                printf("yup\r\n");
-            }
-        }
+//        if (EthernetClient client = server.available())
+//        {
+//            while (client.waitAvailable() > 0)
+//            {
+//                printf("yup\r\n");
+//            }
+//        }
 
         vTaskDelayUntil(&lastTimeWoken, pdMS_TO_TICKS(5));
     }
