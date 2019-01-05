@@ -424,7 +424,7 @@
     <ClInclude Include="$(GITHUB_ROOT)\RF24Mesh\RF24Mesh.h" />
     <ClInclude Include="$(GITHUB_ROOT)\RF24Mesh\RF24Mesh_config.h" />
     <ClCompile Include="$(GITHUB_ROOT)\RF24Network\RF24Network.cpp" />
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Network\RF24Network.h" />
-    <ClInclude Include="$(GITHUB_ROOT)\RF24Network\RF24Network_config.h" />
+    <ClInclude Include="..\..\..\..\..\..\GitHub\RF24Network\RF24Network.hpp" />
+    <ClInclude Include="..\..\..\..\..\..\GitHub\RF24Network\RF24NetworkDefinitions.hpp" />
   </ItemGroup>
 </Project>
