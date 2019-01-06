@@ -1,5 +1,5 @@
 #include "nrf24l01.hpp"
-#include "nrf24l01_definitions.hpp"
+#include "nrf24l01Definitions.hpp"
 
 namespace NRF24L
 {

@@ -88,6 +88,8 @@ namespace NRF24L
         RADIO_IN_TX_MODE,
         RADIO_IN_RX_MODE,
         INVALID_PIPE,
+        NOT_CONNECTED,
+        REGISTER_WRITE_FAILURE,
     };
 
     /**

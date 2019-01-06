@@ -1030,5 +1030,8 @@
     <ClCompile Include="helloworld_rx.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\nrf24l01_definitions.cpp">
+      <Filter>nRF24L01</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

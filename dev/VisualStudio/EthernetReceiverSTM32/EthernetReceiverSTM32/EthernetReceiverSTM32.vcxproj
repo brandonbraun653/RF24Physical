@@ -187,6 +187,7 @@
     <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\threads.cpp" />
     <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\uart.cpp" />
     <ClCompile Include="$(THOR_ROOT)\Thor\Thor\source\usart.cpp" />
+    <ClCompile Include="..\..\..\..\nrf24l01_definitions.cpp" />
     <ClCompile Include="helloworld_rx.cpp" />
     <ClCompile Include="serverThread.cpp" />
     <ClCompile Include="main.cpp" />

@@ -81,6 +81,11 @@ namespace NRF24L
         Delay some time to allow the chip to initialize
         -------------------------------------------------*/
         delayMilliseconds(100);
+        if (!isConnected())
+        {
+            oopsies = FailureCode::NOT_CONNECTED;
+            return false;
+        }
 
         /*-------------------------------------------------
         Reset config register and enable 16-bit CRC
@@ -403,10 +408,28 @@ namespace NRF24L
             -------------------------------------------------*/
             uint8_t addrWidth = static_cast<uint8_t>(getAddressWidth());
             writeRegister(pipeRXAddressReg[pipe], reinterpret_cast<const uint8_t *>(&address), addressWidth);
+
+            uint64_t setVal = 0u;
+            readRegister(pipeRXAddressReg[pipe], reinterpret_cast<uint8_t*>(&setVal), addressWidth);
+
+            if (setVal != (address & 0xFFFFFFFFFF))
+            {
+                oopsies = FailureCode::REGISTER_WRITE_FAILURE;
+                return false;
+            }
         }
         else
         {
             writeRegister(pipeRXAddressReg[pipe], reinterpret_cast<const uint8_t *>(&address), 1);
+
+            uint8_t setVal = 0u;
+            readRegister(pipeRXAddressReg[pipe], &setVal, 1);
+
+            if (setVal != (address & 0xFF))
+            {
+                oopsies = FailureCode::REGISTER_WRITE_FAILURE;
+                return false;
+            }
         }
 
         /*-------------------------------------------------
@@ -424,13 +447,22 @@ namespace NRF24L
 
     bool NRF24L01::isConnected()
     {
-        uint8_t setup = readRegister(Register::SETUP_AW);
+        uint8_t old_setup = readRegister(Register::SETUP_AW);
+        uint8_t illegal_setup = 0u;
 
-        #if defined(TRACK_REGISTER_STATES)
-        registers.setup_aw = setup;
-        #endif
+        writeRegister(Register::SETUP_AW, illegal_setup);
+        uint8_t new_setup = readRegister(Register::SETUP_AW);
 
-        return ((setup >= 1) && (setup <= 3));
+        if (new_setup == illegal_setup)
+        {
+            writeRegister(Register::SETUP_AW, old_setup);
+            return true;
+        }
+        else
+        {
+            oopsies = FailureCode::NOT_CONNECTED;
+            return false;
+        }
     }
 
     bool NRF24L01::rxFifoFull()
