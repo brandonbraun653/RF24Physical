@@ -38,7 +38,7 @@ void senderThread(void * argument)
 
     spi = std::make_shared<SPIClass>(3);
 
-    spiSetup.clockFrequency = 12000000;
+    spiSetup.clockFrequency = 4000000;
     spiSetup.bitOrder = BitOrder::MSB_FIRST;
     spiSetup.clockMode = ClockMode::MODE0;
     spiSetup.mode = Chimera::SPI::Mode::MASTER;

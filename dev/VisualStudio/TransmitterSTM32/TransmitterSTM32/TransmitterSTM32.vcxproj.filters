@@ -503,7 +503,7 @@
     <ClCompile Include="..\..\..\..\nrf24l01.cpp">
       <Filter>nRF24L01</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\nrf24l01_definitions.cpp">
+    <ClCompile Include="..\..\..\..\nrf24l01Definitions.cpp">
       <Filter>nRF24L01</Filter>
     </ClCompile>
   </ItemGroup>
@@ -997,7 +997,7 @@
     <ClInclude Include="..\..\..\..\nrf24l01.hpp">
       <Filter>nRF24L01</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\nrf24l01_definitions.hpp">
+    <ClInclude Include="..\..\..\..\nrf24l01Definitions.hpp">
       <Filter>nRF24L01</Filter>
     </ClInclude>
   </ItemGroup>

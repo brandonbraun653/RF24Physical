@@ -69,10 +69,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\nrf24l01.cpp" />
-    <ClCompile Include="..\..\..\..\nrf24l01_definitions.cpp" />
+    <ClCompile Include="..\..\..\..\nrf24l01Definitions.cpp" />
     <ClCompile Include="main.cpp" />
     <ClInclude Include="..\..\..\..\nrf24l01.hpp" />
-    <ClInclude Include="..\..\..\..\nrf24l01_definitions.hpp" />
+    <ClInclude Include="..\..\..\..\nrf24l01Definitions.hpp" />
     <ClInclude Include="sender_thread.hpp" />
     <ClCompile Include="sender_thread.cpp" />
     <ClInclude Include="$(THOR_ROOT)\Thor\Thor\include\boostStub.hpp" />

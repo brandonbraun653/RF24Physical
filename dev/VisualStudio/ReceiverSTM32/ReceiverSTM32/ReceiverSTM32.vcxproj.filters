@@ -533,14 +533,11 @@
     <ClCompile Include="receiverThread.cpp">
       <Filter>Project</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\nrf24l01_definitions.cpp">
+    <ClCompile Include="..\..\..\..\nrf24l01Definitions.cpp">
       <Filter>NRF24L01</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\nrf24l01_definitions.hpp">
-      <Filter>NRF24L01</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\nrf24l01.hpp">
       <Filter>NRF24L01</Filter>
     </ClInclude>
@@ -1074,6 +1071,9 @@
     </ClInclude>
     <ClInclude Include="receiverThread.hpp">
       <Filter>Project</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\nrf24l01Definitions.hpp">
+      <Filter>NRF24L01</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
