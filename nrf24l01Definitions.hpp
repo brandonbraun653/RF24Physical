@@ -96,6 +96,7 @@ namespace NRF24L
     namespace CONFIG
     {
         constexpr uint8_t Mask = 0x7F;
+        constexpr uint8_t Reset = 0x08;
 
         constexpr uint8_t MASK_RX_DR_Pos = 6u;
         constexpr uint8_t MASK_RX_DR_Msk = 1u << MASK_RX_DR_Pos;
@@ -155,6 +156,7 @@ namespace NRF24L
     namespace EN_AA
     {
         constexpr uint8_t Mask = 0x3F;
+        constexpr uint8_t Reset = 0x3F;
 
         constexpr uint8_t P5_Pos = 5u;
         constexpr uint8_t P5_Msk = 1u << P5_Pos;
@@ -208,6 +210,7 @@ namespace NRF24L
     namespace EN_RXADDR
     {
         constexpr uint8_t Mask = 0x3F;
+        constexpr uint8_t Reset = 0x03;
 
         constexpr uint8_t P5_Pos = 5u;
         constexpr uint8_t P5_Msk = 1u << P5_Pos;
@@ -261,6 +264,7 @@ namespace NRF24L
     namespace SETUP_AW
     {
         constexpr uint8_t Msk = 0x03;
+        constexpr uint8_t Reset = 0x03;
 
         constexpr uint8_t AW_Pos = 0u;
         constexpr uint8_t AW_Wid = 0x03;
@@ -285,6 +289,7 @@ namespace NRF24L
     namespace SETUP_RETR
     {
         constexpr uint8_t Mask = 0xFF;
+        constexpr uint8_t Reset = 0x03;
 
         constexpr uint8_t ARD_Pos = 4u;
         constexpr uint8_t ARD_Msk = 0x0F << ARD_Pos;
@@ -314,6 +319,7 @@ namespace NRF24L
     namespace RF_CH
     {
         constexpr uint8_t Mask = 0x7F;
+        constexpr uint8_t Reset = 0x02;
 
         class BitField
         {
@@ -333,6 +339,7 @@ namespace NRF24L
     namespace RF_SETUP
     {
         constexpr uint8_t Mask = 0x1F;
+        constexpr uint8_t Reset = 0x0F;
 
         constexpr uint8_t RF_DR_LOW_Pos = 5u;
         constexpr uint8_t RF_DR_LOW_Msk = 1u << RF_DR_LOW_Pos;
@@ -386,6 +393,7 @@ namespace NRF24L
     namespace STATUS
     {
         constexpr uint8_t Mask = 0x7F;
+        constexpr uint8_t Reset = 0x0E;
 
         constexpr uint8_t RX_DR_Pos = 6u;
         constexpr uint8_t RX_DR_Msk = 1u << RX_DR_Pos;
@@ -434,6 +442,7 @@ namespace NRF24L
     namespace OBSERVE_TX
     {
         constexpr uint8_t Mask = 0xFF;
+        constexpr uint8_t Reset = 0x00;
 
         constexpr uint8_t PLOS_CNT_Pos = 4u;
         constexpr uint8_t PLOS_CNT_Wid = 0x0F;
@@ -631,14 +640,15 @@ namespace NRF24L
 
     namespace RX_PW_P0
     {
-        constexpr uint64_t Mask = 0x3F;
+        constexpr uint8_t Mask = 0x3F;
+        constexpr uint8_t Reset = 0x00;
 
         class BitField
         {
         public:
-            uint64_t rxPayloadWidthP0 = 0u;
+            uint8_t rxPayloadWidthP0 = 0u;
 
-            void operator=(const uint64_t reg)
+            void operator=(const uint8_t reg)
             {
                 rxPayloadWidthP0 = reg & Mask;
             }
@@ -650,14 +660,15 @@ namespace NRF24L
 
     namespace RX_PW_P1
     {
-        constexpr uint64_t Mask = 0x3F;
+        constexpr uint8_t Mask = 0x3F;
+        constexpr uint8_t Reset = 0x00;
 
         class BitField
         {
         public:
-            uint64_t rxPayloadWidthP1 = 0u;
+            uint8_t rxPayloadWidthP1 = 0u;
 
-            void operator=(const uint64_t reg)
+            void operator=(const uint8_t reg)
             {
                 rxPayloadWidthP1 = reg & Mask;
             }
@@ -670,6 +681,7 @@ namespace NRF24L
     namespace RX_PW_P2
     {
         constexpr uint8_t Mask = 0x3F;
+        constexpr uint8_t Reset = 0x00;
 
         class BitField
         {
@@ -689,6 +701,7 @@ namespace NRF24L
     namespace RX_PW_P3
     {
         constexpr uint8_t Mask = 0x3F;
+        constexpr uint8_t Reset = 0x00;
 
         class BitField
         {
@@ -708,6 +721,7 @@ namespace NRF24L
     namespace RX_PW_P4
     {
         constexpr uint8_t Mask = 0x3F;
+        constexpr uint8_t Reset = 0x00;
 
         class BitField
         {
@@ -727,6 +741,7 @@ namespace NRF24L
     namespace RX_PW_P5
     {
         constexpr uint8_t Mask = 0x3F;
+        constexpr uint8_t Reset = 0x00;
 
         class BitField
         {
@@ -752,6 +767,7 @@ namespace NRF24L
     namespace FIFO_STATUS
     {
         constexpr uint8_t Mask = 0x7F;
+        constexpr uint8_t Reset = 0x00;
 
         constexpr uint8_t TX_REUSE_Pos = 6u;
         constexpr uint8_t TX_REUSE_Msk = 1u << TX_REUSE_Pos;
@@ -799,6 +815,7 @@ namespace NRF24L
     namespace DYNPD
     {
         constexpr uint8_t Mask = 0x3F;
+        constexpr uint8_t Reset = 0x00;
 
         constexpr uint8_t DPL_P5_Pos = 5u;
         constexpr uint8_t DPL_P5_Msk = 1u << DPL_P5_Pos;
@@ -852,6 +869,7 @@ namespace NRF24L
     namespace FEATURE
     {
         constexpr uint8_t MSK = 0x07;
+        constexpr uint8_t Reset = 0x00;
 
         constexpr uint8_t EN_DPL_Pos = 2u;
         constexpr uint8_t EN_DPL_Msk = 1u << EN_DPL_Pos;

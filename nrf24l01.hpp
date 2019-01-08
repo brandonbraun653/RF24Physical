@@ -90,6 +90,7 @@ namespace NRF24L
         INVALID_PIPE,
         NOT_CONNECTED,
         REGISTER_WRITE_FAILURE,
+        COULD_NOT_ERASE,
     };
 
     /**
@@ -143,6 +144,14 @@ namespace NRF24L
 
         NRF24L01() = default;
         ~NRF24L01() = default;
+
+        /**
+        *   Erases all settings from the onboard registers and reinitialize them to the datasheet
+        *   default values on power up. This is to allow the user a clean slate from which to work with.
+        *
+        *   @return True if the erase was successful, false if not
+        */
+        bool erase();
 
         /**
         *   Initialize the chip and verify correct setup

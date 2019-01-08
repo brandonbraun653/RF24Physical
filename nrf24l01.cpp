@@ -68,6 +68,237 @@ namespace NRF24L
     }
     #endif
 
+    bool NRF24L01::erase()
+    {
+        bool eraseStatus = true;
+
+        clearChipEnable();
+
+        flushTX();
+        flushRX();
+
+        /*------------------------------------------------
+        CONFIG Register
+        ------------------------------------------------*/
+        writeRegister(Register::CONFIG, CONFIG::Reset);
+        if (readRegister(Register::CONFIG) != CONFIG::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        EN_AA Register
+        ------------------------------------------------*/
+        writeRegister(Register::EN_AA, EN_AA::Reset);
+        if (readRegister(Register::EN_AA) != EN_AA::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        EN_RXADDR Register
+        ------------------------------------------------*/
+        writeRegister(Register::EN_RXADDR, EN_RXADDR::Reset);
+        if (readRegister(Register::EN_RXADDR) != EN_RXADDR::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        SETUP_AW Register
+        ------------------------------------------------*/
+        writeRegister(Register::SETUP_AW, SETUP_AW::Reset);
+        if (readRegister(Register::SETUP_AW) != SETUP_AW::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        SETUP_RETR Register
+        ------------------------------------------------*/
+        writeRegister(Register::SETUP_RETR, SETUP_RETR::Reset);
+        if (readRegister(Register::SETUP_RETR) != SETUP_RETR::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        RF_CH Register
+        ------------------------------------------------*/
+        writeRegister(Register::RF_CH, RF_CH::Reset);
+        if (readRegister(Register::RF_CH) != RF_CH::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        RF_SETUP Register
+        ------------------------------------------------*/
+        writeRegister(Register::RF_SETUP, RF_SETUP::Reset);
+        if (readRegister(Register::RF_SETUP) != RF_SETUP::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        STATUS Register: Only the upper 4 bits can be written to
+        ------------------------------------------------*/
+        writeRegister(Register::STATUS, STATUS::Reset);
+        if ((readRegister(Register::STATUS) & 0xF0) != (STATUS::Reset & 0xF0))
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        RX_ADDR_P0 Register
+        ------------------------------------------------*/
+        writeRegister(Register::RX_ADDR_P0, reinterpret_cast<const uint8_t *>(&RX_ADDR_P0::Reset), RX_ADDR_P0::byteWidth);
+
+        uint64_t result_p0 = 0u;
+        readRegister(Register::RX_ADDR_P0, reinterpret_cast<uint8_t *>(&result_p0), RX_ADDR_P0::byteWidth);
+
+        if (result_p0 != RX_ADDR_P0::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        RX_ADDR_P1 Register
+        ------------------------------------------------*/
+        writeRegister(Register::RX_ADDR_P1, reinterpret_cast<const uint8_t*>(&RX_ADDR_P1::Reset), RX_ADDR_P1::byteWidth);
+
+        uint64_t result_p1 = 0u;
+        readRegister(Register::RX_ADDR_P1, reinterpret_cast<uint8_t *>(&result_p1), RX_ADDR_P1::byteWidth);
+
+        if (result_p1 != RX_ADDR_P1::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        RX_ADDR_P2 Register
+        ------------------------------------------------*/
+        writeRegister(Register::RX_ADDR_P2, RX_ADDR_P2::Reset);
+        if (readRegister(Register::RX_ADDR_P2) != RX_ADDR_P2::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        RX_ADDR_P3 Register
+        ------------------------------------------------*/
+        writeRegister(Register::RX_ADDR_P3, RX_ADDR_P3::Reset);
+        if (readRegister(Register::RX_ADDR_P3) != RX_ADDR_P3::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        RX_ADDR_P4 Register
+        ------------------------------------------------*/
+        writeRegister(Register::RX_ADDR_P4, RX_ADDR_P4::Reset);
+        if (readRegister(Register::RX_ADDR_P4) != RX_ADDR_P4::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        RX_ADDR_P5 Register
+        ------------------------------------------------*/
+        writeRegister(Register::RX_ADDR_P5, RX_ADDR_P5::Reset);
+        if (readRegister(Register::RX_ADDR_P5) != RX_ADDR_P5::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        TX_ADDR Register
+        ------------------------------------------------*/
+        writeRegister(Register::TX_ADDR, reinterpret_cast<const uint8_t *>(&TX_ADDR::Reset), TX_ADDR::byteWidth);
+
+        uint64_t result_tx = 0u;
+        readRegister(Register::TX_ADDR, reinterpret_cast<uint8_t *>(&result_tx), TX_ADDR::byteWidth);
+
+        if (result_tx != TX_ADDR::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        RX_PW_P0 Register
+        ------------------------------------------------*/
+        writeRegister(Register::RX_PW_P0, RX_PW_P0::Reset);
+        if (readRegister(Register::RX_PW_P0) != RX_PW_P0::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        RX_PW_P1 Register
+        ------------------------------------------------*/
+        writeRegister(Register::RX_PW_P1, RX_PW_P1::Reset);
+        if (readRegister(Register::RX_PW_P1) != RX_PW_P1::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        RX_PW_P2 Register
+        ------------------------------------------------*/
+        writeRegister(Register::RX_PW_P2, RX_PW_P2::Reset);
+        if (readRegister(Register::RX_PW_P2) != RX_PW_P2::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        RX_PW_P3 Register
+        ------------------------------------------------*/
+        writeRegister(Register::RX_PW_P3, RX_PW_P3::Reset);
+        if (readRegister(Register::RX_PW_P3) != RX_PW_P3::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        RX_PW_P4 Register
+        ------------------------------------------------*/
+        writeRegister(Register::RX_PW_P4, RX_PW_P4::Reset);
+        if (readRegister(Register::RX_PW_P4) != RX_PW_P4::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        RX_PW_P5 Register
+        ------------------------------------------------*/
+        writeRegister(Register::RX_PW_P5, RX_PW_P5::Reset);
+        if (readRegister(Register::RX_PW_P5) != RX_PW_P5::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        DYNPD Register
+        ------------------------------------------------*/
+        writeRegister(Register::DYNPD, DYNPD::Reset);
+        if (readRegister(Register::DYNPD) != DYNPD::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        /*------------------------------------------------
+        FEATURE Register
+        ------------------------------------------------*/
+        writeRegister(Register::FEATURE, FEATURE::Reset);
+        if (readRegister(Register::FEATURE) != FEATURE::Reset)
+        {
+            eraseStatus = false;
+        }
+
+        return eraseStatus;
+    }
+
     bool NRF24L01::begin()
     {
         uint8_t setup = 0u;
@@ -84,6 +315,12 @@ namespace NRF24L
         if (!isConnected())
         {
             oopsies = FailureCode::NOT_CONNECTED;
+            return false;
+        }
+
+        if (!erase())
+        {
+            oopsies = FailureCode::COULD_NOT_ERASE;
             return false;
         }
 
@@ -1165,8 +1402,11 @@ namespace NRF24L
         spi_txbuff[0] = (Command::R_REGISTER | (Command::REGISTER_MASK & reg));
         memset(&spi_txbuff[1], Command::NOP, len);
 
+        /*------------------------------------------------
+        Read the data out, adding 1 byte for the command instruction
+        ------------------------------------------------*/
         beginTransaction();
-        spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), len);
+        spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), len + 1);
         endTransaction();
 
         memcpy(buf, &spi_rxbuff[1], len);
@@ -1199,9 +1439,11 @@ namespace NRF24L
         spi_txbuff[0] = (Command::W_REGISTER | (Command::REGISTER_MASK & reg));
         memcpy(&spi_txbuff[1], buf, len);
 
-        len += 1;
+        /*------------------------------------------------
+        Write the data out, adding 1 byte for the command instruction
+        ------------------------------------------------*/
         beginTransaction();
-        spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), len);
+        spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), len + 1);
         endTransaction();
 
         /* Status code is in the first byte of the receive buffer */

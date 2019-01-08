@@ -67,15 +67,17 @@ void senderThread(void * argument)
     {
         delayTime = 100;
         initialized = false;
+        printf("Initialization failed\r\n");
     }
     else
     {
         initialized = true;
         radio->setChannel(90);
         radio->openWritePipe(address);
-        radio->setPALevel(PowerAmplitude::LOW);
+        radio->setPALevel(PowerAmplitude::MAX);
         radio->setAutoAck(0, true);
         radio->stopListening();
+        printf("Initialization succeeded\r\n");
     }
 
     TickType_t lastTimeWoken = xTaskGetTickCount();

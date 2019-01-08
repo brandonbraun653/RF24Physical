@@ -70,15 +70,17 @@ void receiverThread(void * argument)
     {
         delayTime = 100;
         initialized = false;
+        printf("Initialization failed\r\n");
     }
     else
     {
         initialized = true;
         radio->setChannel(90);
-        radio->setPALevel(PowerAmplitude::LOW);
+        radio->setPALevel(PowerAmplitude::MAX);
         radio->setAutoAck(0, true);
         radio->openReadPipe(0, address);
         radio->startListening();
+        printf("Initialization succeeded\r\n");
     }
 
     uint8_t pipeNum = 0xFF;
