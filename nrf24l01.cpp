@@ -141,15 +141,6 @@ namespace NRF24L
         }
 
         /*------------------------------------------------
-        STATUS Register: Only the upper 4 bits can be written to
-        ------------------------------------------------*/
-        writeRegister(Register::STATUS, STATUS::Reset);
-        if ((readRegister(Register::STATUS) & 0xF0) != (STATUS::Reset & 0xF0))
-        {
-            eraseStatus = false;
-        }
-
-        /*------------------------------------------------
         RX_ADDR_P0 Register
         ------------------------------------------------*/
         writeRegister(Register::RX_ADDR_P0, reinterpret_cast<const uint8_t *>(&RX_ADDR_P0::Reset), RX_ADDR_P0::byteWidth);
@@ -301,8 +292,6 @@ namespace NRF24L
 
     bool NRF24L01::begin()
     {
-        uint8_t setup = 0u;
-
         /*-------------------------------------------------
         Setup the MCU hardware to the correct state
         -------------------------------------------------*/
@@ -339,7 +328,6 @@ namespace NRF24L
         Check whether or not we have a P variant of the chip
         -------------------------------------------------*/
         pVariant = setDataRate(DataRate::DR_250KBPS);
-        setup = readRegister(Register::RF_SETUP);
 
         /*-------------------------------------------------
         Set datarate to the slowest, most reliable speed supported by all hardware
@@ -364,7 +352,13 @@ namespace NRF24L
         clearChipEnable();
         powerUp();
 
-        return (setup != 0 && setup != 0xFF);
+        initialized = true;
+        return initialized;
+    }
+
+    bool NRF24L01::isInitialized()
+    {
+        return initialized;
     }
 
     void NRF24L01::startListening()
@@ -992,17 +986,28 @@ namespace NRF24L
         return static_cast<AddressWidth>(reg);
     }
 
-    void NRF24L01::setRetries(const AutoRetransmitDelay delay, const uint8_t count)
+    bool NRF24L01::setRetries(const AutoRetransmitDelay delay, const uint8_t count, const bool validate)
     {
+        bool returnVal = true;
         uint8_t ard = (static_cast<uint8_t>(delay) & 0x0F) << SETUP_RETR::ARD_Pos;
         uint8_t arc = (count & 0x0F) << SETUP_RETR::ARC_Pos;
         uint8_t setup_retr = ard | arc;
 
         writeRegister(Register::SETUP_RETR, setup_retr);
 
+        if (validate)
+        {
+            returnVal = (readRegister(Register::SETUP_RETR) == setup_retr);
+        }
+
         #if defined(TRACK_REGISTER_STATES)
-        registers.setup_retr = setup_retr;
+        if (returnVal)
+        {
+            registers.setup_retr = setup_retr;
+        }
         #endif
+
+        return returnVal;
     }
 
     void NRF24L01::setStaticPayloadSize(const uint8_t size)
@@ -1010,13 +1015,20 @@ namespace NRF24L
         payloadSize = std::min(size, static_cast<uint8_t>(32));
     }
 
-    void NRF24L01::setChannel(const uint8_t channel)
+    bool NRF24L01::setChannel(const uint8_t channel, const bool validate)
     {
         writeRegister(Register::RF_CH, channel & RF_CH::Mask);
 
         #if defined(TRACK_REGISTER_STATES)
         registers.rf_ch.update(this);
         #endif
+
+        if (validate)
+        {
+            return (readRegister(Register::RF_CH) == (channel & RF_CH::Mask));
+        }
+
+        return true;
     }
 
     uint8_t NRF24L01::getChannel()
@@ -1217,8 +1229,10 @@ namespace NRF24L
         #endif
     }
 
-    void NRF24L01::setAutoAck(const uint8_t pipe, const bool enable)
+    bool NRF24L01::setAutoAck(const uint8_t pipe, const bool enable, const bool validate)
     {
+        bool returnVal = true;
+
         if (pipe < MAX_NUM_PIPES)
         {
             uint8_t en_aa = readRegister(Register::EN_AA);
@@ -1234,13 +1248,27 @@ namespace NRF24L
 
             writeRegister(Register::EN_AA, en_aa);
 
+            if (validate)
+            {
+                returnVal = (readRegister(Register::EN_AA) == en_aa);
+            }
+
             #if defined(TRACK_REGISTER_STATES)
-            registers.en_aa = en_aa;
+            if (returnVal)
+            {
+                registers.en_aa = en_aa;
+            }
             #endif
         }
+        else
+        {
+            returnVal = false;
+        }
+
+        return returnVal;
     }
 
-    void NRF24L01::setPALevel(const PowerAmplitude level)
+    bool NRF24L01::setPALevel(const PowerAmplitude level, const bool validate)
     {
         /*-------------------------------------------------
         Merge bits from level into setup according to a mask
@@ -1254,6 +1282,13 @@ namespace NRF24L
         #if defined(TRACK_REGISTER_STATES)
         registers.rf_setup = setup;
         #endif
+
+        if (validate)
+        {
+            return (readRegister(Register::RF_SETUP) == setup);
+        }
+
+        return true;
     }
 
     PowerAmplitude NRF24L01::getPALevel()

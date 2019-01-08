@@ -160,6 +160,8 @@ namespace NRF24L
         */
         bool begin();
 
+        bool isInitialized();
+
         /**
         *   Leave low-power mode - required for normal radio operation after calling powerDown()
         *
@@ -437,15 +439,19 @@ namespace NRF24L
         *
         *   @param[in]  delay       How long to wait between each retry
         *   @param[in]  count       How many retries before giving up, max 15
+        *   @param[in]  validate    Check if the value was set correctly
+        *   @return True if success, false if not
         */
-        void setRetries(const AutoRetransmitDelay delay, const uint8_t count);
+        bool setRetries(const AutoRetransmitDelay delay, const uint8_t count, const bool validate = false);
 
         /**
         *   Set RF communication channel
         *
         *   @param[in]  channel     Which RF channel to communicate on, 0-125
+        *   @param[in]  validate    Check if the value was set correctly
+        *   @return True if success, false if not
         */
-        void setChannel(const uint8_t channel);
+        bool setChannel(const uint8_t channel, const bool validate = false);
 
         /**
         *   Get the current RF communication channel
@@ -592,18 +598,21 @@ namespace NRF24L
         *   @note The auto-acknowledge behavior can be temporarily disabled for one packet by enabling
         *           the feature register and using the W_TX_PAYLOAD_NO_ACK command. (ie multicast = true)
         *
-        *   @param[in]  pipe    Which pipeline to modify
-        *   @param[in]  enable  Whether to enable (true) or disable (false) auto-ACKs
+        *   @param[in]  pipe        Which pipeline to modify
+        *   @param[in]  enable      Whether to enable (true) or disable (false) auto-ACKs
+        *   @param[in]  validate    Check if the value was set correctly
+        *   @return True if success, false if not
         */
-        void setAutoAck(const uint8_t pipe, const bool enable);
+        bool setAutoAck(const uint8_t pipe, const bool enable, const bool validate = false);
 
         /**
         *   Set the power amplifier level
         *
-        *   @param[in]  level   Desired power amplifier level
-        *   @return void
+        *   @param[in]  level       Desired power amplifier level
+        *   @param[in]  validate    Check if the value was set correctly
+        *   @return True if success, false if not
         */
-        void setPALevel(const PowerAmplitude level);
+        bool setPALevel(const PowerAmplitude level, const bool validate = false);
 
         /**
         *   Get the current power amplitude level
@@ -831,6 +840,7 @@ namespace NRF24L
 
         FailureCode oopsies;                                              /**< Latest reason why something failed. */
 
+        bool initialized = false;                                       /**< Track initialization state */
         bool pVariant = false;                                          /**< NRF24L01+ variant device? */
         bool featuresActivated = false;                                 /**< Features register functionality enabled? */
         bool dynamicPayloadsEnabled = false;                            /**< Are our payloads configured as variable width? */
