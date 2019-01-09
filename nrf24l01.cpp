@@ -1,55 +1,51 @@
-/* Module Include */
-#include "nrf24l01.hpp"
+/********************************************************************************
+*   nrf24l01.cpp
+*       Implementation of the NRF24L01 hardware driver.
+*
+*   2019 | Brandon Braun | brandonbraun653@gmail.com
+********************************************************************************/
 
-/* Local C/C++ Includes */
+/* C++ Includes */
 #include <cstring>
 #include <algorithm>
 
-#if !defined(_WIN32) && !defined(_WIN64) && !defined(MOD_TEST)
-#define HW_TEST
-#endif
+/* Driver Includes */
+#include "nrf24l01.hpp"
+
 
 namespace NRF24L
 {
-    #if defined(USING_CHIMERA)
-    using namespace Chimera;
-    using namespace Chimera::GPIO;
-    #endif
-
     static const std::array<uint8_t, MAX_NUM_PIPES> pipeRXAddressReg =
-    {
-        Register::RX_ADDR_P0,
-        Register::RX_ADDR_P1,
-        Register::RX_ADDR_P2,
-        Register::RX_ADDR_P3,
-        Register::RX_ADDR_P4,
-        Register::RX_ADDR_P5
-    };
+        {
+            Register::RX_ADDR_P0,
+            Register::RX_ADDR_P1,
+            Register::RX_ADDR_P2,
+            Register::RX_ADDR_P3,
+            Register::RX_ADDR_P4,
+            Register::RX_ADDR_P5};
     static_assert(pipeRXAddressReg.size() == MAX_NUM_PIPES, "Too many/few items in the array!");
 
     static const std::array<uint8_t, MAX_NUM_PIPES> pipeEnableRXAddressReg =
-    {
-        EN_RXADDR::P0,
-        EN_RXADDR::P1,
-        EN_RXADDR::P2,
-        EN_RXADDR::P3,
-        EN_RXADDR::P4,
-        EN_RXADDR::P5
-    };
+        {
+            EN_RXADDR::P0,
+            EN_RXADDR::P1,
+            EN_RXADDR::P2,
+            EN_RXADDR::P3,
+            EN_RXADDR::P4,
+            EN_RXADDR::P5};
     static_assert(pipeEnableRXAddressReg.size() == MAX_NUM_PIPES, "Too many/few items in the array!");
 
     static const std::array<uint8_t, MAX_NUM_PIPES> pipeRXPayloadWidthReg =
-    {
-        Register::RX_PW_P0,
-        Register::RX_PW_P1,
-        Register::RX_PW_P2,
-        Register::RX_PW_P3,
-        Register::RX_PW_P4,
-        Register::RX_PW_P5
-    };
+        {
+            Register::RX_PW_P0,
+            Register::RX_PW_P1,
+            Register::RX_PW_P2,
+            Register::RX_PW_P3,
+            Register::RX_PW_P4,
+            Register::RX_PW_P5};
     static_assert(pipeRXPayloadWidthReg.size() == MAX_NUM_PIPES, "Too many/few items in the array!");
 
-    #if defined(USING_CHIMERA)
+#if defined(USING_CHIMERA)
     NRF24L01::NRF24L01(Chimera::SPI::SPIClass_sPtr spiInstance, Chimera::GPIO::GPIOClass_sPtr chipEnable)
     {
         this->spi = spiInstance;
@@ -66,7 +62,7 @@ namespace NRF24L
         dynamicPayloadsEnabled = false;
         pVariant = false;
     }
-    #endif
+#endif
 
     bool NRF24L01::erase()
     {
@@ -156,7 +152,7 @@ namespace NRF24L
         /*------------------------------------------------
         RX_ADDR_P1 Register
         ------------------------------------------------*/
-        writeRegister(Register::RX_ADDR_P1, reinterpret_cast<const uint8_t*>(&RX_ADDR_P1::Reset), RX_ADDR_P1::byteWidth);
+        writeRegister(Register::RX_ADDR_P1, reinterpret_cast<const uint8_t *>(&RX_ADDR_P1::Reset), RX_ADDR_P1::byteWidth);
 
         uint64_t result_p1 = 0u;
         readRegister(Register::RX_ADDR_P1, reinterpret_cast<uint8_t *>(&result_p1), RX_ADDR_P1::byteWidth);
@@ -298,9 +294,9 @@ namespace NRF24L
         spiInit();
 
         /*-------------------------------------------------
-        Delay some time to allow the chip to initialize
+        Check we can talk to the device and reset it back to
+        some known initial condition.
         -------------------------------------------------*/
-        delayMilliseconds(100);
         if (!isConnected())
         {
             oopsies = FailureCode::NOT_CONNECTED;
@@ -314,15 +310,15 @@ namespace NRF24L
         }
 
         /*-------------------------------------------------
-        Reset config register and enable 16-bit CRC
+        Enable 16-bit CRC
         -------------------------------------------------*/
-        writeRegister(Register::CONFIG, 0u);
         setCRCLength(CRCLength::CRC_16);
 
         /*-------------------------------------------------
-        Set 1500uS timeout. Don't lower or the 250KBS mode will break.
+        Set 1500uS timeout and 3 retry attempts. Don't lower
+        or the 250KBS mode will break.
         -------------------------------------------------*/
-        setRetries(AutoRetransmitDelay::w4000uS, 3);
+        setRetries(AutoRetransmitDelay::w1500uS, 3);
 
         /*-------------------------------------------------
         Check whether or not we have a P variant of the chip
@@ -333,6 +329,10 @@ namespace NRF24L
         Set datarate to the slowest, most reliable speed supported by all hardware
         -------------------------------------------------*/
         setDataRate(DataRate::DR_1MBPS);
+
+        /*------------------------------------------------
+        Default to the 5 byte wide addressing scheme
+        ------------------------------------------------*/
         setAddressWidth(AddressWidth::AW_5Byte);
 
         /*-------------------------------------------------
@@ -341,16 +341,18 @@ namespace NRF24L
         setChannel(76);
 
         /*-------------------------------------------------
-        Clear the buffers
+        Clear the buffers to start with a clean slate
         -------------------------------------------------*/
         flushTX();
         flushRX();
 
         /*-------------------------------------------------
-        Power up the module and enable PTX. Stay in standby mode by not writing CE high
+        Power up the module and enable PTX. Stay in standby mode by not writing CE high.
+        Delay a few milliseconds to let things settle.
         -------------------------------------------------*/
         clearChipEnable();
         powerUp();
+        delayMilliseconds(5);
 
         initialized = true;
         return initialized;
@@ -383,19 +385,26 @@ namespace NRF24L
             currentMode = Mode::RX;
 
             listening = true;
+            listeningPaused = false;
         }
     }
 
     void NRF24L01::pauseListening()
     {
-        clearChipEnable();
-        listeningPaused = true;
+        if (listening && !listeningPaused)
+        {
+            clearChipEnable();
+            listeningPaused = true;
+        }
     }
 
     void NRF24L01::resumeListening()
     {
-        setChipEnable();
-        listeningPaused = false;
+        if (listeningPaused)
+        {
+            setChipEnable();
+            listeningPaused = false;
+        }
     }
 
     void NRF24L01::stopListening()
@@ -411,7 +420,7 @@ namespace NRF24L
 
             /*-------------------------------------------------
             If we are auto-acknowledging RX packets with a payload, make sure the TX FIFO is clean so
-            we don't automatically transmit data the next time we write chipEnable high.
+            we don't accidentally transmit data the next time we write chipEnable high.
             -------------------------------------------------*/
             if (registerIsBitmaskSet(Register::FEATURE, FEATURE::EN_ACK_PAY))
             {
@@ -444,7 +453,7 @@ namespace NRF24L
         /*-------------------------------------------------
         Figure out which pipe has data available
         -------------------------------------------------*/
-        if(available())
+        if (available())
         {
             pipe_num = (getStatus() >> STATUS::RX_P_NO_Pos) & STATUS::RX_P_NO_Wid;
             return true;
@@ -457,101 +466,18 @@ namespace NRF24L
     {
         readPayload(buffer, len);
 
+        /*------------------------------------------------
+        Clear the ISR flag bits by setting them to 1
+        ------------------------------------------------*/
         uint8_t statusVal = STATUS::RX_DR | STATUS::MAX_RT | STATUS::TX_DS;
         writeRegister(Register::STATUS, statusVal);
     }
 
-    bool NRF24L01::write(const uint8_t *const buffer, size_t len, const bool multicast, const bool startTX, const bool autoStandby)
-    {
-        constexpr uint32_t busyDelay_mS = 1;
-        constexpr uint32_t autoTimeout_mS = 100;
-        bool writeResult = true;
-
-        /*-------------------------------------------------
-        Wait for the FIFO to have room for another packet
-        -------------------------------------------------*/
-        while(txFIFOFull())
-        {
-            delayMilliseconds(busyDelay_mS);
-
-            /*-------------------------------------------------
-            If max retries hit, we failed and should exit here
-            -------------------------------------------------*/
-            if (registerIsBitmaskSet(Register::STATUS, STATUS::MAX_RT))
-            {
-                flushTX();
-                writeResult = false;
-                break;
-            }
-        }
-
-        /*------------------------------------------------
-        The FIFO has some room now, so fill it with data.
-        ------------------------------------------------*/
-        if (writeResult)
-        {
-            /*-------------------------------------------------
-            Dump data into the TX FIFO and start the transfer
-            -------------------------------------------------*/
-            startFastWrite(buffer, len, multicast, startTX);
-
-            //takeSnapshot();
-
-            /*-------------------------------------------------
-            Handle ACK/NACK should we be starting the transfer
-            -------------------------------------------------*/
-            if (startTX)
-            {
-                /*-------------------------------------------------
-                Wait for the Data Sent or Max Retry interrupt to occur
-                -------------------------------------------------*/
-                auto startTime = millis();
-                while (!registerIsAnySet(Register::STATUS, (STATUS::TX_DS | STATUS::MAX_RT)))
-                {
-                    if ((millis() - startTime) > autoTimeout_mS)
-                    {
-                        writeResult = false;
-                        break;
-                    }
-                    delayMilliseconds(busyDelay_mS);
-                }
-
-                /*-------------------------------------------------
-                Wait for the FIFO to clear or Max Retries hit
-                -------------------------------------------------*/
-                if (autoStandby)
-                {
-                    while (!txFIFOEmpty() && !registerIsBitmaskSet(Register::STATUS, STATUS::MAX_RT))
-                    {
-                        delayMilliseconds(busyDelay_mS);
-                    }
-
-                    clearChipEnable();
-                    currentMode = Mode::STANDBY_I;
-                }
-
-                /*-------------------------------------------------
-                If we hit the Max Retries, we have a problem and the whole TX FIFO is screwed
-                -------------------------------------------------*/
-                if (registerIsBitmaskSet(Register::STATUS, STATUS::MAX_RT))
-                {
-                    flushTX();
-                    writeResult = false;
-                }
-
-                /*-------------------------------------------------
-                Clear all the interrupt flags
-                -------------------------------------------------*/
-                setRegisterBits(Register::STATUS, STATUS::RX_DR | STATUS::TX_DS | STATUS::MAX_RT);
-            }
-
-        }
-
-        return writeResult;
-    }
-
     bool NRF24L01::writeFast(const uint8_t *const buffer, uint8_t len, const bool multicast)
     {
+        /*------------------------------------------------
+        Don't clobber the RX if we are listening
+        ------------------------------------------------*/
         if (listening)
         {
             oopsies = FailureCode::RADIO_IN_RX_MODE;
@@ -563,10 +489,10 @@ namespace NRF24L
         -------------------------------------------------*/
         uint32_t startTime = millis();
 
-        while(txFIFOFull())
+        while (txFIFOFull())
         {
             /*-------------------------------------------------
-            If max retries hit from a previous transmission, we screwed
+            If max retries hit from a previous transmission, we screwed up
             -------------------------------------------------*/
             if (registerIsBitmaskSet(Register::STATUS, STATUS::MAX_RT))
             {
@@ -613,16 +539,18 @@ namespace NRF24L
         -------------------------------------------------*/
         writeRegister(Register::RX_PW_P0, payloadSize);
 
-
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.tx_addr.update(this);
         registers.rx_pw_p0.update(this);
         registers.rx_addr_p0.update(this);
-        #endif
+#endif
     }
 
-    bool NRF24L01::openReadPipe(const uint8_t pipe, const uint64_t address)
+    bool NRF24L01::openReadPipe(const uint8_t pipe, const uint64_t address, const bool validate)
     {
+        /*------------------------------------------------
+        Make sure the pipe is ok
+        ------------------------------------------------*/
         if (pipe >= MAX_NUM_PIPES)
         {
             oopsies = FailureCode::INVALID_PIPE;
@@ -640,26 +568,41 @@ namespace NRF24L
             uint8_t addrWidth = static_cast<uint8_t>(getAddressWidth());
             writeRegister(pipeRXAddressReg[pipe], reinterpret_cast<const uint8_t *>(&address), addressWidth);
 
-            uint64_t setVal = 0u;
-            readRegister(pipeRXAddressReg[pipe], reinterpret_cast<uint8_t*>(&setVal), addressWidth);
-
-            if (setVal != (address & 0xFFFFFFFFFF))
+            /*------------------------------------------------
+            Optionally validate the write
+            ------------------------------------------------*/
+            if (validate)
             {
-                oopsies = FailureCode::REGISTER_WRITE_FAILURE;
-                return false;
+                uint64_t setVal = 0u;
+                readRegister(pipeRXAddressReg[pipe], reinterpret_cast<uint8_t *>(&setVal), addressWidth);
+
+                if (setVal != (address & 0xFFFFFFFFFF))
+                {
+                    oopsies = FailureCode::REGISTER_WRITE_FAILURE;
+                    return false;
+                }
             }
         }
         else
         {
+            /*------------------------------------------------
+            These pipes only need their LSB set
+            ------------------------------------------------*/
             writeRegister(pipeRXAddressReg[pipe], reinterpret_cast<const uint8_t *>(&address), 1);
 
-            uint8_t setVal = 0u;
-            readRegister(pipeRXAddressReg[pipe], &setVal, 1);
-
-            if (setVal != (address & 0xFF))
+            /*------------------------------------------------
+            Optionally validate the write
+            ------------------------------------------------*/
+            if (validate)
             {
-                oopsies = FailureCode::REGISTER_WRITE_FAILURE;
-                return false;
+                uint8_t setVal = 0u;
+                readRegister(pipeRXAddressReg[pipe], &setVal, 1);
+
+                if (setVal != (address & 0xFF))
+                {
+                    oopsies = FailureCode::REGISTER_WRITE_FAILURE;
+                    return false;
+                }
             }
         }
 
@@ -669,21 +612,31 @@ namespace NRF24L
         writeRegister(pipeRXPayloadWidthReg[pipe], payloadSize);
         setRegisterBits(Register::EN_RXADDR, pipeEnableRXAddressReg[pipe]);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.en_rxaddr.update(this);
-        #endif
+#endif
 
         return true;
     }
 
     bool NRF24L01::isConnected()
     {
+        /*------------------------------------------------
+        Grab the old settings for the register
+        ------------------------------------------------*/
         uint8_t old_setup = readRegister(Register::SETUP_AW);
         uint8_t illegal_setup = 0u;
 
+        /*------------------------------------------------
+        Write some new settings and record their value
+        ------------------------------------------------*/
         writeRegister(Register::SETUP_AW, illegal_setup);
         uint8_t new_setup = readRegister(Register::SETUP_AW);
 
+        /*------------------------------------------------
+        We are connected if the recorded settings match what we thought
+        was set. Reset back to the old settings before exiting.
+        ------------------------------------------------*/
         if (new_setup == illegal_setup)
         {
             writeRegister(Register::SETUP_AW, old_setup);
@@ -700,9 +653,9 @@ namespace NRF24L
     {
         uint8_t reg = readRegister(Register::FIFO_STATUS);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.fifo_status = reg;
-        #endif
+#endif
 
         return reg & FIFO_STATUS::RX_FULL;
     }
@@ -711,9 +664,9 @@ namespace NRF24L
     {
         uint8_t reg = readRegister(Register::FIFO_STATUS);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.fifo_status = reg;
-        #endif
+#endif
 
         return reg & FIFO_STATUS::RX_EMPTY;
     }
@@ -722,9 +675,9 @@ namespace NRF24L
     {
         uint8_t reg = readRegister(Register::FIFO_STATUS);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.fifo_status = reg;
-        #endif
+#endif
 
         return reg & FIFO_STATUS::TX_FULL;
     }
@@ -733,9 +686,9 @@ namespace NRF24L
     {
         uint8_t reg = readRegister(Register::FIFO_STATUS);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.fifo_status = reg;
-        #endif
+#endif
 
         return reg & FIFO_STATUS::TX_EMPTY;
     }
@@ -746,16 +699,16 @@ namespace NRF24L
         If not powered up already, do it. The worst startup delay is
         about 5mS, so just wait that amount.
         -------------------------------------------------*/
-        if(!registerIsBitmaskSet(Register::CONFIG, CONFIG::PWR_UP))
+        if (!registerIsBitmaskSet(Register::CONFIG, CONFIG::PWR_UP))
         {
             writeRegister(Register::CONFIG, CONFIG::PWR_UP);
             delayMilliseconds(5);
 
             currentMode = Mode::STANDBY_I;
 
-            #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
             registers.config.update(this);
-            #endif
+#endif
         }
     }
 
@@ -768,9 +721,9 @@ namespace NRF24L
         clearRegisterBits(Register::CONFIG, CONFIG::PWR_UP);
         currentMode = Mode::POWER_DOWN;
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.config.update(this);
-        #endif
+#endif
     }
 
     void NRF24L01::startFastWrite(const uint8_t *const buffer, size_t len, const bool multicast, const bool startTX)
@@ -829,14 +782,18 @@ namespace NRF24L
             }
         }
 
+        /*------------------------------------------------
+        Sends the chip back to standby mode now that the FIFO is empty
+        ------------------------------------------------*/
         clearChipEnable();
+        currentMode = Mode::STANDBY_I;
         return true;
     }
 
-    bool NRF24L01::txStandBy(uint32_t timeout, bool startTx)
+    bool NRF24L01::txStandBy(const uint32_t timeout, const bool startTx)
     {
         /*------------------------------------------------
-        Start a new transfer
+        Optionally start a new transfer
         ------------------------------------------------*/
         if (startTx)
         {
@@ -912,9 +869,9 @@ namespace NRF24L
     {
         uint8_t reg = readRegister(Register::FIFO_STATUS);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.fifo_status = reg;
-        #endif
+#endif
 
         return !(reg & FIFO_STATUS::RX_EMPTY);
     }
@@ -945,9 +902,9 @@ namespace NRF24L
             uint8_t rxaddrVal = readRegister(Register::EN_RXADDR) & ~pipeEnableRXAddressReg[pipe];
             writeRegister(Register::EN_RXADDR, rxaddrVal);
 
-            #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
             registers.en_rxaddr = rxaddrVal;
-            #endif
+#endif
         }
     }
 
@@ -955,7 +912,7 @@ namespace NRF24L
     {
         writeRegister(Register::SETUP_AW, static_cast<uint8_t>(address_width));
 
-        switch(address_width)
+        switch (address_width)
         {
         case NRF24L::AddressWidth::AW_3Byte:
             addressWidth = 3;
@@ -970,18 +927,18 @@ namespace NRF24L
             break;
         }
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.setup_aw.update(this);
-        #endif
+#endif
     }
 
     AddressWidth NRF24L01::getAddressWidth()
     {
         auto reg = readRegister(Register::SETUP_AW);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.setup_aw = reg;
-        #endif
+#endif
 
         return static_cast<AddressWidth>(reg);
     }
@@ -1000,12 +957,12 @@ namespace NRF24L
             returnVal = (readRegister(Register::SETUP_RETR) == setup_retr);
         }
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         if (returnVal)
         {
             registers.setup_retr = setup_retr;
         }
-        #endif
+#endif
 
         return returnVal;
     }
@@ -1019,9 +976,9 @@ namespace NRF24L
     {
         writeRegister(Register::RF_CH, channel & RF_CH::Mask);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.rf_ch.update(this);
-        #endif
+#endif
 
         if (validate)
         {
@@ -1035,9 +992,9 @@ namespace NRF24L
     {
         uint8_t ch = readRegister(Register::RF_CH);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.rf_ch = ch;
-        #endif
+#endif
 
         return ch;
     }
@@ -1115,10 +1072,10 @@ namespace NRF24L
 
         dynamicPayloadsEnabled = true;
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.dynpd.update(this);
         registers.feature.update(this);
-        #endif
+#endif
     }
 
     void NRF24L01::disableAckPayload()
@@ -1130,10 +1087,10 @@ namespace NRF24L
 
             dynamicPayloadsEnabled = false;
 
-            #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
             registers.dynpd.update(this);
             registers.feature.update(this);
-            #endif
+#endif
         }
     }
 
@@ -1158,11 +1115,11 @@ namespace NRF24L
 
         dynamicPayloadsEnabled = true;
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.dynpd.update(this);
         registers.en_aa.update(this);
         registers.feature.update(this);
-        #endif
+#endif
     }
 
     void NRF24L01::disableDynamicPayloads()
@@ -1178,11 +1135,11 @@ namespace NRF24L
 
             dynamicPayloadsEnabled = false;
 
-            #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
             registers.dynpd.update(this);
             registers.en_aa.update(this);
             registers.feature.update(this);
-            #endif
+#endif
         }
     }
 
@@ -1191,9 +1148,9 @@ namespace NRF24L
         activateFeatures();
         setRegisterBits(Register::FEATURE, FEATURE::EN_DYN_ACK);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.feature.update(this);
-        #endif
+#endif
     }
 
     void NRF24L01::disableDynamicAck()
@@ -1202,9 +1159,9 @@ namespace NRF24L
         {
             clearRegisterBits(Register::FEATURE, FEATURE::EN_DYN_ACK);
 
-            #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
             registers.feature.update(this);
-            #endif
+#endif
         }
     }
 
@@ -1224,9 +1181,9 @@ namespace NRF24L
             clearRegisterBits(Register::EN_AA, EN_AA::Mask);
         }
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.en_aa.update(this);
-        #endif
+#endif
     }
 
     bool NRF24L01::setAutoAck(const uint8_t pipe, const bool enable, const bool validate)
@@ -1253,12 +1210,12 @@ namespace NRF24L
                 returnVal = (readRegister(Register::EN_AA) == en_aa);
             }
 
-            #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
             if (returnVal)
             {
                 registers.en_aa = en_aa;
             }
-            #endif
+#endif
         }
         else
         {
@@ -1279,9 +1236,9 @@ namespace NRF24L
 
         writeRegister(Register::RF_SETUP, setup);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.rf_setup = setup;
-        #endif
+#endif
 
         if (validate)
         {
@@ -1295,9 +1252,9 @@ namespace NRF24L
     {
         uint8_t setup = readRegister(Register::RF_SETUP);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.rf_setup = setup;
-        #endif
+#endif
 
         return static_cast<PowerAmplitude>((setup & RF_SETUP::RF_PWR) >> 1);
     }
@@ -1336,9 +1293,9 @@ namespace NRF24L
         writeRegister(Register::RF_SETUP, setup);
         auto result = readRegister(Register::RF_SETUP);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.rf_setup = result;
-        #endif
+#endif
 
         return (result == setup);
     }
@@ -1347,9 +1304,9 @@ namespace NRF24L
     {
         uint8_t reg = readRegister(Register::RF_SETUP);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.rf_setup = reg;
-        #endif
+#endif
 
         return static_cast<DataRate>(reg & (RF_SETUP::RF_DR_HIGH | RF_SETUP::RF_DR_LOW));
     }
@@ -1358,7 +1315,7 @@ namespace NRF24L
     {
         uint8_t config = readRegister(Register::CONFIG) & ~(CONFIG::CRCO | CONFIG::EN_CRC);
 
-        switch(length)
+        switch (length)
         {
         case CRCLength::CRC_8:
             config |= CONFIG::EN_CRC;
@@ -1375,9 +1332,9 @@ namespace NRF24L
 
         writeRegister(Register::CONFIG, config);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.config = config;
-        #endif
+#endif
     }
 
     CRCLength NRF24L01::getCRCLength()
@@ -1387,9 +1344,9 @@ namespace NRF24L
         uint8_t config = readRegister(Register::CONFIG) & (CONFIG::CRCO | CONFIG::EN_CRC);
         uint8_t en_aa = readRegister(Register::EN_AA);
 
-        if((config & CONFIG::EN_CRC) || en_aa)
+        if ((config & CONFIG::EN_CRC) || en_aa)
         {
-            if(config & CONFIG::CRCO)
+            if (config & CONFIG::CRCO)
             {
                 result = CRCLength::CRC_16;
             }
@@ -1399,10 +1356,10 @@ namespace NRF24L
             }
         }
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.config = config;
         registers.en_aa = en_aa;
-        #endif
+#endif
 
         return result;
     }
@@ -1422,14 +1379,14 @@ namespace NRF24L
 
         writeRegister(Register::CONFIG, config);
 
-        #if defined(TRACK_REGISTER_STATES)
+#if defined(TRACK_REGISTER_STATES)
         registers.config = config;
-        #endif
+#endif
     }
 
     uint8_t NRF24L01::readRegister(const uint8_t reg, uint8_t *const buf, size_t len)
     {
-        if(len > MAX_PAYLOAD_WIDTH)
+        if (len > MAX_PAYLOAD_WIDTH)
         {
             len = MAX_PAYLOAD_WIDTH;
         }
@@ -1466,7 +1423,7 @@ namespace NRF24L
 
     uint8_t NRF24L01::writeRegister(const uint8_t reg, const uint8_t *const buf, size_t len)
     {
-        if(len > MAX_PAYLOAD_WIDTH)
+        if (len > MAX_PAYLOAD_WIDTH)
         {
             len = MAX_PAYLOAD_WIDTH;
         }
@@ -1519,9 +1476,9 @@ namespace NRF24L
         -------------------------------------------------*/
         memset(spi_txbuff.begin(), 0xff, spi_txbuff.size());
 
-        spi_txbuff[0] = writeType;                  /* Write command type*/
-        memcpy(&spi_txbuff[1], buf, len);           /* Payload information */
-        memset(&spi_txbuff[len], 0, blank_len);     /* Null out the remaining buffer space*/
+        spi_txbuff[0] = writeType;              /* Write command type*/
+        memcpy(&spi_txbuff[1], buf, len);       /* Payload information */
+        memset(&spi_txbuff[len], 0, blank_len); /* Null out the remaining buffer space*/
 
         beginTransaction();
         spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), size);
@@ -1593,87 +1550,72 @@ namespace NRF24L
         return temp;
     }
 
+#if defined(USING_CHIMERA)
+    void NRF24L01::spiInit()
+    {
+        spi->setChipSelectControlMode(Chimera::SPI::ChipSelectMode::MANUAL);
+        chipEnable->setMode(Chimera::GPIO::Drive::OUTPUT_PUSH_PULL, false);
+        chipEnable->setState(Chimera::GPIO::State::LOW);
+
+        spi->setChipSelect(Chimera::GPIO::State::LOW);
+        spi->setChipSelect(Chimera::GPIO::State::HIGH);
+    }
+
     size_t NRF24L01::spiWrite(const uint8_t *const tx_buffer, size_t len)
     {
-        #if defined(USING_CHIMERA)
         spi->writeBytes(tx_buffer, len, false);
-        #endif
-
         return len;
     }
 
     size_t NRF24L01::spiRead(uint8_t *const rx_buffer, size_t len)
     {
-        #if defined(USING_CHIMERA)
         spi->readBytes(rx_buffer, len, false);
-        #endif
-
         return len;
     }
 
     size_t NRF24L01::spiWriteRead(const uint8_t *const tx_buffer, uint8_t *const rx_buffer, size_t len)
     {
-        #if defined(USING_CHIMERA)
         spi->readWriteBytes(tx_buffer, rx_buffer, len, false);
-        #endif
-
         return len;
     }
 
     void NRF24L01::beginTransaction()
     {
-        #if defined(USING_CHIMERA)
-        spi->setChipSelect(GPIO::State::LOW);
-        #endif
+        spi->setChipSelect(Chimera::GPIO::State::LOW);
     }
 
     void NRF24L01::endTransaction()
     {
-        #if defined(USING_CHIMERA)
-        spi->setChipSelect(GPIO::State::HIGH);
-        #endif
+        spi->setChipSelect(Chimera::GPIO::State::HIGH);
     }
 
     void NRF24L01::setChipEnable()
     {
-        #if defined(USING_CHIMERA)
-        chipEnable->setState(State::HIGH);
-        #endif
-
-        chipEnableState = true;
+        chipEnable->setState(Chimera::GPIO::State::HIGH);
     }
 
     void NRF24L01::clearChipEnable()
     {
-        #if defined(USING_CHIMERA)
-        chipEnable->setState(State::LOW);
-        #endif
-
-        chipEnableState = false;
+        chipEnable->setState(Chimera::GPIO::State::LOW);
     }
 
     bool NRF24L01::getChipEnableState()
     {
-        #if defined(USING_CHIMERA)
         Chimera::GPIO::State state;
         chipEnable->getState(state);
         return static_cast<bool>(state);
-        #endif
-
-        return chipEnableState;
     }
 
-    void NRF24L01::spiInit()
+    void NRF24L01::delayMilliseconds(uint32_t ms)
     {
-        #if defined(USING_CHIMERA)
-        spi->setChipSelectControlMode(Chimera::SPI::ChipSelectMode::MANUAL);
-        chipEnable->setMode(Drive::OUTPUT_PUSH_PULL, false);
-        chipEnable->setState(State::LOW);
-
-        spi->setChipSelect(State::LOW);
-        spi->setChipSelect(State::HIGH);
-        #endif
+        Chimera::delayMilliseconds(ms);
     }
+
+    uint32_t NRF24L01::millis()
+    {
+        return Chimera::millis();
+    }
+#endif
 
     uint8_t NRF24L01::writeCMD(const uint8_t cmd)
     {
@@ -1710,5 +1652,4 @@ namespace NRF24L
         regVal |= bitmask;
         writeRegister(reg, regVal);
     }
-
 }

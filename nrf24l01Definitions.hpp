@@ -1,3 +1,10 @@
+/********************************************************************************
+*   nrf24l01Definitions.hpp
+*       Provides definitions and models of the NRF24L01 radio.
+*
+*   2019 | Brandon Braun | brandonbraun653@gmail.com
+********************************************************************************/
+
 #pragma once
 #ifndef NRF24L01_DEFINITIONS_HPP
 #define NRF24L01_DEFINITIONS_HPP
@@ -12,19 +19,24 @@ namespace NRF24L
     /*------------------------------------------------
     Configuration Constants
     ------------------------------------------------*/
-    #define TRACK_REGISTER_STATES                       /* Keep track of the register states as they are set/read (Debugging Feature, lots of overhead) */
+    #define TRACK_REGISTER_STATES /* Keep track of the register states as they are set/read (Debugging Feature, lots of overhead) */
 
     /*----------------------------------------------
     General Definitions
     ----------------------------------------------*/
     class NRF24L01; /* Forward declare the class so register Bitfields can auto-update */
 
-    constexpr uint8_t MAX_NUM_PIPES = 6;        /**< Hardware limit for number of pipes we can use */
-    constexpr size_t MAX_ADDRESS_WIDTH = 5;     /**< Hardware limit for how many bytes can represent a device's address */
-    constexpr size_t MAX_PAYLOAD_WIDTH = 32;    /**< Hardware limit for RF payload */
-    constexpr uint32_t MIN_TIMEOUT_MS = 1;      /**< The absolute lowest resolution timeout we want to achieve */
-    constexpr uint32_t DFLT_TIMEOUT_MS = 100;   /**< Default timeout for general operations */
+    constexpr uint8_t MAX_NUM_PIPES = 6;                                 /**< Hardware limit for number of pipes we can use */
+    constexpr size_t MAX_ADDRESS_WIDTH = 5;                              /**< Hardware limit for how many bytes can represent a device's address */
+    constexpr size_t MAX_PAYLOAD_WIDTH = 32;                             /**< Hardware limit for RF payload */
+    constexpr size_t COMMAND_WIDTH = 1;                                  /**< Number of bytes for an SPI command */
+    constexpr size_t SPI_BUFFER_LEN = COMMAND_WIDTH + MAX_PAYLOAD_WIDTH; /**< Accounts for max payload of 32 bytes + 1 byte for the command */
+    constexpr uint32_t MIN_TIMEOUT_MS = 1;                               /**< The absolute lowest resolution timeout we want to achieve */
+    constexpr uint32_t DFLT_TIMEOUT_MS = 100;                            /**< Default timeout for general operations */
 
+    /**
+    *   Definitions for tracking the hardware state machine mode
+    */
     enum class Mode : uint8_t
     {
         POWER_DOWN = 0,
@@ -37,24 +49,110 @@ namespace NRF24L
         UNKNOWN_MODE
     };
 
+    /**
+    *   Definitions for allowed TX power levels
+    */
+    enum class PowerAmplitude : uint8_t
+    {
+        MIN = 0u,  /**< -18 dBm */
+        LOW = 2u,  /**< -12 dBm */
+        HIGH = 4u, /**<  -6 dBm */
+        MAX = 6u   /**<   0 dBm */
+    };
+
+    /**
+    *   Definitions for allowed data rates
+    */
+    enum class DataRate : uint8_t
+    {
+        DR_1MBPS,  /**< 1 MBPS */
+        DR_2MBPS,  /**< 2 MBPS */
+        DR_250KBPS /**< 250 KBPS */
+    };
+
+    /**
+    *   Definitions for CRC settings
+    */
+    enum class CRCLength : uint8_t
+    {
+        CRC_DISABLED, /**< No CRC */
+        CRC_8,        /**< 8 Bit CRC */
+        CRC_16        /**< 16 Bit CRC */
+    };
+
+    /**
+    *   Definitions for how many address bytes to use
+    */
+    enum class AddressWidth : uint8_t
+    {
+        AW_3Byte = 0x01,
+        AW_4Byte = 0x02,
+        AW_5Byte = 0x03
+    };
+
+    /**
+    *   Definitions for the auto retransmit delay register field
+    */
+    enum class AutoRetransmitDelay : uint8_t
+    {
+        w250uS = 0,
+        w500uS = 1,
+        w750uS = 2,
+        w1000uS = 3,
+        w1250uS = 4,
+        w1500uS = 5,
+        w1750uS = 6,
+        w2000uS = 7,
+        w2250uS = 8,
+        w2500uS = 9,
+        w2750uS = 10,
+        w3000uS = 11,
+        w3250uS = 12,
+        w3500uS = 13,
+        w3750uS = 14,
+        w4000uS = 15,
+
+        MIN = w250uS,
+        MED = w2250uS,
+        MAX = w4000uS
+    };
+
+    /**
+    *   Provide reasons for why something has failed.
+    */
+    enum class FailureCode : uint8_t
+    {
+        NO_FAILURE = 0,
+        CLEARED = NO_FAILURE,
+        MAX_RETRY_TIMEOUT,
+        TX_FIFO_FULL_TIMEOUT,
+        TX_FIFO_EMPTY_TIMEOUT,
+        RADIO_IN_TX_MODE,
+        RADIO_IN_RX_MODE,
+        INVALID_PIPE,
+        NOT_CONNECTED,
+        REGISTER_WRITE_FAILURE,
+        COULD_NOT_ERASE,
+    };
+
     /*----------------------------------------------
     Command Instructions
     ----------------------------------------------*/
     namespace Command
     {
-        constexpr uint8_t REGISTER_MASK = 0x1F;       /* Masks off the largest available register address */
-        constexpr uint8_t R_REGISTER = 0x00;          /* Read command and status registers  */
-        constexpr uint8_t W_REGISTER = 0x20;          /* Write command and status registers  */
-        constexpr uint8_t R_RX_PAYLOAD = 0x61;        /* Read RX Payload (1-32 bytes) */
-        constexpr uint8_t W_TX_PAYLOAD = 0xA0;        /* Write TX Payload (1-32 bytes) */
-        constexpr uint8_t FLUSH_TX = 0xE1;            /* Flush TX FIFO, used in TX Mode */
-        constexpr uint8_t FLUSH_RX = 0xE2;            /* Flush RX FIFO, used in RX Mode */
-        constexpr uint8_t REUSE_TX_PL = 0xE3;         /* Reuse last transmitted payload (PTX device only) */
-        constexpr uint8_t ACTIVATE = 0x50;            /* This command, followed by 0x73, activates R_RX_PL_WID, W_ACK_PAYLOAD, W_TX_PAYLOAD_NOACK */
-        constexpr uint8_t R_RX_PL_WID = 0x60;         /* Read RX payload width for the top payload in the RX FIFO */
-        constexpr uint8_t W_ACK_PAYLOAD = 0xA8;       /* Write Payload together with ACK packet */
-        constexpr uint8_t W_TX_PAYLOAD_NO_ACK = 0xB0; /* Disables AUTOACK on this specific packet */
-        constexpr uint8_t NOP = 0xFF;                 /* No operation */
+        constexpr uint8_t REGISTER_MASK = 0x1F;       /**<*< Masks off the largest available register address */
+        constexpr uint8_t R_REGISTER = 0x00;          /**<*< Read command and status registers  */
+        constexpr uint8_t W_REGISTER = 0x20;          /**<*< Write command and status registers  */
+        constexpr uint8_t R_RX_PAYLOAD = 0x61;        /**<*< Read RX Payload (1-32 bytes) */
+        constexpr uint8_t W_TX_PAYLOAD = 0xA0;        /**<*< Write TX Payload (1-32 bytes) */
+        constexpr uint8_t FLUSH_TX = 0xE1;            /**<*< Flush TX FIFO, used in TX Mode */
+        constexpr uint8_t FLUSH_RX = 0xE2;            /**<*< Flush RX FIFO, used in RX Mode */
+        constexpr uint8_t REUSE_TX_PL = 0xE3;         /**<*< Reuse last transmitted payload (PTX device only) */
+        constexpr uint8_t ACTIVATE = 0x50;            /**<*< This command, followed by 0x73, activates R_RX_PL_WID, W_ACK_PAYLOAD, W_TX_PAYLOAD_NOACK */
+        constexpr uint8_t R_RX_PL_WID = 0x60;         /**<*< Read RX payload width for the top payload in the RX FIFO */
+        constexpr uint8_t W_ACK_PAYLOAD = 0xA8;       /**<*< Write Payload together with ACK packet */
+        constexpr uint8_t W_TX_PAYLOAD_NO_ACK = 0xB0; /**<*< Disables AUTOACK on this specific packet */
+        constexpr uint8_t NOP = 0xFF;                 /**<*< No operation */
     }
 
     /*----------------------------------------------
@@ -62,32 +160,32 @@ namespace NRF24L
     ----------------------------------------------*/
     namespace Register
     {
-        constexpr uint8_t CONFIG = 0x00;      /* Configuration Register */
-        constexpr uint8_t EN_AA = 0x01;       /* Enable Auto Acknowledgment */
-        constexpr uint8_t EN_RXADDR = 0x02;   /* Enable RX Addresses */
-        constexpr uint8_t SETUP_AW = 0x03;    /* Setup of Address Width */
-        constexpr uint8_t SETUP_RETR = 0x04;  /* Setup of Automatic Retransmission */
-        constexpr uint8_t RF_CH = 0x05;       /* RF Channel Frequency Settings */
-        constexpr uint8_t RF_SETUP = 0x06;    /* RF Channel Settings Register */
-        constexpr uint8_t STATUS = 0x07;      /* Status Register */
-        constexpr uint8_t OBSERVE_TX = 0x08;  /* Transmit Observe */
-        constexpr uint8_t CD = 0x09;          /* Carrier Detect */
-        constexpr uint8_t RX_ADDR_P0 = 0x0A;  /* Receive Address Data Pipe 0 */
-        constexpr uint8_t RX_ADDR_P1 = 0x0B;  /* Receive Address Data Pipe 1 */
-        constexpr uint8_t RX_ADDR_P2 = 0x0C;  /* Receive Address Data Pipe 2 */
-        constexpr uint8_t RX_ADDR_P3 = 0x0D;  /* Receive Address Data Pipe 3 */
-        constexpr uint8_t RX_ADDR_P4 = 0x0E;  /* Receive Address Data Pipe 4 */
-        constexpr uint8_t RX_ADDR_P5 = 0x0F;  /* Receive Address Data Pipe 5 */
-        constexpr uint8_t TX_ADDR = 0x10;     /* Transmit Address */
-        constexpr uint8_t RX_PW_P0 = 0x11;    /* Number of bytes in RX Payload Data Pipe 0 */
-        constexpr uint8_t RX_PW_P1 = 0x12;    /* Number of bytes in RX Payload Data Pipe 1 */
-        constexpr uint8_t RX_PW_P2 = 0x13;    /* Number of bytes in RX Payload Data Pipe 2 */
-        constexpr uint8_t RX_PW_P3 = 0x14;    /* Number of bytes in RX Payload Data Pipe 3 */
-        constexpr uint8_t RX_PW_P4 = 0x15;    /* Number of bytes in RX Payload Data Pipe 4 */
-        constexpr uint8_t RX_PW_P5 = 0x16;    /* Number of bytes in RX Payload Data Pipe 5 */
-        constexpr uint8_t FIFO_STATUS = 0x17; /* FIFO Status Register */
-        constexpr uint8_t DYNPD = 0x1C;       /* Enable Dynamic Payload Length for Data Pipes */
-        constexpr uint8_t FEATURE = 0x1D;     /* Feature Register */
+        constexpr uint8_t CONFIG = 0x00;      /**< Configuration Register */
+        constexpr uint8_t EN_AA = 0x01;       /**< Enable Auto Acknowledgment */
+        constexpr uint8_t EN_RXADDR = 0x02;   /**< Enable RX Addresses */
+        constexpr uint8_t SETUP_AW = 0x03;    /**< Setup of Address Width */
+        constexpr uint8_t SETUP_RETR = 0x04;  /**< Setup of Automatic Retransmission */
+        constexpr uint8_t RF_CH = 0x05;       /**< RF Channel Frequency Settings */
+        constexpr uint8_t RF_SETUP = 0x06;    /**< RF Channel Settings Register */
+        constexpr uint8_t STATUS = 0x07;      /**< Status Register */
+        constexpr uint8_t OBSERVE_TX = 0x08;  /**< Transmit Observe */
+        constexpr uint8_t CD = 0x09;          /**< Carrier Detect */
+        constexpr uint8_t RX_ADDR_P0 = 0x0A;  /**< Receive Address Data Pipe 0 */
+        constexpr uint8_t RX_ADDR_P1 = 0x0B;  /**< Receive Address Data Pipe 1 */
+        constexpr uint8_t RX_ADDR_P2 = 0x0C;  /**< Receive Address Data Pipe 2 */
+        constexpr uint8_t RX_ADDR_P3 = 0x0D;  /**< Receive Address Data Pipe 3 */
+        constexpr uint8_t RX_ADDR_P4 = 0x0E;  /**< Receive Address Data Pipe 4 */
+        constexpr uint8_t RX_ADDR_P5 = 0x0F;  /**< Receive Address Data Pipe 5 */
+        constexpr uint8_t TX_ADDR = 0x10;     /**< Transmit Address */
+        constexpr uint8_t RX_PW_P0 = 0x11;    /**< Number of bytes in RX Payload Data Pipe 0 */
+        constexpr uint8_t RX_PW_P1 = 0x12;    /**< Number of bytes in RX Payload Data Pipe 1 */
+        constexpr uint8_t RX_PW_P2 = 0x13;    /**< Number of bytes in RX Payload Data Pipe 2 */
+        constexpr uint8_t RX_PW_P3 = 0x14;    /**< Number of bytes in RX Payload Data Pipe 3 */
+        constexpr uint8_t RX_PW_P4 = 0x15;    /**< Number of bytes in RX Payload Data Pipe 4 */
+        constexpr uint8_t RX_PW_P5 = 0x16;    /**< Number of bytes in RX Payload Data Pipe 5 */
+        constexpr uint8_t FIFO_STATUS = 0x17; /**< FIFO Status Register */
+        constexpr uint8_t DYNPD = 0x1C;       /**< Enable Dynamic Payload Length for Data Pipes */
+        constexpr uint8_t FEATURE = 0x1D;     /**< Feature Register */
     }
 
     /*----------------------------------------------
@@ -901,6 +999,42 @@ namespace NRF24L
             void update(std::shared_ptr<NRF24L01> &radio);
         };
     }
+
+    /**
+    *   Keeps track of the hardware registers so that config information and settings
+    *   can be checked here rather than via the slow SPI bus. Also very useful as a
+    *   debugging tool.
+    */
+    class NRF24L01Registers
+    {
+    public:
+        CONFIG::BitField config;
+        EN_AA::BitField en_aa;
+        EN_RXADDR::BitField en_rxaddr;
+        SETUP_AW::BitField setup_aw;
+        SETUP_RETR::BitField setup_retr;
+        RF_CH::BitField rf_ch;
+        RF_SETUP::BitField rf_setup;
+        STATUS::BitField status;
+        OBSERVE_TX::BitField observe_tx;
+        CD::BitField cd;
+        RX_ADDR_P0::BitField rx_addr_p0;
+        RX_ADDR_P1::BitField rx_addr_p1;
+        RX_ADDR_P2::BitField rx_addr_p2;
+        RX_ADDR_P3::BitField rx_addr_p3;
+        RX_ADDR_P4::BitField rx_addr_p4;
+        RX_ADDR_P5::BitField rx_addr_p5;
+        TX_ADDR::BitField tx_addr;
+        RX_PW_P0::BitField rx_pw_p0;
+        RX_PW_P1::BitField rx_pw_p1;
+        RX_PW_P2::BitField rx_pw_p2;
+        RX_PW_P3::BitField rx_pw_p3;
+        RX_PW_P4::BitField rx_pw_p4;
+        RX_PW_P5::BitField rx_pw_p5;
+        FIFO_STATUS::BitField fifo_status;
+        DYNPD::BitField dynpd;
+        FEATURE::BitField feature;
+    };
 }
 
 #endif /* NRF24L01_DEFINITIONS_HPP */

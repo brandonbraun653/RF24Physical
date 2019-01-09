@@ -1,3 +1,11 @@
+/********************************************************************************
+*   nrf24l01Definitions.cpp
+*       Implementation of register models for the NRF24L01 radio.
+*
+*   2019 | Brandon Braun | brandonbraun653@gmail.com
+********************************************************************************/
+
+/* Driver Includes */
 #include "nrf24l01.hpp"
 #include "nrf24l01Definitions.hpp"
 
@@ -138,14 +146,14 @@ namespace NRF24L
         void BitField::update(NRF24L01 *const radio)
         {
             uint64_t reg = 0u;
-            radio->readRegister(Register::RX_ADDR_P0, reinterpret_cast<uint8_t*>(&reg), RX_ADDR_P0::byteWidth);
+            radio->readRegister(Register::RX_ADDR_P0, reinterpret_cast<uint8_t *>(&reg), RX_ADDR_P0::byteWidth);
             this->operator=(reg);
         }
 
         void BitField::update(std::shared_ptr<NRF24L01> &radio)
         {
             uint64_t reg = 0u;
-            radio->readRegister(Register::RX_ADDR_P0, reinterpret_cast<uint8_t*>(&reg), RX_ADDR_P0::byteWidth);
+            radio->readRegister(Register::RX_ADDR_P0, reinterpret_cast<uint8_t *>(&reg), RX_ADDR_P0::byteWidth);
             this->operator=(reg);
         }
     }
@@ -155,14 +163,14 @@ namespace NRF24L
         void BitField::update(NRF24L01 *const radio)
         {
             uint64_t reg = 0u;
-            radio->readRegister(Register::RX_ADDR_P1, reinterpret_cast<uint8_t*>(&reg), RX_ADDR_P1::byteWidth);
+            radio->readRegister(Register::RX_ADDR_P1, reinterpret_cast<uint8_t *>(&reg), RX_ADDR_P1::byteWidth);
             this->operator=(reg);
         }
 
         void BitField::update(std::shared_ptr<NRF24L01> &radio)
         {
             uint64_t reg = 0u;
-            radio->readRegister(Register::RX_ADDR_P1, reinterpret_cast<uint8_t*>(&reg), RX_ADDR_P1::byteWidth);
+            radio->readRegister(Register::RX_ADDR_P1, reinterpret_cast<uint8_t *>(&reg), RX_ADDR_P1::byteWidth);
             this->operator=(reg);
         }
     }
@@ -224,14 +232,14 @@ namespace NRF24L
         void BitField::update(NRF24L01 *const radio)
         {
             uint64_t reg = 0u;
-            radio->readRegister(Register::TX_ADDR, reinterpret_cast<uint8_t*>(&reg), TX_ADDR::byteWidth);
+            radio->readRegister(Register::TX_ADDR, reinterpret_cast<uint8_t *>(&reg), TX_ADDR::byteWidth);
             this->operator=(reg);
         }
 
         void BitField::update(std::shared_ptr<NRF24L01> &radio)
         {
             uint64_t reg = 0u;
-            radio->readRegister(Register::TX_ADDR, reinterpret_cast<uint8_t*>(&reg), TX_ADDR::byteWidth);
+            radio->readRegister(Register::TX_ADDR, reinterpret_cast<uint8_t *>(&reg), TX_ADDR::byteWidth);
             this->operator=(reg);
         }
     }

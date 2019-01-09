@@ -1,3 +1,19 @@
+/********************************************************************************
+*   File Name:
+*       nrf24l01.hpp
+*
+*   Description:
+*       Interface to the NRF24L01 radio hardware driver. Originally based upon the work done by James Coliz
+*       (https://github.com/nRF24/RF24). This version expands on the original by adding more modern C++ features, reliability
+*       and safety checks, improved debugging notifications, and more helpful comments to understand how and why things are done.
+*
+*       The hardware SPI driver has been abstracted away and can be driven by either the Chimera HAL
+*       (https://github.com/brandonbraun653/Chimera) or by providing overriding functions of the SPI/GPIO interface as defined
+*       in the class below. This allows the driver to be platform agnostic.
+*
+*   2019 | Brandon Braun | brandonbraun653@gmail.com
+********************************************************************************/
+
 #pragma once
 #ifndef NRF24L01_HPP
 #define NRF24L01_HPP
@@ -8,10 +24,10 @@
 #include <array>
 #include <memory>
 
-/* Module Includes */
+/* Driver Includes */
 #include "nrf24l01Definitions.hpp"
 
-/* Chimera Includes */
+/* Optional Chimera Includes */
 #if defined(USING_CHIMERA)
 #include <Chimera/chimera.hpp>
 #include <Chimera/gpio.hpp>
@@ -22,113 +38,8 @@ namespace NRF24L
 {
     class NRF24L01;
 
-    typedef std::shared_ptr<NRF24L01> NRF24L01_sPtr;
-    typedef std::unique_ptr<NRF24L01> NRF24L01_uPtr;
-
-    enum class PowerAmplitude : uint8_t
-    {
-        MIN = 0u,       /**< -18 dBm */
-        LOW = 2u,       /**< -12 dBm */
-        HIGH = 4u,      /**<  -6 dBm */
-        MAX = 6u        /**<   0 dBm */
-    };
-
-    enum class DataRate : uint8_t
-    {
-        DR_1MBPS,       /**< 1 MBPS */
-        DR_2MBPS,       /**< 2 MBPS */
-        DR_250KBPS      /**< 250 KBPS */
-    };
-
-    enum class CRCLength : uint8_t
-    {
-        CRC_DISABLED,   /**< No CRC */
-        CRC_8,          /**< 8 Bit CRC */
-        CRC_16          /**< 16 Bit CRC */
-    };
-
-    enum class AddressWidth : uint8_t
-    {
-        AW_3Byte = 0x01,
-        AW_4Byte = 0x02,
-        AW_5Byte = 0x03
-    };
-
-    enum class AutoRetransmitDelay : uint8_t
-    {
-        w250uS = 0,
-        w500uS = 1,
-        w750uS = 2,
-        w1000uS = 3,
-        w1250uS = 4,
-        w1500uS = 5,
-        w1750uS = 6,
-        w2000uS = 7,
-        w2250uS = 8,
-        w2500uS = 9,
-        w2750uS = 10,
-        w3000uS = 11,
-        w3250uS = 12,
-        w3500uS = 13,
-        w3750uS = 14,
-        w4000uS = 15,
-
-        MIN = w250uS,
-        MED = w2250uS,
-        MAX = w4000uS
-    };
-
-    enum class FailureCode : uint8_t
-    {
-        NO_FAILURE = 0,
-        CLEARED = NO_FAILURE,
-        MAX_RETRY_TIMEOUT,
-        TX_FIFO_FULL_TIMEOUT,
-        TX_FIFO_EMPTY_TIMEOUT,
-        RADIO_IN_TX_MODE,
-        RADIO_IN_RX_MODE,
-        INVALID_PIPE,
-        NOT_CONNECTED,
-        REGISTER_WRITE_FAILURE,
-        COULD_NOT_ERASE,
-    };
-
-    /**
-    *   Keeps track of the hardware registers so that config information and settings
-    *   can be checked here rather than via the slow SPI bus. Also very useful as a
-    *   debugging tool.
-    */
-    class NRF24L01Registers
-    {
-    public:
-
-        CONFIG::BitField config;
-        EN_AA::BitField en_aa;
-        EN_RXADDR::BitField en_rxaddr;
-        SETUP_AW::BitField setup_aw;
-        SETUP_RETR::BitField setup_retr;
-        RF_CH::BitField rf_ch;
-        RF_SETUP::BitField rf_setup;
-        STATUS::BitField status;
-        OBSERVE_TX::BitField observe_tx;
-        CD::BitField cd;
-        RX_ADDR_P0::BitField rx_addr_p0;
-        RX_ADDR_P1::BitField rx_addr_p1;
-        RX_ADDR_P2::BitField rx_addr_p2;
-        RX_ADDR_P3::BitField rx_addr_p3;
-        RX_ADDR_P4::BitField rx_addr_p4;
-        RX_ADDR_P5::BitField rx_addr_p5;
-        TX_ADDR::BitField tx_addr;
-        RX_PW_P0::BitField rx_pw_p0;
-        RX_PW_P1::BitField rx_pw_p1;
-        RX_PW_P2::BitField rx_pw_p2;
-        RX_PW_P3::BitField rx_pw_p3;
-        RX_PW_P4::BitField rx_pw_p4;
-        RX_PW_P5::BitField rx_pw_p5;
-        FIFO_STATUS::BitField fifo_status;
-        DYNPD::BitField dynpd;
-        FEATURE::BitField feature;
-    };
+    typedef std::shared_ptr<NRF24L01> NRF24L01_sPtr;    /**< Shared pointer type for the radio driver */
+    typedef std::unique_ptr<NRF24L01> NRF24L01_uPtr;    /**< Unique pointer type for the radio driver */
 
     /**
     *   Base class for interacting with an NRF24L01 wireless module.
@@ -138,9 +49,9 @@ namespace NRF24L
     class NRF24L01
     {
     public:
-        #if defined(USING_CHIMERA)
+#if defined(USING_CHIMERA)
         NRF24L01(Chimera::SPI::SPIClass_sPtr spiInstance, Chimera::GPIO::GPIOClass_sPtr chipEnable);
-        #endif
+#endif
 
         NRF24L01() = default;
         ~NRF24L01() = default;
@@ -160,6 +71,11 @@ namespace NRF24L
         */
         bool begin();
 
+        /**
+        *   Checks if the driver has been initialized properly
+        *
+        *   @return True if success, false if not
+        */
         bool isInitialized();
 
         /**
@@ -192,12 +108,23 @@ namespace NRF24L
         */
         void startListening();
 
+        /**
+        *   Pauses a currently listening device. Does nothing if the device is not listening.
+        *
+        *   @return void
+        */
         void pauseListening();
 
+        /**
+        *   Resumes listening a paused device. Does nothing if the device is not paused.
+        *
+        *   @return void
+        */
         void resumeListening();
 
         /**
-        *   Stop listening for RX messages and switch to transmit mode.
+        *   Stop listening for RX messages and switch to transmit mode. Does nothing if already
+        *   stopped listening.
         *
         *   @return void
         */
@@ -231,9 +158,19 @@ namespace NRF24L
         *
         *   @param[in]  number      Which pipe to open, 0-5.
         *   @param[in]  address     The address you want the pipe to listen to
+        *   @param[in]  validate    Optionally validate the address was set properly
         *   @return True if the pipe was opened properly
         */
-        bool openReadPipe(const uint8_t pipe, const uint64_t address);
+        bool openReadPipe(const uint8_t pipe, const uint64_t address, const bool validate = false);
+
+        /**
+        *   Close a pipe after it has been previously opened.
+        *   Can be safely called without having previously opened a pipe.
+        *
+        *   @param[in]  pipe    Which pipe number to close, 0-5.
+        *   @return void
+        */
+        void closeReadPipe(const uint8_t pipe);
 
         /**
         *   Check if data is available to be read on any pipe.
@@ -266,34 +203,6 @@ namespace NRF24L
         /**
         *   Writes data onto a previously configured RF channel.
         *
-        *   This will not block until the 3 internal FIFO buffers are filled with data. Once the FIFOs are full, the function will
-        *   return false, so external code can know to begin the transfers.
-        *
-        *   @note This function can leave the CE pin high (startTX=true, autoStandby=false), so the radio will remain in TX or STANDBY-II Mode
-        *       until a txStandBy() command is issued. See related warning below.
-        *
-        *   @warning It is important to never keep the nRF24L01 in TX mode and FIFO full for more than 4ms at a time. If the auto
-        *       retransmit is enabled, the nRF24L01 is never in TX mode long enough to disobey this rule. Allow the FIFO
-        *       to clear by issuing txStandBy() or ensure appropriate time between transmissions.
-        *
-        *   Prerequisite Calls:
-        *       1. openWritePipe()
-        *       2. setChannel()
-        *       3. stopListening()
-        *
-        *   @param[in]  buffer          Array of data to be sent
-        *   @param[in]  len             Number of bytes to be sent
-        *   @param[in]  multicast       If true, allows a NOACK on the transmission for this packet
-        *   @param[in]  startTX         Decide whether or not to begin transmitting the FIFO data
-        *   @param[in]  autoStandby     Signals the end of a set of transfers and places the radio into STANDBY_I mode
-        *   @return True if the payload was delivered successfully false if not
-        */
-        bool write(const uint8_t *const buffer, size_t len, const bool multicast = false, const bool startTX = true, const bool autoStandby = false);
-
-        /**
-        *   Writes data onto a previously configured RF channel.
-        *
-        *
         *   Prerequisite Calls:
         *       1. openWritePipe()
         *       2. setChannel()
@@ -312,14 +221,6 @@ namespace NRF24L
         *   @return true if connected, false if not
         */
         bool isConnected();
-
-        /**
-        *   Originally a shim function that was used to detect if the radio was a virtual model (not valid) or
-        *   it was an actual device (is valid). The virtual model was used for testing purposes and was a bit limited.
-        *
-        *   @return true
-        */
-        constexpr bool isValid() { return true; };
 
         /**
         *   Check if the RX FIFO is full
@@ -364,7 +265,7 @@ namespace NRF24L
         *
         * @return True if transmission is successful
         */
-        bool txStandBy(uint32_t timeout, bool startTx = false);
+        bool txStandBy(const uint32_t timeout, const bool startTx = false);
 
         /**
         *   Write an ACK payload for the specified pipe
@@ -409,21 +310,16 @@ namespace NRF24L
         *   and re-send once the timeout limit has been reached. After issuing reUseTX(), it
         *   will keep resending the same payload forever until a payload is written to the
         *   FIFO, or a flush_tx command is given.
+        *
+        *   @return void
         */
         void reUseTX();
-
-        /**
-        *   Close a pipe after it has been previously opened.
-        *   Can be safely called without having previously opened a pipe.
-        *
-        *   @param[in]  pipe    Which pipe number to close, 0-5.
-        */
-        void closeReadPipe(const uint8_t pipe);
 
         /**
         *   Set the device's address width from 3 to 5 bytes (24, 32 or 40 bit)
         *
         *   @param[in]  address_width   The address width to use
+        *   @return void
         */
         void setAddressWidth(const AddressWidth address_width);
 
@@ -733,15 +629,27 @@ namespace NRF24L
         */
         FailureCode getFailureCode();
 
-        #if defined(TRACK_REGISTER_STATES)
+        /**
+        *   User defined function to provide a delay mechanism
+        *
+        *   @param[in]  ms      The number of milliseconds to delay
+        *   @return void
+        */
+        virtual void delayMilliseconds(uint32_t ms);
+
+        /**
+        *   User defined function to provide how many milliseconds have elapsed since program start
+        *
+        *   @return Number of elapsed milliseconds
+        */
+        virtual uint32_t millis();
+
+#if defined(TRACK_REGISTER_STATES)
         NRF24L01Registers registers;
-        #endif
+#endif
 
     protected:
 
-
-
-        bool chipEnableState = false;
 
         /**
         *   Non-blocking write to an open TX pipe. If the TX FIFO is full when called, the data will simply be lost.
@@ -766,13 +674,15 @@ namespace NRF24L
         */
         uint8_t writePayload(const uint8_t *const buffer, size_t len, const uint8_t writeType);
 
-        /** User defined function that will initialize the SPI hardware as needed.
+        /**
+        *   User defined function that will initialize the SPI hardware as needed.
         *
         *   @return void
         */
         virtual void spiInit();
 
-        /** User defined function that will perform an SPI write/read. This must
+        /**
+        *   User defined function that will perform an SPI write/read. This must
         *   be overwritten otherwise the program will not compile.
         *
         *   @param[in]  tx_buffer   Data buffer from which to transmit
@@ -782,7 +692,8 @@ namespace NRF24L
         */
         virtual size_t spiWrite(const uint8_t *const tx_buffer, size_t len);
 
-        /** User defined function that will perform an SPI read. This must
+        /**
+        *   User defined function that will perform an SPI read. This must
         *   be overwritten otherwise the program will not compile.
         *
         *   @param[in]  rx_buffer   Data buffer to read information into
@@ -792,7 +703,8 @@ namespace NRF24L
         */
         virtual size_t spiRead(uint8_t *const rx_buffer, size_t len);
 
-        /** User defined function that will perform an SPI write/read. This must
+        /**
+        *   User defined function that will perform an SPI write/read. This must
         *   be overwritten otherwise the program will not compile.
         *
         *   @param[in]  tx_buffer   Data buffer from which to transmit
@@ -803,71 +715,66 @@ namespace NRF24L
         */
         virtual size_t spiWriteRead(const uint8_t *const tx_buffer, uint8_t *const rx_buffer, size_t len);
 
-        /** User defined function that will start the SPI transaction correctly. This
+        /**
+        *   User defined function that will start the SPI transaction correctly. This
         *   typically means asserting the chip select line either in software or hardware.
         *
         *   @return void
         */
         virtual void beginTransaction();
 
-        /** User defined function that will end the SPI transaction correctly. This
+        /**
+        *   User defined function that will end the SPI transaction correctly. This
         *   typically means deasserting the chip select line either in software or hardware.
         *
         *   @return void
         */
         virtual void endTransaction();
 
-        /** User defined function to set the chip enable pin logically HIGH
+        /**
+        *   User defined function to set the chip enable pin logically HIGH
         *
         *   @return void
         */
         virtual void setChipEnable();
 
-        /** User defined function to set the chip enable pin logically LOW
+        /**
+        *   User defined function to set the chip enable pin logically LOW
         *
         *   @return void
         */
         virtual void clearChipEnable();
 
-        /** User defined function to get the current logical state of the chip enable pin
+        /**
+        *   User defined function to get the current logical state of the chip enable pin
         *
         *   @return void
         */
         virtual bool getChipEnableState();
 
     private:
-        static constexpr size_t SPI_BUFFER_LEN = 1 + MAX_PAYLOAD_WIDTH; /**< Accounts for max payload of 32 bytes + 1 byte for the command */
 
-        FailureCode oopsies;                                              /**< Latest reason why something failed. */
+        FailureCode oopsies;                            /**< Latest reason why something failed. */
 
-        bool initialized = false;                                       /**< Track initialization state */
-        bool pVariant = false;                                          /**< NRF24L01+ variant device? */
-        bool featuresActivated = false;                                 /**< Features register functionality enabled? */
-        bool dynamicPayloadsEnabled = false;                            /**< Are our payloads configured as variable width? */
-
-        bool listening = false;                                         /**< Track if the radio is listening or not */
+        bool initialized = false;                       /**< Track initialization state */
+        bool pVariant = false;                          /**< NRF24L01+ variant device? */
+        bool featuresActivated = false;                 /**< Features register functionality enabled? */
+        bool dynamicPayloadsEnabled = false;            /**< Are our payloads configured as variable width? */
+        bool listening = false;                         /**< Track if the radio is listening or not */
         bool listeningPaused = false;
 
-        size_t addressWidth = 0;                                        /**< Keep track of the user's address width preference */
-        size_t payloadSize = 0;                                         /**< Keep track of the user's payload width preference */
+        size_t addressWidth = 0;                        /**< Keep track of the user's address width preference */
+        size_t payloadSize = 0;                         /**< Keep track of the user's payload width preference */
 
-        std::array<uint8_t, MAX_ADDRESS_WIDTH> pipe0_reading_address;   /**< Keep track of the TX pipe0 address */
-        std::array<uint8_t, SPI_BUFFER_LEN> spi_txbuff;                 /**< Internal transmit buffer */
-        std::array<uint8_t, SPI_BUFFER_LEN> spi_rxbuff;                 /**< Internal receive buffer */
+        std::array<uint8_t, SPI_BUFFER_LEN> spi_txbuff; /**< Internal transmit buffer */
+        std::array<uint8_t, SPI_BUFFER_LEN> spi_rxbuff; /**< Internal receive buffer */
 
-        NRF24L::Mode currentMode = Mode::POWER_DOWN;                    /**< Keep track of which HW mode of the radio is likely to be in */
+        NRF24L::Mode currentMode = Mode::POWER_DOWN;    /**< Keep track of which HW mode of the radio is likely to be in */
 
-        #if defined(USING_CHIMERA)
-        Chimera::SPI::SPIClass_sPtr spi;                                /**< SPI Object Instance */
-        Chimera::GPIO::GPIOClass_sPtr chipEnable;                       /**< GPIO Object Instance */
-        #endif
-
-        /*-------------------------------------------------
-        Register bit fields useful for inspection in the debugger
-        -------------------------------------------------*/
-        #if defined(DEBUG)
-        STATUS::BitField statusReg;
-        #endif
+#if defined(USING_CHIMERA)
+        Chimera::SPI::SPIClass_sPtr spi;                /**< SPI Object Instance */
+        Chimera::GPIO::GPIOClass_sPtr chipEnable;       /**< GPIO Object Instance */
+#endif
 
         uint8_t writeCMD(const uint8_t cmd);
         bool registerIsBitmaskSet(const uint8_t reg, const uint8_t bitmask);
@@ -875,10 +782,6 @@ namespace NRF24L
         void clearRegisterBits(const uint8_t reg, const uint8_t bitmask);
         void setRegisterBits(const uint8_t reg, const uint8_t bitmask);
     };
-
-
-
-
 }
 
 #endif /* NRF24L01_HPP */
