@@ -331,6 +331,13 @@ namespace NRF24L
         AddressWidth getAddressWidth();
 
         /**
+        *   Get the number of bytes used in the device address width
+        *
+        *   @return The current address width byte size
+        */
+        uint8_t getAddressBytes();
+
+        /**
         *   Set the number and delay of retries upon failed transfer
         *
         *   @param[in]  delay       How long to wait between each retry
@@ -649,8 +656,6 @@ namespace NRF24L
 #endif
 
     protected:
-
-
         /**
         *   Non-blocking write to an open TX pipe. If the TX FIFO is full when called, the data will simply be lost.
         *   By default, the transfer will immediately start.
@@ -765,6 +770,8 @@ namespace NRF24L
 
         size_t addressWidth = 0;                        /**< Keep track of the user's address width preference */
         size_t payloadSize = 0;                         /**< Keep track of the user's payload width preference */
+
+        uint64_t cachedPipe0RXAddress;                  /**< Remembers a previously set Pipe0 listening address */
 
         std::array<uint8_t, SPI_BUFFER_LEN> spi_txbuff; /**< Internal transmit buffer */
         std::array<uint8_t, SPI_BUFFER_LEN> spi_rxbuff; /**< Internal receive buffer */

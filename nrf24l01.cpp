@@ -61,12 +61,15 @@ namespace NRF24L
         payloadSize = MAX_PAYLOAD_WIDTH;
         dynamicPayloadsEnabled = false;
         pVariant = false;
+        cachedPipe0RXAddress = 0u;
     }
 #endif
 
     bool NRF24L01::erase()
     {
         bool eraseStatus = true;
+
+        cachedPipe0RXAddress = 0u;
 
         clearChipEnable();
 
@@ -384,6 +387,15 @@ namespace NRF24L
             setChipEnable();
             currentMode = Mode::RX;
 
+            /*------------------------------------------------
+            If we clobbered the old pipe 0 listening address so we could transmit
+            something, restore it back.
+            ------------------------------------------------*/
+            if (cachedPipe0RXAddress)
+            {
+                openReadPipe(0, cachedPipe0RXAddress, true);
+            }
+
             listening = true;
             listeningPaused = false;
         }
@@ -565,8 +577,17 @@ namespace NRF24L
             /*-------------------------------------------------
             Write only as many address bytes as were set in SETUP_AW
             -------------------------------------------------*/
-            uint8_t addrWidth = static_cast<uint8_t>(getAddressWidth());
+            uint8_t addressWidth = getAddressBytes();
             writeRegister(pipeRXAddressReg[pipe], reinterpret_cast<const uint8_t *>(&address), addressWidth);
+
+            /*------------------------------------------------
+            Save the pipe 0 address because it can be clobbered by openWritePipe() and
+            will need to be restored later when we start listening again.
+            ------------------------------------------------*/
+            if (pipe == 0)
+            {
+                memcpy(&cachedPipe0RXAddress, &address, addressWidth);
+            }
 
             /*------------------------------------------------
             Optionally validate the write
@@ -614,6 +635,12 @@ namespace NRF24L
 
 #if defined(TRACK_REGISTER_STATES)
         registers.en_rxaddr.update(this);
+        registers.rx_addr_p0.update(this);
+        registers.rx_addr_p1.update(this);
+        registers.rx_addr_p2.update(this);
+        registers.rx_addr_p3.update(this);
+        registers.rx_addr_p4.update(this);
+        registers.rx_addr_p5.update(this);
 #endif
 
         return true;
@@ -941,6 +968,24 @@ namespace NRF24L
 #endif
 
         return static_cast<AddressWidth>(reg);
+    }
+
+    uint8_t NRF24L01::getAddressBytes()
+    {
+        switch (getAddressWidth())
+        {
+        case NRF24L::AddressWidth::AW_3Byte:
+            return 3;
+            break;
+
+        case NRF24L::AddressWidth::AW_4Byte:
+            return 4;
+            break;
+
+        case NRF24L::AddressWidth::AW_5Byte:
+            return 5;
+            break;
+        }
     }
 
     bool NRF24L01::setRetries(const AutoRetransmitDelay delay, const uint8_t count, const bool validate)

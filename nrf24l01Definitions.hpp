@@ -81,7 +81,9 @@ namespace NRF24L
     };
 
     /**
-    *   Definitions for how many address bytes to use
+    *   Definitions for how many address bytes to use. The
+    *   numerical value here is NOT the number of bytes. This is the
+    *   register level definition.
     */
     enum class AddressWidth : uint8_t
     {
