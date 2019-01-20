@@ -1521,9 +1521,9 @@ namespace NRF24L
         -------------------------------------------------*/
         memset(spi_txbuff.begin(), 0xff, spi_txbuff.size());
 
-        spi_txbuff[0] = writeType;              /* Write command type*/
-        memcpy(&spi_txbuff[1], buf, len);       /* Payload information */
-        memset(&spi_txbuff[len], 0, blank_len); /* Null out the remaining buffer space*/
+        spi_txbuff[0] = writeType;                  /* Write command type */
+        memcpy(&spi_txbuff[1], buf, len);           /* Payload information */
+        memset(&spi_txbuff[len + 1], 0, blank_len); /* Null out the remaining buffer space */
 
         beginTransaction();
         spiWriteRead(spi_txbuff.begin(), spi_rxbuff.begin(), size);
