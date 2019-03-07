@@ -14,7 +14,7 @@
 #include <cstdio>
 #include <memory>
 
-namespace NRF24L
+namespace RF24Phy
 {
     /*------------------------------------------------
     Configuration Constants
@@ -24,7 +24,7 @@ namespace NRF24L
     /*----------------------------------------------
     General Definitions
     ----------------------------------------------*/
-    class NRF24L01; /* Forward declare the class so register Bitfields can auto-update */
+    class Phy; /* Forward declare the class so register Bitfields can auto-update */
 
     constexpr uint8_t MAX_NUM_PIPES = 6;                                 /**< Hardware limit for number of pipes we can use */
     constexpr size_t MAX_ADDRESS_WIDTH = 5;                              /**< Hardware limit for how many bytes can represent a device's address */
@@ -248,8 +248,8 @@ namespace NRF24L
                 bPRIM_RX = reg & PRIM_RX;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -302,8 +302,8 @@ namespace NRF24L
                 bP0 = reg & P0;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -356,8 +356,8 @@ namespace NRF24L
                 bP0 = reg & P0;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -381,8 +381,8 @@ namespace NRF24L
                 fAW = reg & AW;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -411,8 +411,8 @@ namespace NRF24L
                 fARC = reg & ARC;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -431,8 +431,8 @@ namespace NRF24L
                 fRF_CH = reg & Mask;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -485,8 +485,8 @@ namespace NRF24L
                 bLNA_HCURR = reg & LNA_HCURR;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -534,8 +534,8 @@ namespace NRF24L
                 fRX_P_NO = reg & RX_P_NO;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -566,8 +566,8 @@ namespace NRF24L
                 fARC_CNT = reg & ARC_CNT;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -590,8 +590,8 @@ namespace NRF24L
                 bCD = reg & CD;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -611,8 +611,8 @@ namespace NRF24L
                 rxAddressP0 = reg & Mask;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -632,8 +632,8 @@ namespace NRF24L
                 rxAddressP1 = reg & Mask;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -652,8 +652,8 @@ namespace NRF24L
                 rxAddressP2 = reg & Mask;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -672,8 +672,8 @@ namespace NRF24L
                 rxAddressP3 = reg & Mask;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -692,8 +692,8 @@ namespace NRF24L
                 rxAddressP4 = reg & Mask;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -712,8 +712,8 @@ namespace NRF24L
                 rxAddressP5 = reg & Mask;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -733,8 +733,8 @@ namespace NRF24L
                 txAddress = reg & Mask;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -753,8 +753,8 @@ namespace NRF24L
                 rxPayloadWidthP0 = reg & Mask;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -773,8 +773,8 @@ namespace NRF24L
                 rxPayloadWidthP1 = reg & Mask;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -793,8 +793,8 @@ namespace NRF24L
                 rxPayloadWidthP2 = reg & Mask;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -813,8 +813,8 @@ namespace NRF24L
                 rxPayloadWidthP3 = reg & Mask;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -833,8 +833,8 @@ namespace NRF24L
                 rxPayloadWidthP4 = reg & Mask;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -853,8 +853,8 @@ namespace NRF24L
                 rxPayloadWidthP5 = reg & Mask;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -907,8 +907,8 @@ namespace NRF24L
                 bRX_EMPTY = reg & RX_EMPTY;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -961,8 +961,8 @@ namespace NRF24L
                 bDPL_P0 = reg & bDPL_P0;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
@@ -997,8 +997,8 @@ namespace NRF24L
                 bEN_DYN_ACK = reg & EN_DYN_ACK;
             }
 
-            void update(NRF24L01 *const radio);
-            void update(std::shared_ptr<NRF24L01> &radio);
+            void update(Phy *const radio);
+            void update(std::shared_ptr<Phy> &radio);
         };
     }
 
