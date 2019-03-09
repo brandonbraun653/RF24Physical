@@ -30,7 +30,7 @@ namespace RF24Phy
   static_assert( pipeRXPayloadWidthReg.size() == MAX_NUM_PIPES, "Too many/few items in the array!" );
 
 #if defined( USING_CHIMERA )
-  NRF24L01::NRF24L01( Chimera::SPI::SPIClass_sPtr spiInstance, Chimera::GPIO::GPIOClass_sPtr chipEnable )
+  Phy::Phy( Chimera::SPI::SPIClass_sPtr spiInstance, Chimera::GPIO::GPIOClass_sPtr chipEnable )
   {
     this->spi        = spiInstance;
     this->chipEnable = chipEnable;
@@ -1585,7 +1585,7 @@ namespace RF24Phy
   }
 
 #if defined( USING_CHIMERA )
-  void NRF24L01::spiInit()
+  void Phy::spiInit()
   {
     spi->setChipSelectControlMode( Chimera::SPI::ChipSelectMode::MANUAL );
     chipEnable->setMode( Chimera::GPIO::Drive::OUTPUT_PUSH_PULL, false );
@@ -1595,57 +1595,57 @@ namespace RF24Phy
     spi->setChipSelect( Chimera::GPIO::State::HIGH );
   }
 
-  size_t NRF24L01::spiWrite( const uint8_t *const tx_buffer, size_t len )
+  size_t Phy::spiWrite( const uint8_t *const tx_buffer, size_t len )
   {
     spi->writeBytes( tx_buffer, len, false );
     return len;
   }
 
-  size_t NRF24L01::spiRead( uint8_t *const rx_buffer, size_t len )
+  size_t Phy::spiRead( uint8_t *const rx_buffer, size_t len )
   {
     spi->readBytes( rx_buffer, len, false );
     return len;
   }
 
-  size_t NRF24L01::spiWriteRead( const uint8_t *const tx_buffer, uint8_t *const rx_buffer, size_t len )
+  size_t Phy::spiWriteRead( const uint8_t *const tx_buffer, uint8_t *const rx_buffer, size_t len )
   {
     spi->readWriteBytes( tx_buffer, rx_buffer, len, false );
     return len;
   }
 
-  void NRF24L01::beginTransaction()
+  void Phy::beginTransaction()
   {
     spi->setChipSelect( Chimera::GPIO::State::LOW );
   }
 
-  void NRF24L01::endTransaction()
+  void Phy::endTransaction()
   {
     spi->setChipSelect( Chimera::GPIO::State::HIGH );
   }
 
-  void NRF24L01::setChipEnable()
+  void Phy::setChipEnable()
   {
     chipEnable->setState( Chimera::GPIO::State::HIGH );
   }
 
-  void NRF24L01::clearChipEnable()
+  void Phy::clearChipEnable()
   {
     chipEnable->setState( Chimera::GPIO::State::LOW );
   }
 
-  bool NRF24L01::getChipEnableState()
+  bool Phy::getChipEnableState()
   {
     Chimera::GPIO::State state;
     chipEnable->getState( state );
     return static_cast<bool>( state );
   }
 
-  void NRF24L01::delayMilliseconds( uint32_t ms )
+  void Phy::delayMilliseconds( uint32_t ms )
   {
     Chimera::delayMilliseconds( ms );
   }
 
-  uint32_t NRF24L01::millis()
+  uint32_t Phy::millis()
   {
     return Chimera::millis();
   }
