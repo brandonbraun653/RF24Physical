@@ -1,8 +1,11 @@
 /********************************************************************************
- *   nrf24l01.cpp
- *       Implementation of the NRF24L01 hardware driver.
+ * File Name:
+ *	  RF24Phy.cpp
  *
- *   2019 | Brandon Braun | brandonbraun653@gmail.com
+ * Description:
+ *	  Implementation of the RF24 Physical layer (aka hardware driver)
+ *
+ * 2019 | Brandon Braun | brandonbraun653@gmail.com
  ********************************************************************************/
 
 /* C++ Includes */
@@ -28,26 +31,6 @@ namespace RF24Phy
                                                                             Register::RX_PW_P2, Register::RX_PW_P3,
                                                                             Register::RX_PW_P4, Register::RX_PW_P5 };
   static_assert( pipeRXPayloadWidthReg.size() == MAX_NUM_PIPES, "Too many/few items in the array!" );
-
-#if defined( USING_CHIMERA )
-  Phy::Phy( Chimera::SPI::SPIClass_sPtr spiInstance, Chimera::GPIO::GPIOClass_sPtr chipEnable )
-  {
-    this->spi        = spiInstance;
-    this->chipEnable = chipEnable;
-
-    memset( spi_txbuff.data(), 0, spi_txbuff.size() );
-    memset( spi_rxbuff.data(), 0, spi_rxbuff.size() );
-
-    /*-------------------------------------------------
-    Initialize class variables
-    -------------------------------------------------*/
-    addressWidth           = MAX_ADDRESS_WIDTH;
-    payloadSize            = MAX_PAYLOAD_WIDTH;
-    dynamicPayloadsEnabled = false;
-    pVariant               = false;
-    cachedPipe0RXAddress   = 0u;
-  }
-#endif
 
   bool Phy::erase()
   {
@@ -275,6 +258,8 @@ namespace RF24Phy
 
   bool Phy::begin()
   {
+    initialized = false;
+
     /*-------------------------------------------------
     Setup the MCU hardware to the correct state
     -------------------------------------------------*/
@@ -287,61 +272,62 @@ namespace RF24Phy
     if ( !isConnected() )
     {
       oopsies = FailureCode::NOT_CONNECTED;
-      return false;
     }
 
-    if ( !erase() )
+    else if ( !erase() )
     {
       oopsies = FailureCode::COULD_NOT_ERASE;
-      return false;
+    }
+    else
+    {
+      /*-------------------------------------------------
+      Enable 16-bit CRC
+      -------------------------------------------------*/
+      setCRCLength( CRCLength::CRC_16 );
+
+      /*-------------------------------------------------
+      Set 1500uS timeout and 3 retry attempts. Don't lower
+      or the 250KBS mode will break.
+      -------------------------------------------------*/
+      setRetries( AutoRetransmitDelay::w1500uS, 3 );
+
+      /*-------------------------------------------------
+      Check whether or not we have a P variant of the chip
+      -------------------------------------------------*/
+      pVariant = setDataRate( DataRate::DR_250KBPS );
+
+      /*-------------------------------------------------
+      Set data rate to the slowest, most reliable speed supported by all hardware
+      -------------------------------------------------*/
+      setDataRate( DataRate::DR_1MBPS );
+
+      /*------------------------------------------------
+      Default to the 5 byte wide addressing scheme
+      ------------------------------------------------*/
+      setAddressWidth( AddressWidth::AW_5Byte );
+
+      /*-------------------------------------------------
+      Set the default channel to a value that likely won't congest the spectrum
+      -------------------------------------------------*/
+      setChannel( 76 );
+
+      /*-------------------------------------------------
+      Clear the buffers to start with a clean slate
+      -------------------------------------------------*/
+      flushTX();
+      flushRX();
+
+      /*-------------------------------------------------
+      Power up the module and enable PTX. Stay in standby mode by not writing CE high.
+      Delay a few milliseconds to let things settle.
+      -------------------------------------------------*/
+      clearChipEnable();
+      powerUp();
+      delayMilliseconds( 5 );
+
+      initialized = true;
     }
 
-    /*-------------------------------------------------
-    Enable 16-bit CRC
-    -------------------------------------------------*/
-    setCRCLength( CRCLength::CRC_16 );
-
-    /*-------------------------------------------------
-    Set 1500uS timeout and 3 retry attempts. Don't lower
-    or the 250KBS mode will break.
-    -------------------------------------------------*/
-    setRetries( AutoRetransmitDelay::w1500uS, 3 );
-
-    /*-------------------------------------------------
-    Check whether or not we have a P variant of the chip
-    -------------------------------------------------*/
-    pVariant = setDataRate( DataRate::DR_250KBPS );
-
-    /*-------------------------------------------------
-    Set datarate to the slowest, most reliable speed supported by all hardware
-    -------------------------------------------------*/
-    setDataRate( DataRate::DR_1MBPS );
-
-    /*------------------------------------------------
-    Default to the 5 byte wide addressing scheme
-    ------------------------------------------------*/
-    setAddressWidth( AddressWidth::AW_5Byte );
-
-    /*-------------------------------------------------
-    Set the default channel to a value that likely won't congest the spectrum
-    -------------------------------------------------*/
-    setChannel( 76 );
-
-    /*-------------------------------------------------
-    Clear the buffers to start with a clean slate
-    -------------------------------------------------*/
-    flushTX();
-    flushRX();
-
-    /*-------------------------------------------------
-    Power up the module and enable PTX. Stay in standby mode by not writing CE high.
-    Delay a few milliseconds to let things settle.
-    -------------------------------------------------*/
-    clearChipEnable();
-    powerUp();
-    delayMilliseconds( 5 );
-
-    initialized = true;
     return initialized;
   }
 
@@ -358,7 +344,7 @@ namespace RF24Phy
       If we are auto-acknowledging RX packets with a payload, make sure the TX
       FIFO is clean so we don't accidently transmit data.
       -------------------------------------------------*/
-      if ( registerIsBitmaskSet( Register::FEATURE, FEATURE::EN_ACK_PAY ) )
+      if ( _registerIsBitmaskSet( Register::FEATURE, FEATURE::EN_ACK_PAY ) )
       {
         flushTX();
       }
@@ -366,8 +352,8 @@ namespace RF24Phy
       /*-------------------------------------------------
       Clear interrupt flags and transition to RX mode
       -------------------------------------------------*/
-      setRegisterBits( Register::STATUS, STATUS::RX_DR | STATUS::TX_DS | STATUS::MAX_RT );
-      setRegisterBits( Register::CONFIG, CONFIG::PRIM_RX );
+      _setRegisterBits( Register::STATUS, STATUS::RX_DR | STATUS::TX_DS | STATUS::MAX_RT );
+      _setRegisterBits( Register::CONFIG, CONFIG::PRIM_RX );
       setChipEnable();
       currentMode = Mode::RX;
 
@@ -418,7 +404,7 @@ namespace RF24Phy
       If we are auto-acknowledging RX packets with a payload, make sure the TX FIFO is clean so
       we don't accidentally transmit data the next time we write chipEnable high.
       -------------------------------------------------*/
-      if ( registerIsBitmaskSet( Register::FEATURE, FEATURE::EN_ACK_PAY ) )
+      if ( _registerIsBitmaskSet( Register::FEATURE, FEATURE::EN_ACK_PAY ) )
       {
         flushTX();
       }
@@ -426,12 +412,12 @@ namespace RF24Phy
       /*-------------------------------------------------
       Disable RX/Enable TX
       -------------------------------------------------*/
-      clearRegisterBits( Register::CONFIG, CONFIG::PRIM_RX );
+      _clearRegisterBits( Register::CONFIG, CONFIG::PRIM_RX );
 
       /*-------------------------------------------------
       Ensure RX Pipe 0 can listen (TX only transmits/receives on pipe 0)
       -------------------------------------------------*/
-      setRegisterBits( Register::EN_RXADDR, pipeEnableRXAddressReg[ 0 ] );
+      _setRegisterBits( Register::EN_RXADDR, pipeEnableRXAddressReg[ 0 ] );
 
       listening = false;
     }
@@ -490,9 +476,9 @@ namespace RF24Phy
       /*-------------------------------------------------
       If max retries hit from a previous transmission, we screwed up
       -------------------------------------------------*/
-      if ( registerIsBitmaskSet( Register::STATUS, STATUS::MAX_RT ) )
+      if ( _registerIsBitmaskSet( Register::STATUS, STATUS::MAX_RT ) )
       {
-        setRegisterBits( Register::STATUS, STATUS::MAX_RT );
+        _setRegisterBits( Register::STATUS, STATUS::MAX_RT );
         oopsies = FailureCode::MAX_RETRY_TIMEOUT;
         return false;
       }
@@ -615,7 +601,7 @@ namespace RF24Phy
     Let the pipe know how wide the payload will be, then turn it on
     -------------------------------------------------*/
     writeRegister( pipeRXPayloadWidthReg[ pipe ], static_cast<uint8_t>( payloadSize ) );
-    setRegisterBits( Register::EN_RXADDR, pipeEnableRXAddressReg[ pipe ] );
+    _setRegisterBits( Register::EN_RXADDR, pipeEnableRXAddressReg[ pipe ] );
 
 #if defined( TRACK_REGISTER_STATES )
     registers.en_rxaddr.update( this );
@@ -710,7 +696,7 @@ namespace RF24Phy
     If not powered up already, do it. The worst startup delay is
     about 5mS, so just wait that amount.
     -------------------------------------------------*/
-    if ( !registerIsBitmaskSet( Register::CONFIG, CONFIG::PWR_UP ) )
+    if ( !_registerIsBitmaskSet( Register::CONFIG, CONFIG::PWR_UP ) )
     {
       writeRegister( Register::CONFIG, CONFIG::PWR_UP );
       delayMilliseconds( 5 );
@@ -729,7 +715,7 @@ namespace RF24Phy
     Force standby mode and power down the chip
     -------------------------------------------------*/
     clearChipEnable();
-    clearRegisterBits( Register::CONFIG, CONFIG::PWR_UP );
+    _clearRegisterBits( Register::CONFIG, CONFIG::PWR_UP );
     currentMode = Mode::POWER_DOWN;
 
 #if defined( TRACK_REGISTER_STATES )
@@ -782,9 +768,9 @@ namespace RF24Phy
       If we hit the Max Retries, we have a problem and the whole TX FIFO is screwed.
       Go back to standby mode and clear out the FIFO.
       -------------------------------------------------*/
-      if ( registerIsBitmaskSet( Register::STATUS, STATUS::MAX_RT ) )
+      if ( _registerIsBitmaskSet( Register::STATUS, STATUS::MAX_RT ) )
       {
-        setRegisterBits( Register::STATUS, STATUS::MAX_RT );
+        _setRegisterBits( Register::STATUS, STATUS::MAX_RT );
         clearChipEnable();
         flushTX();
 
@@ -833,10 +819,10 @@ namespace RF24Phy
       If max retries interrupt occurs, retry transmission. The data is
       automatically kept in the TX FIFO.
       ------------------------------------------------*/
-      if ( registerIsBitmaskSet( Register::STATUS, STATUS::MAX_RT ) )
+      if ( _registerIsBitmaskSet( Register::STATUS, STATUS::MAX_RT ) )
       {
         clearChipEnable();
-        setRegisterBits( Register::STATUS, STATUS::MAX_RT );
+        _setRegisterBits( Register::STATUS, STATUS::MAX_RT );
 
         delayMilliseconds( 1 );
         setChipEnable();
@@ -901,7 +887,7 @@ namespace RF24Phy
   void Phy::reUseTX()
   {
     writeRegister( Register::STATUS, STATUS::MAX_RT );
-    writeCMD( Command::REUSE_TX_PL );
+    _writeCMD( Command::REUSE_TX_PL );
     clearChipEnable();
     setChipEnable();
   }
@@ -1065,12 +1051,12 @@ namespace RF24Phy
 
   uint8_t Phy::flushTX()
   {
-    return writeCMD( Command::FLUSH_TX );
+    return _writeCMD( Command::FLUSH_TX );
   }
 
   uint8_t Phy::flushRX()
   {
-    return writeCMD( Command::FLUSH_RX );
+    return _writeCMD( Command::FLUSH_RX );
   }
 
   void Phy::activateFeatures()
@@ -1100,8 +1086,8 @@ namespace RF24Phy
   void Phy::enableAckPayload()
   {
     activateFeatures();
-    setRegisterBits( Register::FEATURE, FEATURE::EN_ACK_PAY | FEATURE::EN_DPL );
-    setRegisterBits( Register::DYNPD, DYNPD::DPL_P0 | DYNPD::DPL_P1 );
+    _setRegisterBits( Register::FEATURE, FEATURE::EN_ACK_PAY | FEATURE::EN_DPL );
+    _setRegisterBits( Register::DYNPD, DYNPD::DPL_P0 | DYNPD::DPL_P1 );
 
     dynamicPayloadsEnabled = true;
 
@@ -1115,8 +1101,8 @@ namespace RF24Phy
   {
     if ( featuresActivated )
     {
-      clearRegisterBits( Register::FEATURE, FEATURE::EN_ACK_PAY | FEATURE::EN_DPL );
-      clearRegisterBits( Register::DYNPD, DYNPD::DPL_P0 | DYNPD::DPL_P1 );
+      _clearRegisterBits( Register::FEATURE, FEATURE::EN_ACK_PAY | FEATURE::EN_DPL );
+      _clearRegisterBits( Register::DYNPD, DYNPD::DPL_P0 | DYNPD::DPL_P1 );
 
       dynamicPayloadsEnabled = false;
 
@@ -1137,14 +1123,14 @@ namespace RF24Phy
     /*-------------------------------------------------
     Enable the dynamic payload feature bit
     -------------------------------------------------*/
-    setRegisterBits( Register::FEATURE, FEATURE::EN_DPL );
+    _setRegisterBits( Register::FEATURE, FEATURE::EN_DPL );
 
     /*-------------------------------------------------
     Enable dynamic payload on all pipes. This requires that
     auto-acknowledge be enabled.
     -------------------------------------------------*/
-    setRegisterBits( Register::EN_AA, EN_AA::Mask );
-    setRegisterBits( Register::DYNPD, DYNPD::Mask );
+    _setRegisterBits( Register::EN_AA, EN_AA::Mask );
+    _setRegisterBits( Register::DYNPD, DYNPD::Mask );
 
     dynamicPayloadsEnabled = true;
 
@@ -1162,9 +1148,9 @@ namespace RF24Phy
     -------------------------------------------------*/
     if ( featuresActivated )
     {
-      clearRegisterBits( Register::DYNPD, DYNPD::Mask );
-      clearRegisterBits( Register::EN_AA, EN_AA::Mask );
-      clearRegisterBits( Register::FEATURE, FEATURE::EN_DPL );
+      _clearRegisterBits( Register::DYNPD, DYNPD::Mask );
+      _clearRegisterBits( Register::EN_AA, EN_AA::Mask );
+      _clearRegisterBits( Register::FEATURE, FEATURE::EN_DPL );
 
       dynamicPayloadsEnabled = false;
 
@@ -1179,7 +1165,7 @@ namespace RF24Phy
   void Phy::enableDynamicAck()
   {
     activateFeatures();
-    setRegisterBits( Register::FEATURE, FEATURE::EN_DYN_ACK );
+    _setRegisterBits( Register::FEATURE, FEATURE::EN_DYN_ACK );
 
 #if defined( TRACK_REGISTER_STATES )
     registers.feature.update( this );
@@ -1190,7 +1176,7 @@ namespace RF24Phy
   {
     if ( featuresActivated )
     {
-      clearRegisterBits( Register::FEATURE, FEATURE::EN_DYN_ACK );
+      _clearRegisterBits( Register::FEATURE, FEATURE::EN_DYN_ACK );
 
 #if defined( TRACK_REGISTER_STATES )
       registers.feature.update( this );
@@ -1207,11 +1193,11 @@ namespace RF24Phy
   {
     if ( enable )
     {
-      setRegisterBits( Register::EN_AA, EN_AA::Mask );
+      _setRegisterBits( Register::EN_AA, EN_AA::Mask );
     }
     else
     {
-      clearRegisterBits( Register::EN_AA, EN_AA::Mask );
+      _clearRegisterBits( Register::EN_AA, EN_AA::Mask );
     }
 
 #if defined( TRACK_REGISTER_STATES )
@@ -1562,7 +1548,7 @@ namespace RF24Phy
     /*------------------------------------------------
     Clear (by setting) the RX_DR flag to signal we've read data
     ------------------------------------------------*/
-    setRegisterBits( Register::STATUS, STATUS::RX_DR );
+    _setRegisterBits( Register::STATUS, STATUS::RX_DR );
 
     /*-------------------------------------------------
     Reset the chip enable back to the initial RX state
@@ -1574,7 +1560,7 @@ namespace RF24Phy
 
   uint8_t Phy::getStatus()
   {
-    return writeCMD( Command::NOP );
+    return _writeCMD( Command::NOP );
   }
 
   FailureCode Phy::getFailureCode()
@@ -1651,7 +1637,22 @@ namespace RF24Phy
   }
 #endif
 
-  uint8_t Phy::writeCMD( const uint8_t cmd )
+  void Phy::_common_init()
+  {
+    spi_rxbuff.fill(0);
+    spi_txbuff.fill(0);
+
+    /*-------------------------------------------------
+    Initialize class variables
+    -------------------------------------------------*/
+    addressWidth           = MAX_ADDRESS_WIDTH;
+    payloadSize            = MAX_PAYLOAD_WIDTH;
+    dynamicPayloadsEnabled = false;
+    pVariant               = false;
+    cachedPipe0RXAddress   = 0u;
+  }
+
+  uint8_t Phy::_writeCMD( const uint8_t cmd )
   {
     size_t txLength = 1;
     spi_txbuff[ 0 ] = cmd;
@@ -1663,24 +1664,24 @@ namespace RF24Phy
     return spi_rxbuff[ 0 ];
   }
 
-  bool Phy::registerIsBitmaskSet( const uint8_t reg, const uint8_t bitmask )
+  bool Phy::_registerIsBitmaskSet( const uint8_t reg, const uint8_t bitmask )
   {
     return ( readRegister( reg ) & bitmask ) == bitmask;
   }
 
-  bool Phy::registerIsAnySet( const uint8_t reg, const uint8_t bitmask )
+  bool Phy::_registerIsAnySet( const uint8_t reg, const uint8_t bitmask )
   {
     return readRegister( reg ) & bitmask;
   }
 
-  void Phy::clearRegisterBits( const uint8_t reg, const uint8_t bitmask )
+  void Phy::_clearRegisterBits( const uint8_t reg, const uint8_t bitmask )
   {
     uint8_t regVal = readRegister( reg );
     regVal &= ~bitmask;
     writeRegister( reg, regVal );
   }
 
-  void Phy::setRegisterBits( const uint8_t reg, const uint8_t bitmask )
+  void Phy::_setRegisterBits( const uint8_t reg, const uint8_t bitmask )
   {
     uint8_t regVal = readRegister( reg );
     regVal |= bitmask;

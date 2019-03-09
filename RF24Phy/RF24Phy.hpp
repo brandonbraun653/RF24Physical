@@ -33,32 +33,46 @@
 #include <Chimera/chimera.hpp>
 #include <Chimera/gpio.hpp>
 #include <Chimera/spi.hpp>
-#endif
+#endif /* USING_CHIMERA */
 
 namespace RF24Phy
 {
   class Phy;
-
-  typedef std::shared_ptr<Phy> Phy_sPtr; /**< Shared pointer type for the radio driver */
-  typedef std::unique_ptr<Phy> Phy_uPtr; /**< Unique pointer type for the radio driver */
+  using Phy_sPtr = std::shared_ptr<Phy>;
+  using Phy_uPtr = std::unique_ptr<Phy>;
 
   /**
    *   Base class for interacting with an NRF24L01 wireless module.
-   *   Most of this was taken from https://github.com/nRF24/RF24 and modified to
-   *   accommodate my particular flavor of hardware abstraction.
+   *   Most of this was taken from https://github.com/nRF24/RF24 and modified to accommodate my
+   *   particular flavor of hardware abstraction.
    */
   class Phy
   {
   public:
-#if defined( USING_CHIMERA )
-    Phy( Chimera::SPI::SPIClass_sPtr spiInstance, Chimera::GPIO::GPIOClass_sPtr chipEnable );
-#endif
+    /**
+     *  Template constructor that internally redirects the underlying SPI and GPIO implementations
+     *  to use either real Chimera::SPI::SPIClass_sPtr & Chimera::GPIO::GPIOClass_sPtr objects, or
+     *  allow creation from mock objects.
+     *
+     *  This is effectively how dependency injection for GMock tests is achieved.
+     *
+     *  @param[in]  spi               A pre-initialized SPI object
+     *  @param[in]  chipEnable        A pre-initialized GPIO object
+     */
+    template<typename xSPI, typename xGPIO>
+    Phy( xSPI spi, xGPIO chipEnable )
+    {
+      this->spi        = spi;
+      this->chipEnable = chipEnable;
+
+      _common_init();
+    }
 
     Phy()  = default;
     ~Phy() = default;
 
     /**
-     *   Erases all settings from the onboard registers and reinitialize them to the datasheet
+     *   Erases all settings from the on board registers and reinitialize them to the datasheet
      *   default values on power up. This is to allow the user a clean slate from which to work with.
      *
      *   @return True if the erase was successful, false if not
@@ -780,16 +794,21 @@ namespace RF24Phy
 
     RF24Phy::Mode currentMode = Mode::POWER_DOWN; /**< Keep track of which HW mode of the radio is likely to be in */
 
-#if defined( USING_CHIMERA )
-    Chimera::SPI::SPIClass_sPtr spi;          /**< SPI Object Instance */
-    Chimera::GPIO::GPIOClass_sPtr chipEnable; /**< GPIO Object Instance */
+#if defined( USING_CHIMERA ) && defined( GMOCK_TEST )
+    Chimera::Mock::SPIMock *spi;
+    Chimera::Mock::GPIOMock *chipEnable;
+#elif defined( USING_CHIMERA ) && !defined( GMOCK_TEST )
+    Chimera::SPI::SPIClass_sPtr spi;
+    Chimera::GPIO::GPIOClass_sPtr chipEnable;
 #endif
 
-    uint8_t writeCMD( const uint8_t cmd );
-    bool registerIsBitmaskSet( const uint8_t reg, const uint8_t bitmask );
-    bool registerIsAnySet( const uint8_t reg, const uint8_t bitmask );
-    void clearRegisterBits( const uint8_t reg, const uint8_t bitmask );
-    void setRegisterBits( const uint8_t reg, const uint8_t bitmask );
+    void _common_init();
+
+    uint8_t _writeCMD( const uint8_t cmd );
+    bool _registerIsBitmaskSet( const uint8_t reg, const uint8_t bitmask );
+    bool _registerIsAnySet( const uint8_t reg, const uint8_t bitmask );
+    void _clearRegisterBits( const uint8_t reg, const uint8_t bitmask );
+    void _setRegisterBits( const uint8_t reg, const uint8_t bitmask );
   };
 }  // namespace RF24Phy
 
