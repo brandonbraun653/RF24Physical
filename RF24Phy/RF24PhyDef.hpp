@@ -953,12 +953,12 @@ namespace RF24Phy
 
             void operator=(const uint8_t reg)
             {
-                bDPL_P5 = reg & bDPL_P5;
-                bDPL_P4 = reg & bDPL_P4;
-                bDPL_P3 = reg & bDPL_P3;
-                bDPL_P2 = reg & bDPL_P2;
-                bDPL_P1 = reg & bDPL_P1;
-                bDPL_P0 = reg & bDPL_P0;
+              bDPL_P5 = reg & static_cast<uint8_t>( bDPL_P5 );
+              bDPL_P4 = reg & static_cast<uint8_t>( bDPL_P4 );
+              bDPL_P3 = reg & static_cast<uint8_t>( bDPL_P3 );
+              bDPL_P2 = reg & static_cast<uint8_t>( bDPL_P2 );
+              bDPL_P1 = reg & static_cast<uint8_t>( bDPL_P1 );
+              bDPL_P0 = reg & static_cast<uint8_t>( bDPL_P0 );
             }
 
             void update(Phy *const radio);
