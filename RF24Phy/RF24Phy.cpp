@@ -471,7 +471,7 @@ namespace RF24Phy
     -------------------------------------------------*/
     uint32_t startTime = millis();
 
-    while ( txFIFOFull() )
+    while ( txFifoFull() )
     {
       /*-------------------------------------------------
       If max retries hit from a previous transmission, we screwed up
@@ -668,7 +668,7 @@ namespace RF24Phy
     return reg & FIFO_STATUS::RX_EMPTY;
   }
 
-  bool Phy::txFIFOFull()
+  bool Phy::txFifoFull()
   {
     uint8_t reg = readRegister( Register::FIFO_STATUS );
 
@@ -679,7 +679,7 @@ namespace RF24Phy
     return reg & FIFO_STATUS::TX_FULL;
   }
 
-  bool Phy::txFIFOEmpty()
+  bool Phy::txFifoEmpty()
   {
     uint8_t reg = readRegister( Register::FIFO_STATUS );
 
@@ -762,7 +762,7 @@ namespace RF24Phy
     /*-------------------------------------------------
     Wait for the TX FIFO to signal it's empty
     -------------------------------------------------*/
-    while ( !txFIFOEmpty() )
+    while ( !txFifoEmpty() )
     {
       /*-------------------------------------------------
       If we hit the Max Retries, we have a problem and the whole TX FIFO is screwed.
@@ -813,7 +813,7 @@ namespace RF24Phy
     ------------------------------------------------*/
     uint32_t start = millis();
 
-    while ( !txFIFOEmpty() )
+    while ( !txFifoEmpty() )
     {
       /*------------------------------------------------
       If max retries interrupt occurs, retry transmission. The data is

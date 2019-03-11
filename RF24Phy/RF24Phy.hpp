@@ -28,12 +28,10 @@
 /* Driver Includes */
 #include <RF24Phy/RF24PhyDef.hpp>
 
-/* Optional Chimera Includes */
-#if defined( USING_CHIMERA )
+/* Chimera Includes */
 #include <Chimera/chimera.hpp>
 #include <Chimera/gpio.hpp>
 #include <Chimera/spi.hpp>
-#endif /* USING_CHIMERA */
 
 namespace RF24Phy
 {
@@ -50,23 +48,33 @@ namespace RF24Phy
   {
   public:
     /**
-     *  Template constructor that internally redirects the underlying SPI and GPIO implementations
-     *  to use either real Chimera::SPI::SPIClass_sPtr & Chimera::GPIO::GPIOClass_sPtr objects, or
-     *  allow creation from mock objects.
+     *  Constructor that redirects the underlying SPI and GPIO implementations
+     *  to use either real Chimera hardware objects, or to allow creation from 
+     *  mock objects.
      *
-     *  This is effectively how dependency injection for GMock tests is achieved.
+     *  @note   This constructor is how dependency injection for GMock tests are achieved.
      *
      *  @param[in]  spi               A pre-initialized SPI object
      *  @param[in]  chipEnable        A pre-initialized GPIO object
      */
-    template<typename xSPI, typename xGPIO>
-    Phy( xSPI spi, xGPIO chipEnable )
+
+#if defined( GMOCK_TEST )
+    Phy( Chimera::Mock::SPIMock *spi, Chimera::Mock::GPIOMock *chipEnable )
     {
       this->spi        = spi;
       this->chipEnable = chipEnable;
 
       _common_init();
     }
+#else
+    Phy( Chimera::SPI::SPIClass_sPtr spi, Chimera::GPIO::GPIOClass_sPtr chipEnable )
+    {
+      this->spi        = spi;
+      this->chipEnable = chipEnable;
+
+      _common_init();
+    }
+#endif
 
     Phy()  = default;
     ~Phy() = default;
@@ -257,14 +265,14 @@ namespace RF24Phy
      *
      *   @return true if full, false if not
      */
-    bool txFIFOFull();
+    bool txFifoFull();
 
     /**
      *   Check if the TX FIFO is empty
      *
      *   @return true if empty, false if not
      */
-    bool txFIFOEmpty();
+    bool txFifoEmpty();
 
     /**
      *   Place the radio into Standby-I mode
@@ -794,10 +802,10 @@ namespace RF24Phy
 
     RF24Phy::Mode currentMode = Mode::POWER_DOWN; /**< Keep track of which HW mode of the radio is likely to be in */
 
-#if defined( USING_CHIMERA ) && defined( GMOCK_TEST )
+#if defined( GMOCK_TEST )
     Chimera::Mock::SPIMock *spi;
     Chimera::Mock::GPIOMock *chipEnable;
-#elif defined( USING_CHIMERA ) && !defined( GMOCK_TEST )
+#else
     Chimera::SPI::SPIClass_sPtr spi;
     Chimera::GPIO::GPIOClass_sPtr chipEnable;
 #endif
